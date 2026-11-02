@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "tsx watch src/main.ts",
     "build": "tsc",
-    "test": "tsx --test src/validators/auth.validator.test.ts src/views/routes/auth.routes.test.ts src/validators/admin-product.validator.test.ts src/views/routes/admin.routes.test.ts src/models/product.model.test.ts src/validators/profile.validator.test.ts src/views/routes/profile.routes.test.ts src/validators/cart.validator.test.ts src/views/routes/cart.routes.test.ts",
+    "test": "tsx --test src/validators/auth.validator.test.ts src/views/routes/auth.routes.test.ts src/validators/admin-product.validator.test.ts src/views/routes/admin.routes.test.ts src/models/product.model.test.ts src/validators/profile.validator.test.ts src/views/routes/profile.routes.test.ts src/validators/cart.validator.test.ts src/views/routes/cart.routes.test.ts src/validators/payment.validator.test.ts src/models/payment.model.test.ts src/views/routes/payment.routes.test.ts",
     "start": "node dist/main.js"
   },
   "dependencies": {
