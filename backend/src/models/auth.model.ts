@@ -86,7 +86,7 @@ function ensureDemoUser() {
 function isSupabaseTemporaryAuthFailure(error: unknown) {
   if (!error) return false;
   const message = String((error as { message?: string })?.message ?? error);
-  return /rate limit|too many requests|email rate limit|email_address_invalid|temporar|fetch failed/i.test(message);
+  return /rate limit|too many requests|email rate limit|email_address_invalid|is invalid|invalid|temporar|fetch failed/i.test(message);
 }
 
 export class AuthModel {
