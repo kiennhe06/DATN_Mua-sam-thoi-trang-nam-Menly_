@@ -28,3 +28,4 @@ class CategoryModel {
     'sort_order': sortOrder,
   };
 }
+

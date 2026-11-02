@@ -26,7 +26,7 @@ class CartItemModel {
     return CartItemModel(
       id: json['id']?.toString() ?? '',
       product: ProductModel.fromJson(Map<String, dynamic>.from(json['product'] ?? {})),
-      variantId: json['variant_id']?.toString() ?? '',
+      variantId: json['variant_id']?.toString() ?? json['variantId']?.toString() ?? '',
       size: json['size']?.toString() ?? 'M',
       color: json['color']?.toString() ?? 'Đen',
       quantity: (json['quantity'] is num) ? (json['quantity'] as num).toInt() : 1,
@@ -34,23 +34,32 @@ class CartItemModel {
     );
   }
 
-  /// Parse du lieu tu backend API: GET /api/v1/cart
+  /// Parse du lieu tu backend API: GET /api/v1/cart (ho tro ca CartItemDetail va raw join)
   factory CartItemModel.fromBackendJson(Map<String, dynamic> json) {
-    final variant = json['product_variants'] as Map<String, dynamic>?;
-    final productJson = variant?['products'] as Map<String, dynamic>?;
+    final variant = (json['variant'] ?? json['product_variants']) as Map<String, dynamic>?;
+    final productJson = (json['product'] ?? variant?['products']) as Map<String, dynamic>?;
+    final variantId = json['variantId']?.toString() ??
+        json['variant_id']?.toString() ??
+        variant?['id']?.toString() ??
+        '';
+
+    ProductModel parsedProduct;
+    if (productJson != null) {
+      parsedProduct = ProductModel.fromJson(Map<String, dynamic>.from(productJson));
+    } else {
+      parsedProduct = ProductModel(
+        id: variant?['product_id']?.toString() ?? '',
+        name: 'Sản phẩm Menly',
+        slug: 'san-pham',
+        price: (json['price'] is num) ? (json['price'] as num).toInt() : 0,
+        thumbnailUrl: '',
+      );
+    }
 
     return CartItemModel(
-      id: 'cart-${json['variant_id']}',
-      product: productJson != null
-          ? ProductModel.fromJson(Map<String, dynamic>.from(productJson))
-          : const ProductModel(
-              id: '',
-              name: 'Sản phẩm',
-              slug: 'sp',
-              price: 0,
-              thumbnailUrl: '',
-            ),
-      variantId: json['variant_id']?.toString() ?? '',
+      id: 'cart-$variantId',
+      product: parsedProduct,
+      variantId: variantId,
       size: variant?['size']?.toString() ?? 'M',
       color: variant?['color']?.toString() ?? 'Đen',
       quantity: (json['quantity'] is num) ? (json['quantity'] as num).toInt() : 1,
@@ -68,4 +77,3 @@ class CartItemModel {
     'is_selected': isSelected,
   };
 }
-
