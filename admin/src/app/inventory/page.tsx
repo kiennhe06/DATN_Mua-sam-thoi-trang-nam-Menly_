@@ -64,7 +64,7 @@ export default function InventoryPage() {
         onRefresh={loadData}
       />
 
-      <div className="p-8 space-y-8 flex-1">
+      <div className="flex-1 space-y-6 p-4 sm:space-y-8 sm:p-6 xl:p-8">
         {/* Quick restock and policy cards */}
         <InventoryRestockForm
           products={products}
