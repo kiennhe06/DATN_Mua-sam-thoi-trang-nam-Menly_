@@ -129,7 +129,7 @@ export default function SettingsPage() {
         onRefresh={checkAll}
       />
 
-      <div className="p-6 space-y-6 flex-1 overflow-auto">
+      <div className="flex-1 space-y-6 overflow-auto p-4 sm:p-6">
 
         {/* Saved Alert */}
         {saved && (
