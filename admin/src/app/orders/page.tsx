@@ -109,7 +109,7 @@ export default function OrdersPage() {
         onRefresh={loadOrders}
       />
 
-      <div className="p-8 space-y-6 flex-1">
+      <div className="flex-1 space-y-6 p-4 sm:p-6 xl:p-8">
         {/* Status Filter Tabs */}
         <div className="flex items-center gap-2 overflow-x-auto pb-1 bg-slate-900/60 p-3 rounded-2xl border border-slate-800">
           <Filter className="w-4 h-4 text-slate-400 ml-2 mr-1" />
