@@ -6,17 +6,20 @@ import 'package:menly_app/models/product_model.dart';
 import 'package:menly_app/models/voucher_model.dart';
 
 /// Provider quan ly Gio hang va Ap dung ma giam gia
-/// Ket noi truc tiep cac API backend da hoan thien (AP-GH1, AP-VC1):
-/// - GET /api/v1/cart (Xem gio hang)
-/// - PUT /api/v1/cart/items (Them/sua so luong mon)
+/// Ket noi truc tiep cac API backend moi nhat (AP-GH1, AP-VC1):
+/// - GET /api/v1/cart (Xem chi tiet gio hang tu may chu)
+/// - POST /api/v1/cart/items (Them san pham vao gio hang)
+/// - PUT /api/v1/cart/items/:variantId (Cap nhat so luong mon)
 /// - DELETE /api/v1/cart/items/:variantId (Xoa 1 mon)
-/// - DELETE /api/v1/cart (Xoa ca gio)
+/// - DELETE /api/v1/cart (Xoa ca gio hang)
 class CartProvider extends ChangeNotifier {
   final ApiClient _api = ApiClient();
   final List<CartItemModel> _items = [];
   VoucherModel? _appliedVoucher;
   final int _baseShippingFee = 25000;
   bool _isLoading = false;
+
+  final RegExp _uuidRegex = RegExp(r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$');
 
   CartProvider() {
     loadCartFromApi();
@@ -119,7 +122,7 @@ class CartProvider extends ChangeNotifier {
     }
   }
 
-  /// Them san pham vao gio (Dong bo PUT /api/v1/cart/items)
+  /// Them san pham vao gio (POST /api/v1/cart/items)
   Future<void> addToCart(ProductModel product, {String size = 'M', String color = 'Đen', int quantity = 1}) async {
     final existingIndex = _items.indexWhere(
       (item) => item.product.id == product.id && item.size == size && item.color == color,
@@ -134,13 +137,11 @@ class CartProvider extends ChangeNotifier {
       }
     }
 
-    int targetQuantity = quantity;
     if (existingIndex >= 0) {
       _items[existingIndex].quantity += quantity;
       if (_items[existingIndex].quantity > 20) {
         _items[existingIndex].quantity = 20;
       }
-      targetQuantity = _items[existingIndex].quantity;
     } else {
       _items.insert(0, CartItemModel(
         id: 'cart-${DateTime.now().millisecondsSinceEpoch}',
@@ -154,16 +155,26 @@ class CartProvider extends ChangeNotifier {
     }
     notifyListeners();
 
-    // Dong bo backend PUT /api/v1/cart/items
-    try {
-      await _api.dio.put('/cart/items', data: {
-        'variantId': variantId,
-        'quantity': targetQuantity,
-      });
-    } catch (_) {}
+    // Dong bo backend POST /api/v1/cart/items neu variantId la UUID hop le
+    if (_uuidRegex.hasMatch(variantId)) {
+      try {
+        final res = await _api.dio.post('/cart/items', data: {
+          'variantId': variantId,
+          'quantity': quantity,
+        });
+        if (res.statusCode == 201 && res.data['data'] != null) {
+          final rawList = res.data['data'] as List;
+          _items.clear();
+          for (var item in rawList) {
+            _items.add(CartItemModel.fromBackendJson(Map<String, dynamic>.from(item)));
+          }
+          notifyListeners();
+        }
+      } catch (_) {}
+    }
   }
 
-  /// Tang so luong (+1)
+  /// Tang so luong (+1) (PUT /api/v1/cart/items/:variantId)
   Future<void> incrementQuantity(String cartItemId) async {
     final index = _items.indexWhere((i) => i.id == cartItemId);
     if (index >= 0 && _items[index].quantity < 20) {
@@ -171,16 +182,17 @@ class CartProvider extends ChangeNotifier {
       final item = _items[index];
       notifyListeners();
 
-      try {
-        await _api.dio.put('/cart/items', data: {
-          'variantId': item.variantId,
-          'quantity': item.quantity,
-        });
-      } catch (_) {}
+      if (_uuidRegex.hasMatch(item.variantId)) {
+        try {
+          await _api.dio.put('/cart/items/${item.variantId}', data: {
+            'quantity': item.quantity,
+          });
+        } catch (_) {}
+      }
     }
   }
 
-  /// Giam so luong (-1)
+  /// Giam so luong (-1) (PUT /api/v1/cart/items/:variantId hoac DELETE)
   Future<void> decrementQuantity(String cartItemId) async {
     final index = _items.indexWhere((i) => i.id == cartItemId);
     if (index >= 0) {
@@ -189,12 +201,13 @@ class CartProvider extends ChangeNotifier {
         final item = _items[index];
         notifyListeners();
 
-        try {
-          await _api.dio.put('/cart/items', data: {
-            'variantId': item.variantId,
-            'quantity': item.quantity,
-          });
-        } catch (_) {}
+        if (_uuidRegex.hasMatch(item.variantId)) {
+          try {
+            await _api.dio.put('/cart/items/${item.variantId}', data: {
+              'quantity': item.quantity,
+            });
+          } catch (_) {}
+        }
       } else {
         removeItem(cartItemId);
       }
@@ -210,9 +223,11 @@ class CartProvider extends ChangeNotifier {
       _checkVoucherEligibility();
       notifyListeners();
 
-      try {
-        await _api.dio.delete('/cart/items/$variantId');
-      } catch (_) {}
+      if (_uuidRegex.hasMatch(variantId)) {
+        try {
+          await _api.dio.delete('/cart/items/$variantId');
+        } catch (_) {}
+      }
     }
   }
 
@@ -244,9 +259,11 @@ class CartProvider extends ChangeNotifier {
     notifyListeners();
 
     for (var item in toRemove) {
-      try {
-        await _api.dio.delete('/cart/items/${item.variantId}');
-      } catch (_) {}
+      if (_uuidRegex.hasMatch(item.variantId)) {
+        try {
+          await _api.dio.delete('/cart/items/${item.variantId}');
+        } catch (_) {}
+      }
     }
   }
 

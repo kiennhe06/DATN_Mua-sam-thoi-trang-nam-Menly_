@@ -6,6 +6,9 @@ import 'package:menly_app/models/order_model.dart';
 import 'package:menly_app/features/order/presentation/providers/order_provider.dart';
 
 /// Man hinh thanh toan online VNPay su dung thu vien flutter_inappwebview: ^6.1.5 (AP-TT1)
+/// Ket noi truc tiep voi Backend API moi:
+/// - POST /api/v1/payments/vnpay/create (Tao link VNPay Sandbox HMAC-SHA512)
+/// - GET /api/v1/payments/vnpay/return (Nhan ket qua dieu huong tra ve)
 class VNPayPaymentPage extends StatefulWidget {
   final OrderModel order;
 
@@ -31,20 +34,45 @@ class _VNPayPaymentPageState extends State<VNPayPaymentPage> {
     supportZoom: false,
   );
 
+  static const Map<String, String> _vnpayMessages = {
+    '00': 'Giao dịch thành công',
+    '07': 'Trừ tiền thành công. Giao dịch bị nghi ngờ bất thường',
+    '09': 'Thẻ/Tài khoản chưa đăng ký dịch vụ InternetBanking',
+    '10': 'Xác thực thông tin thẻ/tài khoản không đúng quá 3 lần',
+    '11': 'Đã hết hạn chờ thanh toán',
+    '12': 'Thẻ/Tài khoản của khách hàng bị khóa',
+    '13': 'Quý khách nhập sai mật khẩu xác thực OTP',
+    '24': 'Khách hàng hủy giao dịch thanh toán',
+    '51': 'Tài khoản không đủ số dư để thực hiện giao dịch',
+    '65': 'Tài khoản đã vượt quá hạn mức giao dịch trong ngày',
+    '75': 'Ngân hàng thanh toán đang bảo trì',
+    '79': 'Khách hàng nhập sai mật khẩu thanh toán quá số lần quy định',
+    '99': 'Lỗi không xác định từ cổng VNPay',
+  };
+
   @override
   void initState() {
     super.initState();
     _fetchPaymentUrl();
   }
 
-  /// Lay link thanh toan tu backend hoac khoi tao cong Sandbox
+  /// Goi API POST /api/v1/payments/vnpay/create de tao URL thanh toan
   Future<void> _fetchPaymentUrl() async {
     try {
-      final res = await _api.dio.post('/payments/vnpay/create', data: {
-        'orderId': widget.order.id,
+      final payload = <String, dynamic>{
         'amount': widget.order.total,
         'orderCode': widget.order.code,
-      });
+        'orderInfo': 'Thanh toan don hang ${widget.order.code}',
+        'locale': 'vn',
+      };
+
+      // Kiem tra orderId neu la UUID hop le thi gui kem cho backend
+      final uuidRegex = RegExp(r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$');
+      if (uuidRegex.hasMatch(widget.order.id)) {
+        payload['orderId'] = widget.order.id;
+      }
+
+      final res = await _api.dio.post('/payments/vnpay/create', data: payload);
 
       if (res.statusCode == 200 && res.data['paymentUrl'] != null) {
         setState(() {
@@ -54,7 +82,7 @@ class _VNPayPaymentPageState extends State<VNPayPaymentPage> {
         return;
       }
     } catch (_) {
-      // Backend chua khoi chay hoac tra ve 501 -> Dung giao dien cong VNPay Sandbox duoc mo phong chuan
+      // Backend offline hoac chua khoi chay -> Chuyen sang giao dien cong VNPay Sandbox noi bo
     }
 
     setState(() {
@@ -71,12 +99,13 @@ class _VNPayPaymentPageState extends State<VNPayPaymentPage> {
     // Kiem tra xem URL co chua tham so ket qua cua VNPay hay khong
     if (urlStr.contains('vnp_ResponseCode') || urlStr.contains('vnpay_return') || urlStr.contains('/vnpay/return')) {
       final responseCode = uri.queryParameters['vnp_ResponseCode'];
+      final bankCode = uri.queryParameters['vnp_BankCode'];
+      final transactionNo = uri.queryParameters['vnp_TransactionNo'];
+      final txnRef = uri.queryParameters['vnp_TxnRef'] ?? widget.order.code;
 
       if (responseCode == '00') {
-        // Giao dich thanh cong!
-        _handleSuccess();
-      } else {
-        // Giao dich that bai hoac bi huy
+        _handleSuccess(bankCode: bankCode, transactionNo: transactionNo, txnRef: txnRef);
+      } else if (responseCode != null) {
         _handleFailure(responseCode);
       }
       return true;
@@ -84,7 +113,7 @@ class _VNPayPaymentPageState extends State<VNPayPaymentPage> {
     return false;
   }
 
-  void _handleSuccess() {
+  void _handleSuccess({String? bankCode, String? transactionNo, String? txnRef}) {
     context.read<OrderProvider>().markAsPaidVNPay(widget.order.id);
 
     showDialog(
@@ -93,9 +122,28 @@ class _VNPayPaymentPageState extends State<VNPayPaymentPage> {
       builder: (ctx) => AlertDialog(
         icon: const Icon(Icons.check_circle, color: Colors.green, size: 54),
         title: const Text('Thanh toán VNPay thành công!'),
-        content: Text(
-          'Đơn hàng ${widget.order.code} đã được thanh toán trực tuyến thành công qua cổng VNPay.\n\nSố tiền: ${widget.order.total} đ',
-          textAlign: TextAlign.center,
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Text(
+                '${widget.order.total} đ',
+                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF005BAA)),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text('• Mã đơn hàng: ${widget.order.code}', style: const TextStyle(fontSize: 13)),
+            if (txnRef != null)
+              Text('• Mã giao dịch: $txnRef', style: const TextStyle(fontSize: 13)),
+            if (bankCode != null && bankCode.isNotEmpty)
+              Text('• Ngân hàng thanh toán: $bankCode', style: const TextStyle(fontSize: 13)),
+            if (transactionNo != null && transactionNo.isNotEmpty)
+              Text('• Số GD VNPay: $transactionNo', style: const TextStyle(fontSize: 13)),
+            const SizedBox(height: 8),
+            Text('Đơn hàng đã được xác nhận thanh toán thành công qua cổng VNPay.',
+                style: TextStyle(fontSize: 12, color: Colors.grey.shade700)),
+          ],
         ),
         actions: [
           ElevatedButton(
@@ -115,22 +163,29 @@ class _VNPayPaymentPageState extends State<VNPayPaymentPage> {
   }
 
   void _handleFailure(String? code) {
-    String msg = 'Giao dịch thanh toán không thành công.';
-    if (code == '24') {
-      msg = 'Khách hàng đã hủy giao dịch thanh toán trên VNPay.';
-    } else if (code == '11') {
-      msg = 'Giao dịch không thành công do hết thời gian chờ thanh toán.';
-    }
+    final msg = _vnpayMessages[code] ?? 'Giao dịch thanh toán qua VNPay không thành công.';
 
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         icon: const Icon(Icons.error_outline, color: Colors.red, size: 54),
         title: const Text('Thanh toán thất bại'),
-        content: Text(msg),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(msg, textAlign: TextAlign.center, style: const TextStyle(fontSize: 14)),
+            if (code != null) ...[
+              const SizedBox(height: 6),
+              Text('(Mã lỗi VNPay: $code)', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+            ],
+          ],
+        ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(ctx),
+            onPressed: () {
+              Navigator.pop(ctx);
+              _fetchPaymentUrl();
+            },
             child: const Text('Thử lại'),
           ),
           ElevatedButton(
@@ -149,7 +204,7 @@ class _VNPayPaymentPageState extends State<VNPayPaymentPage> {
     );
   }
 
-  /// Tao HTML mo phong cong thanh toan VNPay Sandbox
+  /// Tao HTML mo phong cong thanh toan VNPay Sandbox khi offline
   String _buildVNPaySandboxHtml() {
     return '''
 <!DOCTYPE html>
@@ -217,7 +272,7 @@ class _VNPayPaymentPageState extends State<VNPayPaymentPage> {
         <p style="font-size: 12px; color: #555; margin-top: 8px;">Quét mã QR bằng ứng dụng Mobile Banking hoặc Ví điện tử</p>
       </div>
 
-      <a class="btn btn-pay" href="https://menly.shop/vnpay_return?vnp_ResponseCode=00&vnp_TxnRef=${widget.order.code}&vnp_Amount=${widget.order.total * 100}">
+      <a class="btn btn-pay" href="https://menly.shop/vnpay_return?vnp_ResponseCode=00&vnp_TxnRef=${widget.order.code}&vnp_Amount=${widget.order.total * 100}&vnp_BankCode=VNPAYQR">
         Xác nhận thanh toán thành công (Mô phỏng)
       </a>
     </div>
@@ -241,7 +296,7 @@ class _VNPayPaymentPageState extends State<VNPayPaymentPage> {
         OTP xác thực: <strong>123456</strong>
       </div>
 
-      <a class="btn btn-pay" href="https://menly.shop/vnpay_return?vnp_ResponseCode=00&vnp_TxnRef=${widget.order.code}&vnp_Amount=${widget.order.total * 100}">
+      <a class="btn btn-pay" href="https://menly.shop/vnpay_return?vnp_ResponseCode=00&vnp_TxnRef=${widget.order.code}&vnp_Amount=${widget.order.total * 100}&vnp_BankCode=NCB">
         Thanh toán qua Thẻ ATM nội địa
       </a>
     </div>
