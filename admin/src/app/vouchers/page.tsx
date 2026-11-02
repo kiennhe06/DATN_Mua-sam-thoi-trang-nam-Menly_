@@ -195,7 +195,7 @@ export default function VouchersPage() {
         onRefresh={loadVouchers}
       />
 
-      <div className="p-8 space-y-6 flex-1">
+      <div className="flex-1 space-y-6 p-4 sm:p-6 xl:p-8">
         {msg && (
           <div
             className={`p-3.5 rounded-xl text-xs font-semibold flex items-center justify-between gap-2 shadow-sm ${
