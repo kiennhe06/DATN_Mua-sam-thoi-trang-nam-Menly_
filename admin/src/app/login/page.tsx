@@ -11,8 +11,8 @@ export default function LoginPage() {
   const [mode, setMode] = useState<'login' | 'register'>('login');
 
   // Form states
-  const [email, setEmail] = useState('admin@gmail.com');
-  const [password, setPassword] = useState('123456');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [name, setName] = useState('');
 
   const [loading, setLoading] = useState(false);
@@ -224,9 +224,7 @@ export default function LoginPage() {
 
         {mode === 'login' && (
           <div className="mt-6 p-3 rounded-xl bg-slate-950/60 border border-slate-800/80 text-[11px] text-slate-400">
-            <span className="text-amber-400 font-semibold block mb-0.5">Tài khoản quản trị mặc định:</span>
-            Email: <code className="text-slate-200 font-mono font-bold">admin@gmail.com</code> • Mật khẩu:{' '}
-            <code className="text-slate-200 font-mono font-bold">123456</code>
+            Đăng nhập bằng tài khoản Supabase có quyền quản trị viên (role admin).
           </div>
         )}
       </div>
