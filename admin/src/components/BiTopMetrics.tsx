@@ -25,7 +25,11 @@ function LineSparkline({ active }: { active: boolean }) {
     .join(' ');
 
   return (
-    <svg width={width} height={height} className="overflow-visible opacity-80">
+    <svg
+      viewBox={`0 0 ${width} ${height}`}
+      className="h-8 w-20 shrink-0 overflow-hidden opacity-80 sm:w-28"
+      preserveAspectRatio="none"
+    >
       <path d={pathD} fill="none" stroke="#22d3ee" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
@@ -70,34 +74,34 @@ export function BiTopMetrics({ orders, products }: BiTopMetricsProps) {
       : '0 ₫';
 
   return (
-    <div className="w-full bg-[#1c0d36]/90 border border-[#371b63] rounded-2xl p-6">
-      <h3 className="text-sm font-semibold text-slate-300 mb-6 flex items-center gap-2">
+    <div className="w-full rounded-2xl border border-[#371b63] bg-[#1c0d36]/90 p-4 sm:p-6">
+      <h3 className="mb-5 flex items-center gap-2 text-sm font-semibold text-slate-300 sm:mb-6">
         <span className="w-2 h-2 rounded-full bg-cyan-400"></span>
         Số liệu thống kê nhanh
       </h3>
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-y-6 gap-x-8">
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-x-6 sm:gap-y-7 xl:grid-cols-4">
         <div>
-          <div className="text-3xl font-extrabold text-white tracking-tight">{totalStockDisplay}</div>
+          <div className="text-2xl font-extrabold tracking-tight text-white sm:text-3xl">{totalStockDisplay}</div>
           <div className="text-xs text-slate-400 mt-1">Khối lượng sản xuất & Tồn kho</div>
         </div>
-        <div className="flex items-center justify-between">
+        <div className="flex min-w-0 items-center justify-between gap-3">
           <LineSparkline active={products.length > 0} />
           <div className="text-right">
-            <div className="text-3xl font-extrabold text-cyan-400">{products.length}</div>
+            <div className="text-2xl font-extrabold text-cyan-400 sm:text-3xl">{products.length}</div>
             <div className="text-xs text-slate-400 mt-1">Sản phẩm mở bán</div>
           </div>
         </div>
 
-        <div className="flex items-center justify-between">
+        <div className="flex min-w-0 items-center justify-between gap-3">
           <div>
-            <div className="text-3xl font-extrabold text-white">{totalOrdersDisplay}</div>
+            <div className="text-2xl font-extrabold text-white sm:text-3xl">{totalOrdersDisplay}</div>
             <div className="text-xs text-slate-400 mt-1">Số lượng đặt hàng</div>
           </div>
           <BarSparkline hasOrders={totalOrdersCount > 0} />
         </div>
 
         <div className="text-right flex flex-col justify-end">
-          <div className="text-3xl font-extrabold text-cyan-400">{totalRevDisplay}</div>
+          <div className="break-words text-2xl font-extrabold text-cyan-400 sm:text-3xl">{totalRevDisplay}</div>
           <div className="text-xs text-slate-400 mt-1">Doanh thu bán hàng (VND)</div>
         </div>
       </div>
