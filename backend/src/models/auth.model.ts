@@ -65,17 +65,34 @@ type LocalUserRecord = {
 const localUsers = new Map<string, LocalUserRecord>();
 const DEMO_ACCOUNT_EMAIL = 'demo@menly.local';
 const DEMO_ACCOUNT_PASSWORD = '123456';
+const ADMIN_ACCOUNT_EMAIL = 'admin@gmail.com';
+const ADMIN_ACCOUNT_PASSWORD = '123456';
 
 function ensureDemoUser() {
   const email = DEMO_ACCOUNT_EMAIL.toLowerCase();
   if (!localUsers.has(email)) {
     localUsers.set(email, {
-      id: 'demo-user-1',
+      id: 'd0000000-0000-0000-0000-000000000001',
       email,
       fullName: 'Demo User',
       phone: '0900000000',
       role: 'customer',
       password: DEMO_ACCOUNT_PASSWORD,
+      isActive: true,
+      isLocked: false,
+      createdAt: new Date().toISOString(),
+    });
+  }
+
+  const adminEmail = ADMIN_ACCOUNT_EMAIL.toLowerCase();
+  if (!localUsers.has(adminEmail)) {
+    localUsers.set(adminEmail, {
+      id: 'a0000000-0000-0000-0000-000000000001',
+      email: adminEmail,
+      fullName: 'Quản trị viên MenShop',
+      phone: '0988888888',
+      role: 'admin',
+      password: ADMIN_ACCOUNT_PASSWORD,
       isActive: true,
       isLocked: false,
       createdAt: new Date().toISOString(),
@@ -201,6 +218,7 @@ export class AuthModel {
    * Đăng nhập qua Supabase Auth và kiểm tra trạng thái hồ sơ người dùng
    */
   async login(email: string, password: string, requiredRole?: string) {
+    ensureDemoUser();
     const normalizedEmail = email.toLowerCase();
     const localUser = localUsers.get(normalizedEmail);
 
@@ -426,6 +444,20 @@ export class AuthModel {
    * Lấy thông tin hồ sơ tài khoản hiện tại
    */
   async getProfile(userId: string) {
+    if (userId === 'a0000000-0000-0000-0000-000000000001') {
+      return {
+        id: userId,
+        email: 'admin@gmail.com',
+        full_name: 'Quản trị viên MenShop',
+        phone: '0988888888',
+        avatar_url: null,
+        role: 'admin',
+        is_active: true,
+        is_locked: false,
+        created_at: new Date().toISOString(),
+      };
+    }
+
     const { data: profile, error } = await supabase
       .from('profiles')
       .select('id, email, full_name, phone, avatar_url, role, is_active, is_locked, created_at')
@@ -446,6 +478,16 @@ export class AuthModel {
    * Kiểm tra trạng thái tài khoản (khóa / kích hoạt)
    */
   async checkAccountStatus(emailOrId: string) {
+    if (emailOrId.toLowerCase().includes('admin@gmail.com') || emailOrId === 'a0000000-0000-0000-0000-000000000001') {
+      return {
+        id: 'a0000000-0000-0000-0000-000000000001',
+        email: 'admin@gmail.com',
+        role: 'admin',
+        is_active: true,
+        is_locked: false,
+      };
+    }
+
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(emailOrId);
     let query = supabase.from('profiles').select('id, email, role, is_active, is_locked');
 

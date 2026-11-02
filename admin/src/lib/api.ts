@@ -262,21 +262,22 @@ export async function loginUser(email: string, password: string): Promise<AuthSe
   }).catch(() => {
     throw new Error(`Không thể kết nối backend tại ${BASE}. Hãy khởi động backend rồi thử lại.`);
   });
-  const data = await res.json().catch(() => ({}));
+  const raw = await res.json().catch(() => ({}));
   if (!res.ok) {
-    throw new Error(data?.error?.message || data?.message || 'Đăng nhập thất bại');
+    throw new Error(raw?.error?.message || raw?.error || raw?.message || 'Đăng nhập thất bại');
   }
-  if (!data.accessToken || !data.user?.id || !data.user?.role) {
+  const payload = raw?.data || raw;
+  if (!payload.accessToken || !payload.user?.id || !payload.user?.role) {
     throw new Error('Backend trả về phiên đăng nhập không hợp lệ.');
   }
   return {
     user: {
-      id: data.user.id,
-      email: data.user?.email || normalized,
-      fullName: data.user?.fullName || data.user?.full_name || data.user?.name || 'Admin MenShop',
-      role: data.user.role,
+      id: payload.user.id,
+      email: payload.user?.email || normalized,
+      fullName: payload.user?.fullName || payload.user?.full_name || payload.user?.name || 'Admin MenShop',
+      role: payload.user.role,
     },
-    accessToken: data.accessToken,
+    accessToken: payload.accessToken,
   };
 }
 

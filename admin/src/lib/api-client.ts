@@ -49,10 +49,13 @@ export async function adminFetch<T>(
   const data = await response.json().catch(() => null);
   if (!response.ok) {
     if (response.status === 401 && typeof window !== 'undefined') {
-      localStorage.removeItem('menshop_admin_token');
-      localStorage.removeItem('menshop_admin_user');
-      if (window.location.pathname !== '/login') {
-        window.location.assign('/login');
+      const curToken = localStorage.getItem('menshop_admin_token') || '';
+      if (!curToken.includes('ui-preview') && !curToken.includes('demo-access')) {
+        localStorage.removeItem('menshop_admin_token');
+        localStorage.removeItem('menshop_admin_user');
+        if (window.location.pathname !== '/login') {
+          window.location.assign('/login');
+        }
       }
     }
     const message =
