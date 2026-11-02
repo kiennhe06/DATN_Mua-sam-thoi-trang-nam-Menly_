@@ -1,313 +1,727 @@
 'use client';
 
-import { FormEvent, useCallback, useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { ApiError, apiFetch } from '@/lib/api';
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import { Header } from '../../components/Header';
+import { ProductDetailModal } from '../../components/ProductDetailModal';
+import { CreateProductModal } from '../../components/CreateProductModal';
+import { EditProductModal } from '../../components/EditProductModal';
+import { DeleteProductModal } from '../../components/DeleteProductModal';
+import { CompactVariantDisplay } from '../../components/CompactVariantDisplay';
+import { fetchAdminProducts, fetchCategories, fetchProductDetail, updateProduct } from '../../lib/api';
+import { Product, Category } from '../../lib/types';
+import {
+  Search,
+  Eye,
+  ArrowUpDown,
+  Layers,
+  LayoutGrid,
+  List,
+  CheckCircle2,
+  FolderOpen,
+  Plus,
+  Pencil,
+  RotateCcw,
+  Trash2,
+  AlertCircle,
+} from 'lucide-react';
 
-type Category = { id: string; name: string };
-type Product = {
-  id: string;
-  category_id: string;
-  name: string;
-  slug: string;
-  description: string | null;
-  price: number;
-  thumbnail_url: string | null;
-  approval_status: 'pending' | 'approved' | 'rejected';
-  is_active: boolean;
-};
-type ProductForm = {
-  categoryId: string;
-  name: string;
-  slug: string;
-  description: string;
-  price: string;
-  thumbnailUrl: string;
-};
-type DataResponse<T> = { data: T };
-
-const emptyForm: ProductForm = {
-  categoryId: '',
-  name: '',
-  slug: '',
-  description: '',
-  price: '',
-  thumbnailUrl: '',
-};
-
-const fieldStyle = { display: 'block', width: '100%', padding: 8, marginTop: 4 };
-const buttonStyle = { padding: '8px 12px', cursor: 'pointer' };
+type SortOption =
+  | 'category'
+  | 'price_asc'
+  | 'price_desc'
+  | 'name_asc'
+  | 'stock_desc'
+  | 'stock_asc';
 
 export default function ProductsPage() {
-  const router = useRouter();
   const [categories, setCategories] = useState<Category[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
-  const [form, setForm] = useState<ProductForm>(emptyForm);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [search, setSearch] = useState('');
-  const [searchText, setSearchText] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
-  const [activeFilter, setActiveFilter] = useState('');
-  const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState<SortOption>('category');
+  const [viewMode, setViewMode] = useState<'grouped' | 'table'>('grouped');
+  const [statusFilter, setStatusFilter] = useState<'active' | 'inactive' | 'all'>('active');
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [productToDelete, setProductToDelete] = useState<Product | null>(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [notification, setNotification] = useState<{
+    message: string;
+    type: 'success' | 'error';
+  } | null>(null);
 
-  const handleRequestError = useCallback((requestError: unknown) => {
-    if (requestError instanceof ApiError && requestError.status === 401) {
-      window.sessionStorage.removeItem('menly_admin_token');
-      router.replace('/login');
-      return;
-    }
-    setError(requestError instanceof Error ? requestError.message : 'Không thể tải dữ liệu');
-  }, [router]);
-
-  const loadProducts = useCallback(async () => {
-    const params = new URLSearchParams();
-    if (search.trim()) params.set('search', search.trim());
-    if (categoryFilter) params.set('categoryId', categoryFilter);
-    if (statusFilter) params.set('approvalStatus', statusFilter);
-    if (activeFilter) params.set('isActive', activeFilter);
-
-    const queryString = params.toString();
-    const query = queryString ? `?${queryString}` : '';
-    const response = await apiFetch<DataResponse<Product[]>>(`/admin/products${query}`);
-    setProducts(response.data);
-  }, [activeFilter, categoryFilter, search, statusFilter]);
-
-  useEffect(() => {
-    if (!window.sessionStorage.getItem('menly_admin_token')) {
-      router.replace('/login');
-      return;
-    }
-
-    apiFetch<DataResponse<Category[]>>('/categories')
-      .then((response) => setCategories(response.data))
-      .catch(handleRequestError);
-  }, [handleRequestError, router]);
-
-  useEffect(() => {
-    if (!window.sessionStorage.getItem('menly_admin_token')) return;
-    setIsLoading(true);
-    setError('');
-    void loadProducts()
-      .catch(handleRequestError)
-      .finally(() => setIsLoading(false));
-  }, [handleRequestError, loadProducts]);
-
-  function resetForm() {
-    setForm(emptyForm);
-    setEditingId(null);
-  }
-
-  function startEditing(product: Product) {
-    setEditingId(product.id);
-    setForm({
-      categoryId: product.category_id,
-      name: product.name,
-      slug: product.slug,
-      description: product.description ?? '',
-      price: String(product.price),
-      thumbnailUrl: product.thumbnail_url ?? '',
-    });
-  }
-
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setError('');
-    setIsSaving(true);
-
-    const payload = {
-      categoryId: form.categoryId,
-      name: form.name.trim(),
-      slug: form.slug.trim(),
-      description: form.description.trim(),
-      price: Number(form.price),
-      thumbnailUrl: form.thumbnailUrl.trim(),
-    };
-
+  async function loadData() {
+    setLoading(true);
+    setLoadError(null);
     try {
-      if (editingId) {
-        await apiFetch(`/admin/products/${editingId}`, {
-          method: 'PUT',
-          body: JSON.stringify(payload),
-        });
-      } else {
-        await apiFetch('/admin/products', {
-          method: 'POST',
-          body: JSON.stringify(payload),
-        });
-      }
-      resetForm();
-      await loadProducts();
-    } catch (requestError) {
-      handleRequestError(requestError);
+      const [cats, prods] = await Promise.all([
+        fetchCategories(),
+        fetchAdminProducts({ limit: 400 }),
+      ]);
+      setCategories(cats);
+      setProducts(prods.items);
+    } catch (error) {
+      setCategories([]);
+      setProducts([]);
+      setLoadError(error instanceof Error ? error.message : 'Không tải được dữ liệu từ backend.');
     } finally {
-      setIsSaving(false);
+      setLoading(false);
     }
   }
 
-  async function approveProduct(id: string) {
-    setError('');
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const getProductCategory = useCallback((p: Product): Category => {
+    if (p.categoryId) {
+      const found = categories.find((c) => c.id === p.categoryId || c.slug === p.categoryId);
+      if (found) return found;
+    }
+    const s = p.slug.toLowerCase();
+    if (s.startsWith('ao-so-mi')) {
+      const cat = categories.find((c) => c.slug === 'ao-so-mi-nam');
+      if (cat) return cat;
+    }
+    if (s.startsWith('ao-polo') || s.startsWith('ao-thun')) {
+      const cat = categories.find((c) => c.slug === 'ao-polo-t-shirt');
+      if (cat) return cat;
+    }
+    if (
+      s.startsWith('quan-jeans') ||
+      s.startsWith('quan-bo') ||
+      s.includes('jeans') ||
+      s.includes('quan-short-jeans') ||
+      s.includes('quan-short-bo')
+    ) {
+      const cat = categories.find((c) => c.slug === 'quan-jeans-nam');
+      if (cat) return cat;
+    }
+    if (
+      s.startsWith('quan-tay') ||
+      s.startsWith('quan-kaki') ||
+      s.startsWith('quan-au') ||
+      s.startsWith('quan-short')
+    ) {
+      const cat = categories.find((c) => c.slug === 'quan-tay-kaki');
+      if (cat) return cat;
+    }
+    if (
+      s.startsWith('ao-khoac') ||
+      s.startsWith('ao-blazer') ||
+      s.startsWith('ao-mang-to') ||
+      s.startsWith('ao-phao') ||
+      s.startsWith('ao-gile') ||
+      s.startsWith('ao-hoodie')
+    ) {
+      const cat = categories.find((c) => c.slug === 'ao-khoac-blazer');
+      if (cat) return cat;
+    }
+    return categories[0] || {
+      id: p.categoryId || 'uncategorized',
+      name: 'Chưa phân loại',
+      slug: 'chua-phan-loai',
+      sortOrder: Number.MAX_SAFE_INTEGER,
+    };
+  }, [categories]);
+
+  // Change product category directly and persist to backend
+  const handleUpdateProductCategory = async (productId: string, newCategoryId: string) => {
+    const targetCat = categories.find((c) => c.id === newCategoryId);
     try {
-      await apiFetch(`/admin/products/${id}/approve`, { method: 'PATCH' });
-      await loadProducts();
-    } catch (requestError) {
-      handleRequestError(requestError);
+      await updateProduct(productId, { categoryId: newCategoryId });
+      setProducts((prev) =>
+        prev.map((p) => p.id === productId ? { ...p, categoryId: newCategoryId } : p)
+      );
+      setNotification({
+        message: `Đã chuyển sản phẩm sang danh mục "${targetCat?.name || 'Mới'}"`,
+        type: 'success',
+      });
+    } catch (error) {
+      setNotification({
+        message: error instanceof Error ? error.message : 'Không cập nhật được sản phẩm.',
+        type: 'error',
+      });
     }
-  }
+    setTimeout(() => setNotification(null), 3000);
+  };
 
-  async function deactivateProduct(product: Product) {
-    if (!window.confirm(`Ngừng kinh doanh sản phẩm "${product.name}"?`)) return;
-    setError('');
+  const handleToggleProductVisibility = async (product: Product) => {
+    const willShow = product.isActive === false;
+    if (!willShow) {
+      setProductToDelete(product);
+      return;
+    }
+
     try {
-      await apiFetch(`/admin/products/${product.id}`, { method: 'DELETE' });
-      await loadProducts();
-    } catch (requestError) {
-      handleRequestError(requestError);
+      await updateProduct(product.id, { isActive: true });
+      setProducts((current) => current.map((item) =>
+        item.id === product.id ? { ...item, isActive: true } : item
+      ));
+      setNotification({ message: `Đã hiển thị lại sản phẩm “${product.name}”.`, type: 'success' });
+    } catch (error) {
+      setNotification({
+        message: error instanceof Error ? error.message : 'Không cập nhật được trạng thái sản phẩm.',
+        type: 'error',
+      });
     }
-  }
+    setTimeout(() => setNotification(null), 3500);
+  };
 
-  async function activateProduct(id: string) {
-    setError('');
-    try {
-      await apiFetch(`/admin/products/${id}/activate`, { method: 'PATCH' });
-      await loadProducts();
-    } catch (requestError) {
-      handleRequestError(requestError);
+  const renderProductActions = (product: Product) => (
+    <div className="flex items-center justify-center gap-1.5">
+      <button
+        type="button"
+        onClick={async () => {
+          try {
+            const detail = await fetchProductDetail(product.id);
+            setSelectedProduct(detail || product);
+          } catch (error) {
+            setNotification({
+              message: error instanceof Error ? error.message : 'Không tải được chi tiết sản phẩm.',
+              type: 'error',
+            });
+            setTimeout(() => setNotification(null), 3500);
+          }
+        }}
+        title="Xem chi tiết và tồn kho"
+        className="rounded-lg bg-slate-800 px-2.5 py-1.5 text-xs font-semibold text-slate-300 transition-all hover:bg-amber-500 hover:text-slate-950"
+      >
+        <Eye className="h-3.5 w-3.5" />
+      </button>
+      <button
+        type="button"
+        onClick={async () => {
+          try {
+            const detail = await fetchProductDetail(product.id);
+            setEditingProduct(detail || product);
+          } catch (error) {
+            setNotification({
+              message: error instanceof Error ? error.message : 'Không tải được sản phẩm để sửa.',
+              type: 'error',
+            });
+            setTimeout(() => setNotification(null), 3500);
+          }
+        }}
+        title="Sửa sản phẩm"
+        className="rounded-lg bg-slate-800 p-1.5 text-amber-300 transition-colors hover:bg-amber-500 hover:text-slate-950"
+      >
+        <Pencil className="h-3.5 w-3.5" />
+      </button>
+      <button
+        type="button"
+        onClick={() => handleToggleProductVisibility(product)}
+        title={product.isActive === false ? 'Hiển thị lại sản phẩm' : 'Ẩn sản phẩm khỏi ứng dụng'}
+        className={`rounded-lg bg-slate-800 p-1.5 transition-colors ${product.isActive === false ? 'text-emerald-300 hover:bg-emerald-500 hover:text-slate-950' : 'text-rose-300 hover:bg-rose-500 hover:text-white'}`}
+      >
+        {product.isActive === false ? <RotateCcw className="h-3.5 w-3.5" /> : <Trash2 className="h-3.5 w-3.5" />}
+      </button>
+    </div>
+  );
+
+  const getProductStock = (p: Product) => {
+    return p.variants?.reduce((sum, v) => sum + v.stock, 0) || 0;
+  };
+
+  // Filter products by selected category and search query
+  const filteredProducts = useMemo(() => {
+    return products.filter((p) => {
+      const pCat = getProductCategory(p);
+      const matchCat =
+        selectedCategory === 'all' ||
+        p.categoryId === selectedCategory ||
+        pCat.id === selectedCategory;
+      const matchSearch =
+        !searchQuery.trim() ||
+        p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        p.slug.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        p.id.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchStatus = statusFilter === 'all' ||
+        (statusFilter === 'active' ? p.isActive !== false : p.isActive === false);
+      return matchCat && matchSearch && matchStatus;
+    });
+  }, [products, selectedCategory, searchQuery, getProductCategory, statusFilter]);
+
+  // Sort products based on selected sort option
+  const sortedProducts = useMemo(() => {
+    const list = [...filteredProducts];
+    if (sortBy === 'category') {
+      const catOrderMap: Record<string, number> = {};
+      categories.forEach((c, idx) => {
+        catOrderMap[c.id] = c.sortOrder ?? idx + 1;
+      });
+      list.sort((a, b) => {
+        const catA = getProductCategory(a);
+        const catB = getProductCategory(b);
+        const orderA = catOrderMap[catA.id] ?? 999;
+        const orderB = catOrderMap[catB.id] ?? 999;
+        if (orderA !== orderB) return orderA - orderB;
+        return a.name.localeCompare(b.name);
+      });
+    } else if (sortBy === 'price_asc') {
+      list.sort((a, b) => a.price - b.price);
+    } else if (sortBy === 'price_desc') {
+      list.sort((a, b) => b.price - a.price);
+    } else if (sortBy === 'name_asc') {
+      list.sort((a, b) => a.name.localeCompare(b.name));
+    } else if (sortBy === 'stock_desc') {
+      list.sort((a, b) => getProductStock(b) - getProductStock(a));
+    } else if (sortBy === 'stock_asc') {
+      list.sort((a, b) => getProductStock(a) - getProductStock(b));
     }
-  }
+    return list;
+  }, [filteredProducts, sortBy, categories, getProductCategory]);
 
-  function logout() {
-    window.sessionStorage.removeItem('menly_admin_token');
-    router.replace('/login');
-  }
+  // Group products by category for Grouped View
+  const groupedProducts = useMemo(() => {
+    const map = new Map<string, { category: Category; items: Product[] }>();
+    categories.forEach((cat) => {
+      map.set(cat.id, { category: cat, items: [] });
+    });
+
+    sortedProducts.forEach((p) => {
+      const cat = getProductCategory(p);
+      if (!map.has(cat.id)) {
+        map.set(cat.id, { category: cat, items: [] });
+      }
+      map.get(cat.id)!.items.push(p);
+    });
+
+    return Array.from(map.values()).filter((g) =>
+      selectedCategory === 'all' ? g.items.length > 0 : g.category.id === selectedCategory
+    );
+  }, [sortedProducts, categories, selectedCategory, getProductCategory]);
 
   return (
-    <main style={{ maxWidth: 1200, margin: '32px auto', padding: 24 }}>
-      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div>
-          <h1>Quản lý sản phẩm</h1>
-          <p>Thêm, cập nhật, duyệt và ngừng kinh doanh sản phẩm.</p>
+    <div className="flex-1 flex flex-col">
+      <Header
+        title="Quản lý Sản phẩm & Danh mục Phân loại"
+        subtitle="Hiển thị và sắp xếp 125 sản phẩm vào từng danh mục (25 sản phẩm / danh mục) chuẩn mực"
+        onRefresh={loadData}
+      />
+
+      <div className="flex-1 space-y-6 p-4 sm:p-6 xl:p-8">
+        <div className="flex justify-end">
+          <button
+            type="button"
+            disabled={categories.length === 0}
+            title={categories.length === 0 ? 'Backend chưa có danh mục để gán cho sản phẩm' : undefined}
+            onClick={() => setShowCreateModal(true)}
+            className="inline-flex items-center gap-2 rounded-xl bg-amber-500 px-4 py-2.5 text-sm font-bold text-slate-950 shadow-lg shadow-amber-950/20 transition-colors hover:bg-amber-400 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <Plus className="h-4 w-4" /> Thêm sản phẩm
+          </button>
         </div>
-        <button type="button" onClick={logout} style={buttonStyle}>Đăng xuất</button>
-      </header>
 
-      {error && <p role="alert" style={{ color: '#b42318' }}>{error}</p>}
-
-      <section style={{ margin: '24px 0', padding: 16, border: '1px solid #ddd', borderRadius: 8 }}>
-        <h2>{editingId ? 'Cập nhật sản phẩm' : 'Thêm sản phẩm'}</h2>
-        <form onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12 }}>
-          <label>
-            Danh mục
-            <select
-              required
-              value={form.categoryId}
-              onChange={(event) => setForm({ ...form, categoryId: event.target.value })}
-              style={fieldStyle}
-            >
-              <option value="">Chọn danh mục</option>
-              {categories.map((category) => (
-                <option key={category.id} value={category.id}>{category.name}</option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Tên sản phẩm
-            <input required maxLength={200} value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} style={fieldStyle} />
-          </label>
-          <label>
-            Slug
-            <input required maxLength={220} pattern="[a-z0-9]+(?:-[a-z0-9]+)*" value={form.slug} onChange={(event) => setForm({ ...form, slug: event.target.value })} style={fieldStyle} />
-          </label>
-          <label>
-            Giá (VNĐ)
-            <input required type="number" min={0} step={1} value={form.price} onChange={(event) => setForm({ ...form, price: event.target.value })} style={fieldStyle} />
-          </label>
-          <label>
-            Ảnh đại diện (URL)
-            <input type="url" value={form.thumbnailUrl} onChange={(event) => setForm({ ...form, thumbnailUrl: event.target.value })} style={fieldStyle} />
-          </label>
-          <label style={{ gridColumn: '1 / -1' }}>
-            Mô tả
-            <textarea maxLength={5000} rows={3} value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} style={fieldStyle} />
-          </label>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'end' }}>
-            <button type="submit" disabled={isSaving} style={buttonStyle}>
-              {isSaving ? 'Đang lưu...' : editingId ? 'Lưu thay đổi' : 'Thêm sản phẩm'}
-            </button>
-            {editingId && <button type="button" onClick={resetForm} style={buttonStyle}>Hủy sửa</button>}
-          </div>
-        </form>
-      </section>
-
-      <section>
-        <h2>Danh sách sản phẩm</h2>
-        <form
-          onSubmit={(event) => {
-            event.preventDefault();
-            setSearch(searchText);
-          }}
-          style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}
-        >
-          <input aria-label="Tìm sản phẩm" placeholder="Tìm theo tên" value={searchText} onChange={(event) => setSearchText(event.target.value)} />
-          <select aria-label="Lọc danh mục" value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value)}>
-            <option value="">Tất cả danh mục</option>
-            {categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
-          </select>
-          <select aria-label="Lọc duyệt" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
-            <option value="">Tất cả trạng thái duyệt</option>
-            <option value="pending">Chờ duyệt</option>
-            <option value="approved">Đã duyệt</option>
-            <option value="rejected">Từ chối</option>
-          </select>
-          <select aria-label="Lọc kinh doanh" value={activeFilter} onChange={(event) => setActiveFilter(event.target.value)}>
-            <option value="">Tất cả trạng thái kinh doanh</option>
-            <option value="true">Đang kinh doanh</option>
-            <option value="false">Đã ngừng</option>
-          </select>
-          <button type="submit" style={buttonStyle}>Lọc</button>
-        </form>
-
-        {isLoading ? <p>Đang tải sản phẩm...</p> : products.length === 0 ? <p>Chưa có sản phẩm phù hợp.</p> : (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr>
-                  {['Tên sản phẩm', 'Danh mục', 'Giá', 'Duyệt', 'Kinh doanh', 'Thao tác'].map((heading) => (
-                    <th key={heading} style={{ textAlign: 'left', padding: 10, borderBottom: '1px solid #ccc' }}>{heading}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {products.map((product) => (
-                  <tr key={product.id}>
-                    <td style={{ padding: 10, borderBottom: '1px solid #eee' }}>{product.name}</td>
-                    <td style={{ padding: 10, borderBottom: '1px solid #eee' }}>
-                      {categories.find((category) => category.id === product.category_id)?.name ?? 'Không rõ'}
-                    </td>
-                    <td style={{ padding: 10, borderBottom: '1px solid #eee' }}>{product.price.toLocaleString('vi-VN')} ₫</td>
-                    <td style={{ padding: 10, borderBottom: '1px solid #eee' }}>{product.approval_status}</td>
-                    <td style={{ padding: 10, borderBottom: '1px solid #eee' }}>{product.is_active ? 'Đang bán' : 'Đã ngừng'}</td>
-                    <td style={{ padding: 10, borderBottom: '1px solid #eee', whiteSpace: 'nowrap' }}>
-                      <button type="button" onClick={() => startEditing(product)} style={buttonStyle}>Sửa</button>{' '}
-                      {product.approval_status !== 'approved' && (
-                        <button type="button" onClick={() => void approveProduct(product.id)} style={buttonStyle}>Duyệt</button>
-                      )}{' '}
-                      {product.is_active && (
-                        <button type="button" onClick={() => void deactivateProduct(product)} style={buttonStyle}>Ngừng bán</button>
-                      )}
-                      {!product.is_active && (
-                        <button type="button" onClick={() => void activateProduct(product.id)} style={buttonStyle}>Mở bán lại</button>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        {/* Toast Notification */}
+        {notification && (
+          <div
+            role={notification.type === 'error' ? 'alert' : 'status'}
+            className={`flex items-center gap-2 rounded-xl border px-4 py-2.5 text-xs shadow-lg animate-fade-in ${
+              notification.type === 'error'
+                ? 'border-rose-500/30 bg-rose-500/10 text-rose-300'
+                : 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400'
+            }`}
+          >
+            {notification.type === 'error' ? (
+              <AlertCircle className="h-4 w-4 shrink-0" />
+            ) : (
+              <CheckCircle2 className="h-4 w-4 shrink-0" />
+            )}
+            <span className="font-semibold">{notification.message}</span>
           </div>
         )}
-      </section>
-    </main>
+
+        {loadError && (
+          <div className="flex items-center justify-between gap-4 rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-300">
+            <span>{loadError}</span>
+            <button type="button" onClick={loadData} className="shrink-0 font-semibold underline">
+              Thử tải lại
+            </button>
+          </div>
+        )}
+
+        {/* 1. Category Filter Tabs */}
+        <div className="bg-slate-900/70 border border-slate-800 p-4 rounded-2xl space-y-3">
+          <div className="flex items-center justify-between text-xs text-slate-400 font-semibold">
+            <span className="flex items-center gap-1.5">
+              <FolderOpen className="w-4 h-4 text-amber-400" />
+              DANH MỤC THỜI TRANG NAM ({categories.length} danh mục)
+            </span>
+            <span className="text-[11px] text-slate-500 font-normal">
+              Bấm vào danh mục để lọc hoặc chọn &quot;Tất cả&quot; để xem phân nhóm
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2 overflow-x-auto pb-1">
+            <button
+              onClick={() => setSelectedCategory('all')}
+              className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer flex items-center gap-2 ${
+                selectedCategory === 'all'
+                  ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
+                  : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700'
+              }`}
+            >
+              <Layers className="w-3.5 h-3.5" />
+              <span>Tất cả</span>
+              <span
+                className={`px-1.5 py-0.2 rounded-full text-[10px] ${
+                  selectedCategory === 'all'
+                    ? 'bg-slate-950 text-amber-400 font-mono'
+                    : 'bg-slate-900 text-slate-400'
+                }`}
+              >
+                {products.length}
+              </span>
+            </button>
+
+            {categories.map((c) => {
+              const count = products.filter((p) => {
+                const cat = getProductCategory(p);
+                return p.categoryId === c.id || cat.id === c.id;
+              }).length;
+
+              return (
+                <button
+                  key={c.id}
+                  onClick={() => setSelectedCategory(c.id)}
+                  className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer flex items-center gap-2 ${
+                    selectedCategory === c.id
+                      ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
+                      : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700'
+                  }`}
+                >
+                  <span>{c.name}</span>
+                  <span
+                    className={`px-1.5 py-0.2 rounded-full text-[10px] ${
+                      selectedCategory === c.id
+                        ? 'bg-slate-950 text-amber-400 font-mono'
+                        : 'bg-slate-900 text-slate-400'
+                    }`}
+                  >
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* 2. Control Toolbar: Search, Sort & View Mode */}
+        <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between bg-slate-900/60 p-4 rounded-2xl border border-slate-800">
+          {/* Search Box */}
+          <div className="flex items-center gap-3 flex-1 max-w-md bg-slate-950 px-3.5 py-2.5 rounded-xl border border-slate-800">
+            <Search className="w-4 h-4 text-slate-400 shrink-0" />
+            <input
+              type="text"
+              placeholder="Tìm kiếm sản phẩm theo tên, slug hoặc ID..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="bg-transparent text-xs text-white placeholder-slate-500 focus:outline-none w-full"
+            />
+          </div>
+
+          <div className="flex items-center gap-3">
+            <select
+              aria-label="Lọc trạng thái sản phẩm"
+              value={statusFilter}
+              onChange={(event) => setStatusFilter(event.target.value as 'active' | 'inactive' | 'all')}
+              className="rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-xs font-medium text-slate-300 focus:border-amber-500 focus:outline-none"
+            >
+              <option value="active">Đang hiển thị</option>
+              <option value="inactive">Đã ẩn</option>
+              <option value="all">Tất cả trạng thái</option>
+            </select>
+            {/* Sort Dropdown */}
+            <div className="flex items-center gap-2 bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-800">
+              <ArrowUpDown className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+              <span className="text-[11px] text-slate-400 font-medium">Sắp xếp:</span>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as SortOption)}
+                className="bg-transparent text-xs text-white font-medium focus:outline-none cursor-pointer pr-1"
+              >
+                <option value="category" className="bg-slate-900 text-white">
+                  Theo Danh mục (Áo sơ mi → Áo Polo → Quần → Áo khoác)
+                </option>
+                <option value="price_asc" className="bg-slate-900 text-white">
+                  Giá: Thấp đến Cao
+                </option>
+                <option value="price_desc" className="bg-slate-900 text-white">
+                  Giá: Cao đến Thấp
+                </option>
+                <option value="name_asc" className="bg-slate-900 text-white">
+                  Tên: A → Z
+                </option>
+                <option value="stock_desc" className="bg-slate-900 text-white">
+                  Tồn kho: Nhiều nhất
+                </option>
+                <option value="stock_asc" className="bg-slate-900 text-white">
+                  Tồn kho: Ít nhất
+                </option>
+              </select>
+            </div>
+
+            {/* View Mode Toggle: Grouped Sections vs Single Table */}
+            <div className="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800">
+              <button
+                onClick={() => setViewMode('grouped')}
+                title="Gom nhóm theo Danh mục"
+                className={`p-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all ${
+                  viewMode === 'grouped'
+                    ? 'bg-amber-500 text-slate-950'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <LayoutGrid className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline text-[11px]">Theo Danh mục</span>
+              </button>
+              <button
+                onClick={() => setViewMode('table')}
+                title="Danh sách Bảng tổng hợp"
+                className={`p-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all ${
+                  viewMode === 'table'
+                    ? 'bg-amber-500 text-slate-950'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <List className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline text-[11px]">Bảng đơn</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* 3. Product Presentation Area */}
+        {loading ? (
+          <div className="py-20 text-center text-slate-500 text-sm bg-slate-900/60 border border-slate-800 rounded-2xl">
+            Đang tải danh mục sản phẩm...
+          </div>
+        ) : sortedProducts.length === 0 ? (
+          <div className="py-20 text-center text-slate-500 text-sm bg-slate-900/60 border border-slate-800 rounded-2xl">
+            Không tìm thấy sản phẩm phù hợp với bộ lọc
+          </div>
+        ) : viewMode === 'grouped' ? (
+          /* GROUPED BY CATEGORY VIEW (Người dùng thấy rõ ràng từng Danh mục và các sản phẩm bên trong) */
+          <div className="space-y-6">
+            {groupedProducts.map((group) => (
+              <div
+                key={group.category.id}
+                className="bg-slate-900/60 border border-slate-800 rounded-2xl overflow-hidden shadow-lg"
+              >
+                {/* Category Group Header */}
+                <div className="p-4 bg-slate-950/80 border-b border-slate-800 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <span className="w-3 h-3 rounded-full bg-amber-400 shadow-sm shadow-amber-400/50"></span>
+                    <h3 className="font-bold text-white text-sm tracking-wide">
+                      {group.category.name}
+                    </h3>
+                    <span className="bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded-full text-[11px] font-mono font-bold">
+                      {group.items.length} sản phẩm
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => setSelectedCategory(group.category.id)}
+                    className="text-xs text-slate-400 hover:text-amber-400 transition-colors font-medium flex items-center gap-1"
+                  >
+                    Xem riêng danh mục này →
+                  </button>
+                </div>
+
+                {/* Table for this Category */}
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead>
+                      <tr className="bg-slate-950/40 text-slate-400 font-semibold border-b border-slate-800/80">
+                        <th className="py-2.5 px-4">Hình ảnh</th>
+                        <th className="py-2.5 px-4">Tên sản phẩm</th>
+                        <th className="py-2.5 px-4">Chuyển Danh mục</th>
+                        <th className="py-2.5 px-4">Đơn giá</th>
+                        <th className="py-2.5 px-4">Biến thể & Tồn kho</th>
+                        <th className="py-2.5 px-4 text-center">Hành động</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-800/50 text-slate-300">
+                      {group.items.map((p) => {
+                        const totalStock = getProductStock(p);
+                        return (
+                          <tr key={p.id} className="hover:bg-slate-800/40 transition-colors">
+                            <td className="py-2.5 px-4">
+                              <img
+                                src={p.thumbnailUrl || undefined}
+                                alt={p.name}
+                                className="w-12 h-14 object-cover rounded-lg border border-slate-800 bg-slate-950"
+                              />
+                            </td>
+                            <td className="py-2.5 px-4 max-w-xs">
+                              <div className="flex items-center gap-2">
+                                <p className="font-semibold text-white line-clamp-1">{p.name}</p>
+                                {p.isActive === false && <span className="shrink-0 rounded bg-slate-700 px-1.5 py-0.5 text-[9px] font-semibold text-slate-300">Đã ẩn</span>}
+                              </div>
+                              <p className="text-[11px] font-mono text-slate-400 line-clamp-1">
+                                {p.slug}
+                              </p>
+                            </td>
+                            <td className="py-2.5 px-4">
+                              <select
+                                value={group.category.id}
+                                onChange={(e) =>
+                                  handleUpdateProductCategory(p.id, e.target.value)
+                                }
+                                className="bg-slate-950 border border-slate-800 rounded-lg px-2 py-1 text-[11px] text-amber-400 font-medium focus:outline-none focus:border-amber-500 cursor-pointer"
+                              >
+                                {categories.map((c) => (
+                                  <option key={c.id} value={c.id}>
+                                    {c.name}
+                                  </option>
+                                ))}
+                              </select>
+                            </td>
+                            <td className="py-2.5 px-4 font-bold text-amber-400 font-mono text-xs">
+                              {p.price.toLocaleString('vi-VN')} đ
+                            </td>
+                            <td className="py-2.5 px-4 min-w-[200px]">
+                              <div className="flex items-start justify-between gap-2">
+                                <CompactVariantDisplay variants={p.variants} />
+                                <span className="text-[10px] bg-emerald-500/10 text-emerald-400 px-1.5 py-0.5 rounded font-mono font-bold border border-emerald-500/20 shrink-0 mt-0.5">
+                                  {totalStock} pcs
+                                </span>
+                              </div>
+                            </td>
+                            <td className="py-2.5 px-4 text-center">
+                              {renderProductActions(p)}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          /* SINGLE TABLE VIEW */
+          <div className="bg-slate-900/60 border border-slate-800 rounded-2xl overflow-hidden shadow-lg">
+            <div className="p-4 border-b border-slate-800 flex items-center justify-between text-xs text-slate-400 font-medium">
+              <span>Hiển thị {sortedProducts.length} sản phẩm</span>
+              <span>Sắp xếp theo: {sortBy}</span>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead>
+                  <tr className="bg-slate-950/60 text-slate-400 font-semibold border-b border-slate-800">
+                    <th className="py-3 px-4">Hình ảnh</th>
+                    <th className="py-3 px-4">Tên sản phẩm</th>
+                    <th className="py-3 px-4">Danh mục phân loại</th>
+                    <th className="py-3 px-4">Đơn giá</th>
+                    <th className="py-3 px-4">Biến thể & Tồn kho</th>
+                    <th className="py-3 px-4 text-center">Hành động</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800/60 text-slate-300">
+                  {sortedProducts.map((p) => {
+                    const cat = getProductCategory(p);
+                    const totalStock = getProductStock(p);
+                    return (
+                      <tr key={p.id} className="hover:bg-slate-800/40 transition-colors">
+                        <td className="py-3 px-4">
+                          <img
+                            src={p.thumbnailUrl || undefined}
+                            alt={p.name}
+                            className="w-12 h-14 object-cover rounded-lg border border-slate-800 bg-slate-950"
+                          />
+                        </td>
+                        <td className="py-3 px-4 max-w-xs">
+                          <div className="flex items-center gap-2">
+                            <p className="font-semibold text-white line-clamp-1">{p.name}</p>
+                            {p.isActive === false && <span className="shrink-0 rounded bg-slate-700 px-1.5 py-0.5 text-[9px] font-semibold text-slate-300">Đã ẩn</span>}
+                          </div>
+                          <p className="text-xs font-mono text-slate-400 line-clamp-1">{p.slug}</p>
+                        </td>
+                        <td className="py-3 px-4">
+                          <select
+                            value={cat.id}
+                            onChange={(e) =>
+                              handleUpdateProductCategory(p.id, e.target.value)
+                            }
+                            className="bg-slate-950 border border-slate-800 rounded-lg px-2 py-1 text-xs text-amber-400 font-semibold focus:outline-none focus:border-amber-500 cursor-pointer"
+                          >
+                            {categories.map((c) => (
+                              <option key={c.id} value={c.id}>
+                                {c.name}
+                              </option>
+                            ))}
+                          </select>
+                        </td>
+                        <td className="py-3 px-4 font-bold text-amber-400 font-mono text-xs">
+                          {p.price.toLocaleString('vi-VN')} đ
+                        </td>
+                        <td className="py-3 px-4 min-w-[200px]">
+                          <div className="flex items-start justify-between gap-2">
+                            <CompactVariantDisplay variants={p.variants} />
+                            <span className="text-[10px] bg-emerald-500/10 text-emerald-400 px-1.5 py-0.5 rounded font-mono font-bold border border-emerald-500/20 shrink-0 mt-0.5">
+                              {totalStock} pcs
+                            </span>
+                          </div>
+                        </td>
+                        <td className="py-3 px-4 text-center">
+                          {renderProductActions(p)}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Product Detail Modal */}
+      <ProductDetailModal
+        product={selectedProduct}
+        onClose={() => setSelectedProduct(null)}
+        onStockAdjusted={loadData}
+      />
+      {showCreateModal && (
+        <CreateProductModal
+          categories={categories}
+          onClose={() => setShowCreateModal(false)}
+          onCreated={(product) => {
+            setProducts((current) => [product, ...current.filter((item) => item.id !== product.id)]);
+            setNotification({ message: `Đã tạo sản phẩm “${product.name}” thành công.`, type: 'success' });
+            setTimeout(() => setNotification(null), 3500);
+          }}
+        />
+      )}
+      {editingProduct && (
+        <EditProductModal
+          product={editingProduct}
+          categories={categories}
+          onClose={() => setEditingProduct(null)}
+          onSaved={(updatedProduct) => {
+            setProducts((current) => current.map((item) => item.id === updatedProduct.id ? updatedProduct : item));
+            setNotification({ message: `Đã cập nhật sản phẩm “${updatedProduct.name}”.`, type: 'success' });
+            setTimeout(() => setNotification(null), 3500);
+          }}
+        />
+      )}
+      {productToDelete && (
+        <DeleteProductModal
+          product={productToDelete}
+          onClose={() => setProductToDelete(null)}
+          onDeleted={() => {
+            setProducts((current) => current.map((item) => item.id === productToDelete.id ? { ...item, isActive: false } : item));
+            setProductToDelete(null);
+            setNotification({ message: `Đã ẩn sản phẩm “${productToDelete.name}” khỏi ứng dụng.`, type: 'success' });
+            setTimeout(() => setNotification(null), 3500);
+          }}
+        />
+      )}
+    </div>
   );
 }
