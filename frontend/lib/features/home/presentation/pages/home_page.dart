@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:menly_app/models/product_model.dart';
 import 'package:menly_app/features/address/presentation/pages/address_page.dart';
+import 'package:menly_app/features/auth/presentation/pages/change_password_page.dart';
+import 'package:menly_app/features/auth/presentation/pages/login_page.dart';
 import 'package:menly_app/features/order/presentation/pages/my_orders_page.dart';
 import 'package:menly_app/features/order/presentation/pages/staff_order_management_page.dart';
 import 'package:menly_app/features/product/presentation/pages/product_detail_page.dart';
@@ -88,6 +90,20 @@ class _HomePageState extends State<HomePage> {
           ],
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.person_outline, color: Colors.black87),
+            tooltip: 'Tài khoản',
+            onPressed: () {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const LoginPage()));
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.lock_reset_rounded, color: Colors.black87),
+            tooltip: 'Đổi mật khẩu',
+            onPressed: () {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const ChangePasswordPage()));
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.confirmation_num_outlined, color: Colors.deepOrange),
             tooltip: 'Kho Voucher (TM10)',
@@ -210,8 +226,10 @@ class _HomePageState extends State<HomePage> {
               // Danh sach nut chuc nang nhanh
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                child: Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  alignment: WrapAlignment.spaceBetween,
                   children: [
                     _buildQuickAction(
                       icon: Icons.confirmation_num_outlined,
@@ -230,6 +248,12 @@ class _HomePageState extends State<HomePage> {
                       label: 'Sổ địa chỉ',
                       color: Colors.teal,
                       onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AddressPage())),
+                    ),
+                    _buildQuickAction(
+                      icon: Icons.person_outline,
+                      label: 'Tài khoản',
+                      color: Colors.purple,
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LoginPage())),
                     ),
                     _buildQuickAction(
                       icon: Icons.manage_accounts_outlined,
@@ -337,12 +361,14 @@ class _HomePageState extends State<HomePage> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
-              Text(subtitle, style: const TextStyle(color: Colors.grey, fontSize: 12)),
-            ],
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
+                Text(subtitle, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+              ],
+            ),
           ),
           TextButton(
             onPressed: onSeeAll,
