@@ -302,7 +302,7 @@ export default function ProductsPage() {
         onRefresh={loadData}
       />
 
-      <div className="p-8 space-y-6 flex-1">
+      <div className="flex-1 space-y-6 p-4 sm:p-6 xl:p-8">
         <div className="flex justify-end">
           <button
             type="button"
