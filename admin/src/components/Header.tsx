@@ -1,7 +1,8 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { RefreshCw, LogOut } from 'lucide-react';
+import { LogOut, RefreshCw, ShieldCheck } from 'lucide-react';
 
 interface HeaderProps {
   title: string;
@@ -9,43 +10,81 @@ interface HeaderProps {
   onRefresh?: () => void;
 }
 
+interface AdminIdentity {
+  fullName?: string;
+  name?: string;
+  email?: string;
+}
+
+function getIdentityName(value: string | null): string {
+  if (!value) return 'Quản trị viên';
+
+  try {
+    const user: unknown = JSON.parse(value);
+    if (typeof user !== 'object' || user === null) return 'Quản trị viên';
+    const identity = user as AdminIdentity;
+    return identity.fullName || identity.name || identity.email || 'Quản trị viên';
+  } catch {
+    return 'Quản trị viên';
+  }
+}
+
 export function Header({ title, subtitle, onRefresh }: HeaderProps) {
   const router = useRouter();
+  const [identity, setIdentity] = useState('Quản trị viên');
+
+  useEffect(() => {
+    setIdentity(getIdentityName(localStorage.getItem('menshop_admin_user')));
+  }, []);
 
   function handleLogout() {
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('menshop_admin_token');
-      localStorage.removeItem('menshop_admin_user');
-      router.push('/login');
-    }
+    localStorage.removeItem('menshop_admin_token');
+    localStorage.removeItem('menshop_admin_user');
+    router.push('/login');
   }
 
   return (
-    <header className="bg-slate-900/60 backdrop-blur-md border-b border-slate-800 px-8 py-4.5 flex items-center justify-between sticky top-0 z-20">
-      <div>
-        <h1 className="text-xl font-bold text-white tracking-tight">{title}</h1>
-        {subtitle && <p className="text-xs text-slate-400 mt-0.5">{subtitle}</p>}
+    <header className="sticky top-0 z-20 flex items-center justify-between gap-3 border-b border-slate-800/80 bg-slate-950/85 px-4 py-3.5 pl-16 backdrop-blur-xl sm:px-6 sm:pl-16 md:px-8 md:pl-8">
+      <div className="min-w-0">
+        <p className="mb-1 hidden text-[10px] font-bold uppercase tracking-[0.18em] text-amber-300/80 sm:block">
+          Menly / Quản trị
+        </p>
+        <h1 className="truncate text-base font-bold tracking-tight text-white sm:text-xl">{title}</h1>
+        {subtitle && (
+          <p className="mt-1 hidden max-w-3xl truncate text-xs text-slate-400 sm:block">{subtitle}</p>
+        )}
       </div>
 
-      <div className="flex items-center gap-4">
-        {/* Refresh Button */}
+      <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+        <div className="hidden items-center gap-2.5 border-r border-slate-800 pr-4 lg:flex">
+          <span className="flex h-9 w-9 items-center justify-center rounded-full border border-amber-400/20 bg-amber-400/10 text-amber-300">
+            <ShieldCheck className="h-4 w-4" />
+          </span>
+          <div className="max-w-40">
+            <p className="truncate text-xs font-semibold text-slate-200">{identity}</p>
+            <p className="mt-0.5 text-[10px] text-slate-500">Quản trị viên</p>
+          </div>
+        </div>
+
         {onRefresh && (
           <button
+            type="button"
             onClick={onRefresh}
-            className="p-2 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white transition-all cursor-pointer"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-800 bg-slate-900 text-slate-300 transition hover:border-slate-700 hover:bg-slate-800 hover:text-white"
             title="Làm mới dữ liệu"
+            aria-label="Làm mới dữ liệu"
           >
-            <RefreshCw className="w-4 h-4" />
+            <RefreshCw className="h-4 w-4" />
           </button>
         )}
 
-        {/* Logout Button */}
         <button
+          type="button"
           onClick={handleLogout}
-          className="p-2 px-3 rounded-lg bg-slate-800/80 hover:bg-rose-950/40 text-slate-400 hover:text-rose-400 border border-slate-800 hover:border-rose-800/40 transition-all cursor-pointer flex items-center gap-1.5 text-xs font-semibold"
+          className="inline-flex h-9 items-center justify-center gap-2 rounded-xl border border-slate-800 bg-slate-900 px-2.5 text-xs font-semibold text-slate-300 transition hover:border-rose-500/30 hover:bg-rose-500/10 hover:text-rose-300 sm:px-3"
           title="Đăng xuất khỏi hệ thống"
         >
-          <LogOut className="w-3.5 h-3.5" />
+          <LogOut className="h-4 w-4" />
           <span className="hidden sm:inline">Đăng xuất</span>
         </button>
       </div>
