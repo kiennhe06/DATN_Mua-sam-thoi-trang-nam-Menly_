@@ -32,7 +32,7 @@ export default function AuditPage() {
         onRefresh={loadLogs}
       />
 
-      <div className="p-8 space-y-6 flex-1">
+      <div className="flex-1 space-y-6 p-4 sm:p-6 xl:p-8">
         {/* Security Alert Header */}
         <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between text-xs text-amber-300">
           <div className="flex items-center gap-2.5">
