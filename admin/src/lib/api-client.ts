@@ -1,5 +1,7 @@
 const DEFAULT_API_URL = 'http://localhost:5000';
 
+import { handlePreviewRequest } from './preview-api';
+
 export function getApiUrl(): string {
   if (typeof window !== 'undefined') {
     return (
@@ -29,6 +31,13 @@ export async function adminFetch<T>(
   path: string,
   options: RequestInit = {},
 ): Promise<T> {
+  if (
+    typeof window !== 'undefined' &&
+    localStorage.getItem('menshop_admin_token') === 'ui-preview'
+  ) {
+    return handlePreviewRequest<T>(path, options);
+  }
+
   const headers = new Headers(options.headers);
   headers.set('Accept', 'application/json');
   headers.set('Authorization', `Bearer ${getAdminToken()}`);
