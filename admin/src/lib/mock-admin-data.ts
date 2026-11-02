@@ -205,7 +205,7 @@ export const INITIAL_PRODUCTS: Product[] = RAW_PRODUCTS.map((p, idx) => {
 });
 
 export const INITIAL_ORDERS: Order[] = [];
- 
+
 export const INITIAL_USERS: UserAccount[] = [
   {
     id: '0f444d92-322c-4956-b452-0c5c10950508',
@@ -307,4 +307,3 @@ export const INITIAL_USERS: UserAccount[] = [
     createdAt: '2026-01-05T08:00:00.000Z',
   },
 ];
-
