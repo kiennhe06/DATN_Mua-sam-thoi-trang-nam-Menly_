@@ -9,7 +9,20 @@
 
 ### 1. Chuẩn bị cơ sở dữ liệu
 
-Tạo project Supabase dùng cho phát triển nhóm, sau đó chạy các file SQL theo thứ tự trong [database/README.md](database/README.md). Tài khoản đăng nhập admin phải tồn tại trong Supabase Auth và có `role = 'admin'` trong bảng `profiles`.
+Tạo project Supabase dùng cho phát triển nhóm, sau đó chạy các file SQL theo thứ tự trong [database/README.md](database/README.md).
+
+Tạo tài khoản quản trị một lần trong Supabase:
+
+1. Mở **Authentication → Users → Add user** trong Supabase Dashboard và tạo user bằng email/mật khẩu riêng.
+2. Sau khi user xuất hiện trong bảng `profiles`, mở **SQL Editor** và cấp quyền admin cho đúng email:
+
+   ```sql
+   update public.profiles
+   set role = 'admin', is_active = true, is_locked = false
+   where lower(email) = lower('admin@example.com');
+   ```
+
+3. Xác nhận chỉ đúng một tài khoản được cập nhật, rồi đăng nhập admin bằng email và mật khẩu vừa tạo. Không dùng chung mật khẩu yếu hoặc đưa mật khẩu vào Git.
 
 ### 2. Cấu hình và chạy backend
 
