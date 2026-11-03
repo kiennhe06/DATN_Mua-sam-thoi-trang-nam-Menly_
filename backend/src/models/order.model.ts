@@ -30,9 +30,9 @@ export interface OrderRow {
   user_id: string;
   status: string;
   payment_method: string;
-  is_paid: boolean;
+  is_paid?: boolean;
   subtotal: number;
-  discount_amount: number;
+  discount_amount?: number;
   shipping_fee: number;
   total: number;
   ship_name: string;
@@ -213,15 +213,12 @@ export class OrderModel {
         user_id: input.userId,
         status,
         payment_method: input.payment_method,
-        is_paid: false,
         subtotal: input.subtotal,
-        discount_amount: input.discount_amount ?? 0,
         shipping_fee: input.shipping_fee,
         total: input.total,
         ship_name: input.ship_name,
         ship_phone: input.ship_phone,
         ship_address: input.ship_address,
-        voucher_code: input.voucher_code ?? null,
       })
       .select()
       .single();
@@ -296,13 +293,25 @@ export class OrderModel {
 
     const { data: updated, error: updateErr } = await this.db
       .from('orders')
-      .update({ status: 'canceled', cancel_reason: reason })
+      .update({ status: 'cancelled' })
       .eq('id', orderId)
       .select('*, order_items(*)')
       .single();
 
     if (updateErr || !updated) {
       throw new Error(updateErr?.message ?? 'Không thể hủy đơn hàng');
+    }
+
+    // Ghi lich su huy don (ly do luu o note; khong lam hong request neu bang chua co)
+    const { error: historyErr } = await this.db.from('order_status_history').insert({
+      order_id: orderId,
+      from_status: existing.status,
+      to_status: 'cancelled',
+      changed_by: userId,
+      note: reason,
+    });
+    if (historyErr) {
+      console.error('Khong ghi duoc lich su huy don:', historyErr.message);
     }
 
     return updated as OrderRow;
