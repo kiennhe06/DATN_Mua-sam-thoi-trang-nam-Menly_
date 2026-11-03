@@ -1,5 +1,6 @@
 import type { Request, Response, NextFunction } from 'express';
 import { supabase } from '../config/supabase.js';
+import { env } from '../config/env.js';
 import { getLocalUserById } from '../models/auth.model.js';
 
 export interface AuthenticatedUser {
@@ -26,7 +27,10 @@ function extractBearerToken(req: Request): string | null {
 }
 
 async function verifyTokenAndGetProfile(token: string) {
-  if (token.startsWith('demo-access-') || token === 'ui-preview') {
+  // Che do dang nhap demo/local fallback: chi hoat dong khi duoc bat tuong minh
+  // (moi truong dev). O production demoAuthEnabled = false nen moi token demo
+  // deu roi xuong nhanh xac thuc Supabase that ben duoi va bi tu choi.
+  if (env.demoAuthEnabled && (token.startsWith('demo-access-') || token === 'ui-preview')) {
     const rawId = token === 'ui-preview'
       ? 'a0000000-0000-0000-0000-000000000001'
       : token.replace('demo-access-', '');
@@ -46,16 +50,19 @@ async function verifyTokenAndGetProfile(token: string) {
       };
     }
 
-    const isAdmin = token.includes('admin') || token === 'ui-preview';
-    const id = isAdmin ? 'a0000000-0000-0000-0000-000000000001' : 'd0000000-0000-0000-0000-000000000001';
+    // Chi token xem truoc giao dien (ui-preview) duoc map san sang tai khoan admin demo.
+    // Token demo-access khong khop user local nao thi mac dinh la khach (customer),
+    // tuyet doi khong cap quyen admin dua tren noi dung chuoi token.
+    const isPreviewAdmin = token === 'ui-preview';
+    const id = isPreviewAdmin ? 'a0000000-0000-0000-0000-000000000001' : 'd0000000-0000-0000-0000-000000000001';
     return {
       error: null,
-      user: { id, email: isAdmin ? 'admin@gmail.com' : 'demo@menly.local' } as any,
+      user: { id, email: isPreviewAdmin ? 'admin@gmail.com' : 'demo@menly.local' } as any,
       profile: {
         id,
-        email: isAdmin ? 'admin@gmail.com' : 'demo@menly.local',
-        full_name: isAdmin ? 'Quản trị viên MenShop' : 'Demo User',
-        role: isAdmin ? 'admin' : 'customer',
+        email: isPreviewAdmin ? 'admin@gmail.com' : 'demo@menly.local',
+        full_name: isPreviewAdmin ? 'Quản trị viên MenShop' : 'Demo User',
+        role: isPreviewAdmin ? 'admin' : 'customer',
         is_active: true,
         is_locked: false,
       },
