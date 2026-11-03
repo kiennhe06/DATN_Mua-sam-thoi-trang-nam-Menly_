@@ -8,8 +8,9 @@ import { ShieldCheck, AlertCircle, CheckCircle2 } from 'lucide-react';
 export default function LoginPage() {
   const router = useRouter();
 
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  // Dien san tai khoan admin chinh cho tien dang nhap (du an public, chap nhan cong khai)
+  const [email, setEmail] = useState('admin@gmail.com');
+  const [password, setPassword] = useState('123456');
 
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
