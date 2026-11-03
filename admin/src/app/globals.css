@@ -1,0 +1,38 @@
+@import "tailwindcss";
+
+:root {
+  color-scheme: dark;
+}
+
+html {
+  min-width: 320px;
+}
+
+body {
+  background:
+    radial-gradient(ellipse at 12% 0%, rgb(245 158 11 / 4%), transparent 34rem),
+    #020617;
+}
+
+::selection {
+  color: #0f172a;
+  background: rgb(252 211 77 / 85%);
+}
+
+* {
+  scrollbar-color: #334155 #0f172a;
+  scrollbar-width: thin;
+}
+
+button,
+a,
+input,
+select,
+textarea {
+  -webkit-tap-highlight-color: transparent;
+}
+
+:focus-visible {
+  outline: 2px solid rgb(251 191 36 / 85%);
+  outline-offset: 2px;
+}

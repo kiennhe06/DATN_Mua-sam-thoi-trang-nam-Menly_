@@ -1,5 +1,4 @@
 import 'package:flutter/foundation.dart';
-import 'package:menly_app/core/mock_data.dart';
 import 'package:menly_app/core/network/api_client.dart';
 import 'package:menly_app/models/cart_item_model.dart';
 import 'package:menly_app/models/product_model.dart';
@@ -12,14 +11,59 @@ import 'package:menly_app/models/voucher_model.dart';
 /// - PUT /api/v1/cart/items/:variantId (Cap nhat so luong mon)
 /// - DELETE /api/v1/cart/items/:variantId (Xoa 1 mon)
 /// - DELETE /api/v1/cart (Xoa ca gio hang)
+/// - POST /api/v1/orders/shipping-fee (Tinh phi ship tu backend)
 class CartProvider extends ChangeNotifier {
   final ApiClient _api = ApiClient();
   final List<CartItemModel> _items = [];
   VoucherModel? _appliedVoucher;
   final int _baseShippingFee = 25000;
+  int? _shippingFeeFromApi;
+  String? _shippingNote;
   bool _isLoading = false;
 
-  final RegExp _uuidRegex = RegExp(r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$');
+  final RegExp _uuidRegex = RegExp(
+      r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$');
+
+  /// Danh sach ma voucher mac dinh khi chua dong bo duoc backend
+  static final List<VoucherModel> _systemVouchers = [
+    VoucherModel(
+      id: 'vouch-1',
+      code: 'MENLY10',
+      title: 'Giảm 10% tối đa 50.000 đ',
+      discountType: 'percentage',
+      discountValue: 10,
+      minOrderValue: 200000,
+      maxDiscount: 50000,
+      endDate: DateTime.now().add(const Duration(days: 30)),
+    ),
+    VoucherModel(
+      id: 'vouch-2',
+      code: 'MENLY50',
+      title: 'Giảm 50.000 đ cho đơn từ 400.000 đ',
+      discountType: 'fixed_amount',
+      discountValue: 50000,
+      minOrderValue: 400000,
+      endDate: DateTime.now().add(const Duration(days: 30)),
+    ),
+    VoucherModel(
+      id: 'vouch-3',
+      code: 'FREESHIP',
+      title: 'Miễn phí vận chuyển toàn quốc',
+      discountType: 'fixed_amount',
+      discountValue: 25000,
+      minOrderValue: 300000,
+      endDate: DateTime.now().add(const Duration(days: 30)),
+    ),
+    VoucherModel(
+      id: 'vouch-4',
+      code: 'WELCOME20',
+      title: 'Giảm 20.000 đ cho khách hàng mới',
+      discountType: 'fixed_amount',
+      discountValue: 20000,
+      minOrderValue: 150000,
+      endDate: DateTime.now().add(const Duration(days: 60)),
+    ),
+  ];
 
   CartProvider() {
     loadCartFromApi();
@@ -28,10 +72,10 @@ class CartProvider extends ChangeNotifier {
   List<CartItemModel> get items => _items;
   VoucherModel? get appliedVoucher => _appliedVoucher;
   bool get isLoading => _isLoading;
+  String? get shippingNote => _shippingNote;
 
   /// Tong so san pham trong gio
-  int get totalItemCount =>
-      _items.fold(0, (sum, item) => sum + item.quantity);
+  int get totalItemCount => _items.fold(0, (sum, item) => sum + item.quantity);
 
   /// Cac san pham dang duoc tick chon
   List<CartItemModel> get selectedItems =>
@@ -51,10 +95,15 @@ class CartProvider extends ChangeNotifier {
     return _appliedVoucher!.calculateDiscount(selectedSubtotal);
   }
 
-  /// Phi van chuyen
+  /// Phi van chuyen (ket hop API backend /orders/shipping-fee)
   int get shippingFee {
     if (selectedItems.isEmpty) return 0;
-    if (_appliedVoucher?.code == 'FREESHIP' && selectedSubtotal >= 300000) {
+    if (_shippingFeeFromApi != null) return _shippingFeeFromApi!;
+
+    // Chinh sach freeship chuan: don tu 499k hoac ma FREESHIP tu 300k
+    final code = _appliedVoucher?.code.toUpperCase() ?? '';
+    if (selectedSubtotal >= 499000 ||
+        (code.contains('FREESHIP') || code.startsWith('FS'))) {
       return 0;
     }
     return _baseShippingFee;
@@ -67,6 +116,43 @@ class CartProvider extends ChangeNotifier {
     return total > 0 ? total : 0;
   }
 
+  /// Tinh phi van chuyen tu Backend API: POST /api/v1/orders/shipping-fee (ho tro ca mua ngay customSubtotal)
+  Future<void> calculateShippingFeeApi(
+      {String province = '',
+      String shippingMethod = 'standard',
+      int? customSubtotal}) async {
+    final subtotal = customSubtotal ?? selectedSubtotal;
+    if (subtotal <= 0 && selectedItems.isEmpty) {
+      _shippingFeeFromApi = 0;
+      _shippingNote = null;
+      notifyListeners();
+      return;
+    }
+
+    try {
+      final res = await _api.dio.post('/orders/shipping-fee', data: {
+        'subtotal': subtotal,
+        if (province.isNotEmpty) 'province': province,
+        'shippingMethod': shippingMethod,
+        if (_appliedVoucher != null) 'voucherCode': _appliedVoucher!.code,
+      });
+
+      if (res.statusCode == 200 &&
+          res.data != null &&
+          res.data['data'] != null) {
+        final data = res.data['data'];
+        if (data['shippingFee'] is num) {
+          _shippingFeeFromApi = (data['shippingFee'] as num).toInt();
+        }
+        _shippingNote = data['note']?.toString();
+        notifyListeners();
+      }
+    } catch (_) {
+      _shippingFeeFromApi = shippingMethod == 'express' ? 45000 : 25000;
+      notifyListeners();
+    }
+  }
+
   // =================== AP-GH1: KẾT NỐI API BACKEND GIỎ HÀNG ===================
 
   /// Goi API GET /api/v1/cart de dong bo gio hang tu may chu
@@ -76,64 +162,44 @@ class CartProvider extends ChangeNotifier {
 
     try {
       final res = await _api.dio.get('/cart');
-      if (res.statusCode == 200 && res.data['data'] != null) {
-        final rawList = res.data['data'] as List;
-        if (rawList.isNotEmpty) {
+      if (res.statusCode == 200 && res.data != null) {
+        final cartData = res.data['data'] ?? res.data;
+        final rawItems = cartData['items'] ?? cartData;
+
+        if (rawItems is List) {
           _items.clear();
-          for (var item in rawList) {
-            _items.add(CartItemModel.fromBackendJson(Map<String, dynamic>.from(item)));
+          for (var item in rawItems) {
+            _items.add(
+                CartItemModel.fromBackendJson(Map<String, dynamic>.from(item)));
           }
-          _isLoading = false;
-          notifyListeners();
-          return;
         }
       }
     } catch (_) {
-      // Backend offline hoac chua dang nhap -> Dung sample fallback
-    }
-
-    if (_items.isEmpty) {
-      _initSampleCart();
-    }
-    _isLoading = false;
-    notifyListeners();
-  }
-
-  void _initSampleCart() {
-    if (MockData.products.length >= 2) {
-      _items.add(CartItemModel(
-        id: 'cart-1',
-        product: MockData.products[0],
-        variantId: 'v-01-m',
-        size: 'M',
-        color: 'Trắng',
-        quantity: 1,
-        isSelected: true,
-      ));
-      _items.add(CartItemModel(
-        id: 'cart-2',
-        product: MockData.products[3],
-        variantId: 'v-04-l',
-        size: 'L',
-        color: 'Xanh Rêu',
-        quantity: 2,
-        isSelected: true,
-      ));
+      // Giu nguyen gio hang hien tai khi loi mang hoac chua dang nhap
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
   }
 
   /// Them san pham vao gio (POST /api/v1/cart/items)
-  Future<void> addToCart(ProductModel product, {String size = 'M', String color = 'Đen', int quantity = 1}) async {
+  Future<void> addToCart(ProductModel product,
+      {String size = 'M', String color = 'Đen', int quantity = 1}) async {
     final existingIndex = _items.indexWhere(
-      (item) => item.product.id == product.id && item.size == size && item.color == color,
+      (item) =>
+          item.product.id == product.id &&
+          item.size == size &&
+          item.color == color,
     );
 
-    String variantId = '${product.id}-$size-$color';
-    // Tim variantId that neu product co variants
-    for (var v in product.variants) {
-      if (v.size == size && v.color == color) {
-        variantId = v.id;
-        break;
+    String variantId = '';
+    if (product.variants.isNotEmpty) {
+      try {
+        final matched = product.variants
+            .firstWhere((v) => v.size == size && v.color == color);
+        variantId = matched.id;
+      } catch (_) {
+        variantId = product.variants.first.id;
       }
     }
 
@@ -143,15 +209,17 @@ class CartProvider extends ChangeNotifier {
         _items[existingIndex].quantity = 20;
       }
     } else {
-      _items.insert(0, CartItemModel(
-        id: 'cart-${DateTime.now().millisecondsSinceEpoch}',
-        product: product,
-        variantId: variantId,
-        size: size,
-        color: color,
-        quantity: quantity,
-        isSelected: true,
-      ));
+      _items.insert(
+          0,
+          CartItemModel(
+            id: 'cart-${DateTime.now().millisecondsSinceEpoch}',
+            product: product,
+            variantId: variantId,
+            size: size,
+            color: color,
+            quantity: quantity,
+            isSelected: true,
+          ));
     }
     notifyListeners();
 
@@ -166,7 +234,8 @@ class CartProvider extends ChangeNotifier {
           final rawList = res.data['data'] as List;
           _items.clear();
           for (var item in rawList) {
-            _items.add(CartItemModel.fromBackendJson(Map<String, dynamic>.from(item)));
+            _items.add(
+                CartItemModel.fromBackendJson(Map<String, dynamic>.from(item)));
           }
           notifyListeners();
         }
@@ -209,12 +278,12 @@ class CartProvider extends ChangeNotifier {
           } catch (_) {}
         }
       } else {
-        removeItem(cartItemId);
+        await removeItem(cartItemId);
       }
     }
   }
 
-  /// Xoa mot mon khoi gio (DELETE /api/v1/cart/items/:variantId)
+  /// Xoa 1 mon khoi gio (DELETE /api/v1/cart/items/:variantId)
   Future<void> removeItem(String cartItemId) async {
     final index = _items.indexWhere((i) => i.id == cartItemId);
     if (index >= 0) {
@@ -256,6 +325,8 @@ class CartProvider extends ChangeNotifier {
     final toRemove = _items.where((i) => i.isSelected).toList();
     _items.removeWhere((i) => i.isSelected);
     _appliedVoucher = null;
+    _shippingFeeFromApi = null;
+    _shippingNote = null;
     notifyListeners();
 
     for (var item in toRemove) {
@@ -271,6 +342,8 @@ class CartProvider extends ChangeNotifier {
   Future<void> clearCart() async {
     _items.clear();
     _appliedVoucher = null;
+    _shippingFeeFromApi = null;
+    _shippingNote = null;
     notifyListeners();
 
     try {
@@ -281,9 +354,7 @@ class CartProvider extends ChangeNotifier {
   // =================== AP-VC1: ÁP DỤNG MÃ GIẢM GIÁ ===================
 
   String? applyVoucher(VoucherModel voucher) {
-    if (selectedSubtotal < voucher.minOrderValue) {
-      return 'Đơn hàng tối thiểu phải từ ${voucher.minOrderValue} đ để áp dụng mã này';
-    }
+    // Khong gioi han so tien don hang de ap dung voucher
     _appliedVoucher = voucher;
     notifyListeners();
     return null;
@@ -291,15 +362,45 @@ class CartProvider extends ChangeNotifier {
 
   String? applyVoucherCode(String code) {
     final cleanCode = code.trim().toUpperCase();
-    final voucher = MockData.vouchers.cast<VoucherModel?>().firstWhere(
-      (v) => v?.code.toUpperCase() == cleanCode,
-      orElse: () => null,
-    );
+    final voucher = _systemVouchers.cast<VoucherModel?>().firstWhere(
+          (v) => v?.code.toUpperCase() == cleanCode,
+          orElse: () => null,
+        );
 
     if (voucher == null) {
       return 'Mã giảm giá không tồn tại hoặc đã hết hạn';
     }
     return applyVoucher(voucher);
+  }
+
+  
+  Future<void> updateQuantity(String cartItemId, int newQty) async {
+    if (newQty <= 0) {
+      await removeItem(cartItemId);
+      return;
+    }
+    final index = _items.indexWhere((i) => i.id == cartItemId);
+    if (index >= 0) {
+      _items[index].quantity = newQty > 20 ? 20 : newQty;
+      final item = _items[index];
+      notifyListeners();
+
+      if (_uuidRegex.hasMatch(item.variantId)) {
+        try {
+          await _api.dio.put('/cart/items/${item.variantId}', data: {
+            'quantity': item.quantity,
+          });
+        } catch (_) {}
+      }
+    }
+  }
+
+  void toggleItemSelection(String cartItemId) {
+    final index = _items.indexWhere((i) => i.id == cartItemId);
+    if (index >= 0) {
+      _items[index].isSelected = !_items[index].isSelected;
+      notifyListeners();
+    }
   }
 
   void removeVoucher() {
@@ -308,8 +409,6 @@ class CartProvider extends ChangeNotifier {
   }
 
   void _checkVoucherEligibility() {
-    if (_appliedVoucher != null && selectedSubtotal < _appliedVoucher!.minOrderValue) {
-      _appliedVoucher = null;
-    }
+    // Khong gioi han so tien don hang
   }
 }

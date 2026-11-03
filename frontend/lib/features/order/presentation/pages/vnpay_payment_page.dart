@@ -120,7 +120,7 @@ class _VNPayPaymentPageState extends State<VNPayPaymentPage> {
       context: context,
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
-        icon: const Icon(Icons.check_circle, color: Colors.green, size: 54),
+        
         title: const Text('Thanh toán VNPay thành công!'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -168,7 +168,7 @@ class _VNPayPaymentPageState extends State<VNPayPaymentPage> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        icon: const Icon(Icons.error_outline, color: Colors.red, size: 54),
+        
         title: const Text('Thanh toán thất bại'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -374,10 +374,9 @@ class _VNPayPaymentPageState extends State<VNPayPaymentPage> {
             ],
           ),
           actions: [
-            IconButton(
-              icon: const Icon(Icons.refresh),
-              tooltip: 'Tải lại trang',
+            TextButton(
               onPressed: () => _webViewController?.reload(),
+              child: const Text('Tải lại', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
             ),
           ],
         ),

@@ -24,7 +24,8 @@ class VoucherModel {
 
   /// Tinh so tien giam gia dua tren tong don hang
   int calculateDiscount(int orderSubtotal) {
-    if (orderSubtotal < minOrderValue) return 0;
+    // Khong gioi han so tien don hang de ap dung voucher
+    if (orderSubtotal <= 0) return 0;
     if (discountType == 'percentage') {
       int calculated = (orderSubtotal * discountValue ~/ 100);
       if (maxDiscount != null && calculated > maxDiscount!) {

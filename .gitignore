@@ -18,3 +18,7 @@ frontend/.flutter-plugins-dependencies
 .DS_Store
 .idea/
 .vscode/
+
+# Docs / Excel
+*.xlsx
+

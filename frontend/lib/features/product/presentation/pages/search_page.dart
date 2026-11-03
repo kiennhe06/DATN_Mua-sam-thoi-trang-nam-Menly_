@@ -45,7 +45,7 @@ class _SearchPageState extends State<SearchPage> {
             border: InputBorder.none,
             suffixIcon: _searchCtrl.text.isNotEmpty
                 ? IconButton(
-                    icon: const Icon(Icons.clear, size: 20),
+                    icon: const Text("✕", style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.grey)),
                     onPressed: () {
                       _searchCtrl.clear();
                       setState(() {});
@@ -57,8 +57,8 @@ class _SearchPageState extends State<SearchPage> {
           onSubmitted: _performSearch,
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.search),
+          TextButton(
+            child: const Text('Tìm', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black87, fontSize: 14)),
             onPressed: () => _performSearch(_searchCtrl.text),
           ),
         ],
@@ -85,9 +85,9 @@ class _SearchPageState extends State<SearchPage> {
                     final sug = suggestions[i];
                     return ListTile(
                       contentPadding: EdgeInsets.zero,
-                      leading: const Icon(Icons.search, size: 20, color: Colors.grey),
+                      
                       title: Text(sug, style: const TextStyle(fontSize: 14)),
-                      trailing: const Icon(Icons.north_west, size: 16, color: Colors.grey),
+                      trailing: const Text("↗", style: TextStyle(color: Colors.grey, fontSize: 16)),
                       onTap: () => _performSearch(sug),
                     );
                   },
@@ -115,7 +115,7 @@ class _SearchPageState extends State<SearchPage> {
                   return InputChip(
                     label: Text(keyword, style: const TextStyle(fontSize: 13)),
                     backgroundColor: Colors.grey.shade100,
-                    deleteIcon: const Icon(Icons.close, size: 16),
+                    deleteIcon: const Text("✕", style: TextStyle(fontSize: 12, color: Colors.grey)),
                     onDeleted: () => productProv.removeSearchKeyword(keyword),
                     onPressed: () => _performSearch(keyword),
                   );
@@ -141,7 +141,7 @@ class _SearchPageState extends State<SearchPage> {
                 return ActionChip(
                   label: Text(term, style: const TextStyle(fontSize: 13)),
                   backgroundColor: Colors.grey.shade100,
-                  avatar: const Icon(Icons.trending_up, size: 16, color: Colors.deepOrange),
+                  
                   onPressed: () => _performSearch(term),
                 );
               }).toList(),
