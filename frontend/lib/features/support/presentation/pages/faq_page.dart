@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:menly_app/features/support/presentation/pages/contact_page.dart';
+import 'package:menly_app/features/support/presentation/pages/policy_page.dart';
 
 /// Trang Cau hoi thuong gap (FAQ) (TM05)
 class FAQPage extends StatefulWidget {
@@ -193,7 +195,16 @@ class _FAQPageState extends State<FAQPage> {
                         ),
                         icon: const Icon(Icons.phone, size: 16),
                         label: const Text('Hotline: 1900 6868'),
-                        onPressed: () {},
+                        onPressed: () {
+                          Navigator.push(context, MaterialPageRoute(builder: (_) => const ContactPage()));
+                        },
+                      ),
+                      const SizedBox(width: 8),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.push(context, MaterialPageRoute(builder: (_) => const PolicyPage()));
+                        },
+                        child: const Text('Xem chính sách'),
                       ),
                     ],
                   ),
