@@ -20,6 +20,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
   String _selectedSize = 'M';
   String _selectedColor = 'Đen';
   int _quantity = 1;
+  List<ProductModel> _relatedProducts = [];
 
   @override
   void initState() {
@@ -27,8 +28,13 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
     _product = widget.product;
     // TM02: Tu dong them san pham vao danh sach da xem gan day va goi API GET /api/v1/products/:id
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      context.read<ProductProvider>().addToRecentlyViewed(_product);
-      final detail = await context.read<ProductProvider>().fetchProductDetail(_product.id);
+      final productProv = context.read<ProductProvider>();
+      productProv.addToRecentlyViewed(_product);
+      setState(() {
+        _relatedProducts = productProv.relatedProductsFor(_product);
+      });
+
+      final detail = await productProv.fetchProductDetail(_product.id);
       if (detail != null && mounted) {
         setState(() {
           _product = detail;
@@ -37,6 +43,11 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
             _selectedColor = _product.variants.first.color;
           }
         });
+      }
+
+      final related = await productProv.fetchRelatedProducts(_product);
+      if (mounted) {
+        setState(() => _relatedProducts = related);
       }
     });
 
@@ -225,6 +236,8 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                     style: TextStyle(fontSize: 14, color: Colors.grey.shade800, height: 1.5),
                   ),
                   const SizedBox(height: 30),
+                  _buildRelatedProducts(),
+                  const SizedBox(height: 16),
                 ],
               ),
             ),
@@ -286,6 +299,126 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildRelatedProducts() {
+    if (_relatedProducts.isEmpty) return const SizedBox.shrink();
+
+    final wishlist = context.watch<WishlistProvider>();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('Sản phẩm liên quan', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+        const SizedBox(height: 4),
+        Text(
+          'Gợi ý cùng danh mục với ${_product.categoryName.isNotEmpty ? _product.categoryName : 'sản phẩm này'}',
+          style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          height: 250,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: _relatedProducts.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 12),
+            itemBuilder: (ctx, i) {
+              final related = _relatedProducts[i];
+              final isFav = wishlist.isFavorite(related.id);
+
+              return InkWell(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => ProductDetailPage(product: related)),
+                  );
+                },
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  width: 150,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.grey.shade200),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.03),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Stack(
+                        children: [
+                          ClipRRect(
+                            borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                            child: Image.network(
+                              related.thumbnailUrl,
+                              width: 150,
+                              height: 140,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => Container(
+                                width: 150,
+                                height: 140,
+                                color: Colors.grey.shade200,
+                                child: const Icon(Icons.checkroom, size: 30),
+                              ),
+                            ),
+                          ),
+                          Positioned(
+                            top: 6,
+                            right: 6,
+                            child: CircleAvatar(
+                              radius: 14,
+                              backgroundColor: Colors.white.withValues(alpha: 0.9),
+                              child: IconButton(
+                                padding: EdgeInsets.zero,
+                                icon: Icon(
+                                  isFav ? Icons.favorite : Icons.favorite_border,
+                                  color: isFav ? Colors.red : Colors.black87,
+                                  size: 16,
+                                ),
+                                onPressed: () => wishlist.toggleFavorite(related),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              related.name,
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              '${related.price} đ',
+                              style: const TextStyle(
+                                color: Colors.redAccent,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 }

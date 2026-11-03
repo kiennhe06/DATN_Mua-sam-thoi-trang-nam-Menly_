@@ -175,6 +175,59 @@ class ProductProvider extends ChangeNotifier {
     }
   }
 
+  /// San pham cung danh muc, loai tru san pham hien tai (trang chi tiet)
+  List<ProductModel> relatedProductsFor(ProductModel product, {int limit = 8}) {
+    bool sameCategory(ProductModel other) {
+      if (product.categoryId.isNotEmpty && other.categoryId.isNotEmpty) {
+        return other.categoryId == product.categoryId;
+      }
+      if (product.categoryName.isNotEmpty && other.categoryName.isNotEmpty) {
+        return other.categoryName.toLowerCase() == product.categoryName.toLowerCase();
+      }
+      return false;
+    }
+
+    final sources = _allProducts.isNotEmpty
+        ? List<ProductModel>.from(_allProducts)
+        : List<ProductModel>.from(MockData.products);
+
+    final related = sources.where((p) => p.id != product.id && sameCategory(p)).toList();
+
+    if (related.length < limit) {
+      for (final p in sources) {
+        if (related.length >= limit) break;
+        if (p.id == product.id) continue;
+        if (related.any((r) => r.id == p.id)) continue;
+        related.add(p);
+      }
+    }
+
+    return related.take(limit).toList();
+  }
+
+  /// Lay san pham lien quan: uu tien API loc theo categoryId, fallback danh sach local
+  Future<List<ProductModel>> fetchRelatedProducts(ProductModel product) async {
+    try {
+      final queryParams = <String, dynamic>{'limit': 12};
+      if (product.categoryId.isNotEmpty) {
+        queryParams['categoryId'] = product.categoryId;
+      }
+
+      final res = await _api.dio.get('/products', queryParameters: queryParams);
+      if (res.statusCode == 200 && res.data['data'] != null) {
+        final apiProducts = (res.data['data'] as List)
+            .map((p) => ProductModel.fromJson(Map<String, dynamic>.from(p)))
+            .where((p) => p.id != product.id)
+            .toList();
+        if (apiProducts.isNotEmpty) {
+          return apiProducts.take(8).toList();
+        }
+      }
+    } catch (_) {}
+
+    return relatedProductsFor(product);
+  }
+
   /// AP-SP1: Bo loc theo danh muc
   void setCategory(String category) {
     _selectedCategory = category;
