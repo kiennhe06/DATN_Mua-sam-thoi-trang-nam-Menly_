@@ -47,15 +47,6 @@ export default function LoginPage() {
     }
   };
 
-  const handlePreview = () => {
-    localStorage.setItem('menshop_admin_token', 'ui-preview');
-    localStorage.setItem(
-      'menshop_admin_user',
-      JSON.stringify({ fullName: 'Admin Preview', email: 'admin@menly.local', role: 'admin' })
-    );
-    router.push('/');
-  };
-
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-950 p-4">
       <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl p-8 shadow-2xl">
@@ -117,21 +108,6 @@ export default function LoginPage() {
             )}
           </button>
         </form>
-
-        {process.env.NODE_ENV === 'development' && (
-          <div className="mt-4 rounded-xl border border-slate-800 bg-slate-950/60 p-3">
-            <p className="mb-2 text-center text-[11px] text-slate-400">
-              Chỉ muốn xem giao diện? Có thể xem trước mà không kết nối backend.
-            </p>
-            <button
-              type="button"
-              onClick={handlePreview}
-              className="w-full rounded-lg border border-amber-400/30 bg-amber-400/5 px-3 py-2 text-xs font-semibold text-amber-200 transition hover:bg-amber-400/10"
-            >
-              Xem trước giao diện quản trị
-            </button>
-          </div>
-        )}
 
         <div className="mt-6 p-3 rounded-xl bg-slate-950/60 border border-slate-800/80 text-[11px] text-slate-400">
           Đăng nhập bằng tài khoản Supabase có quyền quản trị viên (role admin).
