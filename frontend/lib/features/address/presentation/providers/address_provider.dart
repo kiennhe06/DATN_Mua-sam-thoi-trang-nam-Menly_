@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../../../core/mock_data.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../models/address_model.dart';
 
@@ -64,7 +63,8 @@ class AddressProvider extends ChangeNotifier {
     final index = _addresses.indexWhere((a) => a.id == updated.id);
     if (index >= 0) {
       if (updated.isDefault) {
-        _addresses = _addresses.map((a) => a.copyWith(isDefault: false)).toList();
+        _addresses =
+            _addresses.map((a) => a.copyWith(isDefault: false)).toList();
       }
       _addresses[index] = updated;
       if (_selectedAddress?.id == updated.id) {
@@ -121,7 +121,8 @@ class AddressProvider extends ChangeNotifier {
         final list = res.data['data'] as List;
         if (list.isNotEmpty) {
           _addresses = list
-              .map((item) => AddressModel.fromJson(Map<String, dynamic>.from(item)))
+              .map((item) =>
+                  AddressModel.fromJson(Map<String, dynamic>.from(item)))
               .toList();
           _isLoading = false;
           notifyListeners();
@@ -133,7 +134,7 @@ class AddressProvider extends ChangeNotifier {
       // Fallback local
     }
 
-    // Fallback SharedPreferences
+    // Fallback SharedPreferences (dia chi that nguoi dung da luu tren may, khong phai mock)
     try {
       final prefs = await SharedPreferences.getInstance();
       final jsonStr = prefs.getString('saved_addresses');
@@ -141,10 +142,10 @@ class AddressProvider extends ChangeNotifier {
         final List list = jsonDecode(jsonStr);
         _addresses = list.map((item) => AddressModel.fromJson(item)).toList();
       } else {
-        _addresses = List.from(MockData.addresses);
+        _addresses = [];
       }
     } catch (_) {
-      _addresses = List.from(MockData.addresses);
+      _addresses = [];
     }
     _isLoading = false;
     notifyListeners();

@@ -24,47 +24,6 @@ class CartProvider extends ChangeNotifier {
   final RegExp _uuidRegex = RegExp(
       r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$');
 
-  /// Danh sach ma voucher mac dinh khi chua dong bo duoc backend
-  static final List<VoucherModel> _systemVouchers = [
-    VoucherModel(
-      id: 'vouch-1',
-      code: 'MENLY10',
-      title: 'Giảm 10% tối đa 50.000 đ',
-      discountType: 'percentage',
-      discountValue: 10,
-      minOrderValue: 200000,
-      maxDiscount: 50000,
-      endDate: DateTime.now().add(const Duration(days: 30)),
-    ),
-    VoucherModel(
-      id: 'vouch-2',
-      code: 'MENLY50',
-      title: 'Giảm 50.000 đ cho đơn từ 400.000 đ',
-      discountType: 'fixed_amount',
-      discountValue: 50000,
-      minOrderValue: 400000,
-      endDate: DateTime.now().add(const Duration(days: 30)),
-    ),
-    VoucherModel(
-      id: 'vouch-3',
-      code: 'FREESHIP',
-      title: 'Miễn phí vận chuyển toàn quốc',
-      discountType: 'fixed_amount',
-      discountValue: 25000,
-      minOrderValue: 300000,
-      endDate: DateTime.now().add(const Duration(days: 30)),
-    ),
-    VoucherModel(
-      id: 'vouch-4',
-      code: 'WELCOME20',
-      title: 'Giảm 20.000 đ cho khách hàng mới',
-      discountType: 'fixed_amount',
-      discountValue: 20000,
-      minOrderValue: 150000,
-      endDate: DateTime.now().add(const Duration(days: 60)),
-    ),
-  ];
-
   CartProvider() {
     loadCartFromApi();
   }
@@ -148,7 +107,8 @@ class CartProvider extends ChangeNotifier {
         notifyListeners();
       }
     } catch (_) {
-      _shippingFeeFromApi = shippingMethod == 'express' ? 45000 : 25000;
+      // Khong tinh duoc phi ship tu backend -> dung chinh sach local trong getter shippingFee
+      _shippingFeeFromApi = null;
       notifyListeners();
     }
   }
@@ -360,20 +320,6 @@ class CartProvider extends ChangeNotifier {
     return null;
   }
 
-  String? applyVoucherCode(String code) {
-    final cleanCode = code.trim().toUpperCase();
-    final voucher = _systemVouchers.cast<VoucherModel?>().firstWhere(
-          (v) => v?.code.toUpperCase() == cleanCode,
-          orElse: () => null,
-        );
-
-    if (voucher == null) {
-      return 'Mã giảm giá không tồn tại hoặc đã hết hạn';
-    }
-    return applyVoucher(voucher);
-  }
-
-  
   Future<void> updateQuantity(String cartItemId, int newQty) async {
     if (newQty <= 0) {
       await removeItem(cartItemId);

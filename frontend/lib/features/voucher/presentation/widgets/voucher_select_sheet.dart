@@ -21,9 +21,23 @@ class _VoucherSelectSheetState extends State<VoucherSelectSheet> {
     super.dispose();
   }
 
-  void _applyInputCode(CartProvider cart) {
+  void _applyInputCode(CartProvider cart, VoucherProvider voucherProv) {
     setState(() => _errorMessage = null);
-    final error = cart.applyVoucherCode(_codeController.text);
+    final code = _codeController.text.trim();
+    if (code.isEmpty) {
+      setState(() => _errorMessage = 'Vui lòng nhập mã giảm giá');
+      return;
+    }
+
+    // Chi ap dung voucher co that tu API (VoucherProvider)
+    final voucher = voucherProv.findByCode(code);
+    if (voucher == null) {
+      setState(
+          () => _errorMessage = 'Mã giảm giá không tồn tại hoặc đã hết hạn');
+      return;
+    }
+
+    final error = cart.applyVoucher(voucher);
     if (error != null) {
       setState(() => _errorMessage = error);
     } else {
@@ -66,7 +80,9 @@ class _VoucherSelectSheetState extends State<VoucherSelectSheet> {
               ),
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('Đóng', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+                child: const Text('Đóng',
+                    style: TextStyle(
+                        color: Colors.grey, fontWeight: FontWeight.bold)),
               ),
             ],
           ),
@@ -80,8 +96,10 @@ class _VoucherSelectSheetState extends State<VoucherSelectSheet> {
                   textCapitalization: TextCapitalization.characters,
                   decoration: InputDecoration(
                     hintText: 'Nhập mã voucher (VD: WELCOME20, MENLY10)',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8)),
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 10),
                     isDense: true,
                   ),
                 ),
@@ -91,10 +109,12 @@ class _VoucherSelectSheetState extends State<VoucherSelectSheet> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.black87,
                   foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8)),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 ),
-                onPressed: () => _applyInputCode(cart),
+                onPressed: () => _applyInputCode(cart, voucherProv),
                 child: const Text('Áp dụng'),
               ),
             ],
@@ -121,13 +141,14 @@ class _VoucherSelectSheetState extends State<VoucherSelectSheet> {
               itemBuilder: (ctx, index) {
                 final v = vouchers[index];
                 final isSelected = cart.appliedVoucher?.id == v.id;
-                
+
                 return InkWell(
                   onTap: () {
                     final err = cart.applyVoucher(v);
                     if (err != null) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text(err), backgroundColor: Colors.red),
+                        SnackBar(
+                            content: Text(err), backgroundColor: Colors.red),
                       );
                     } else {
                       Navigator.pop(context);
@@ -144,7 +165,9 @@ class _VoucherSelectSheetState extends State<VoucherSelectSheet> {
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       border: Border.all(
-                        color: isSelected ? Colors.deepOrange : Colors.grey.shade300,
+                        color: isSelected
+                            ? Colors.deepOrange
+                            : Colors.grey.shade300,
                         width: isSelected ? 2 : 1,
                       ),
                       borderRadius: BorderRadius.circular(10),
@@ -153,14 +176,20 @@ class _VoucherSelectSheetState extends State<VoucherSelectSheet> {
                     child: Row(
                       children: [
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 6),
                           decoration: BoxDecoration(
                             color: Colors.orange.shade100,
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Text(
-                            v.discountType == 'percentage' ? '${v.discountValue}%' : '${v.discountValue ~/ 1000}k',
-                            style: const TextStyle(color: Colors.deepOrange, fontWeight: FontWeight.bold, fontSize: 13),
+                            v.discountType == 'percentage'
+                                ? '${v.discountValue}%'
+                                : '${v.discountValue ~/ 1000}k',
+                            style: const TextStyle(
+                                color: Colors.deepOrange,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13),
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -172,34 +201,47 @@ class _VoucherSelectSheetState extends State<VoucherSelectSheet> {
                                 children: [
                                   Text(
                                     v.code,
-                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 15),
                                   ),
                                   if (isSelected)
                                     Container(
                                       margin: const EdgeInsets.only(left: 8),
-                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 6, vertical: 2),
                                       decoration: BoxDecoration(
                                         color: Colors.green,
                                         borderRadius: BorderRadius.circular(4),
                                       ),
                                       child: const Text('Đang dùng',
-                                          style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                                          style: TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.bold)),
                                     ),
                                 ],
                               ),
                               const SizedBox(height: 2),
-                              Text(v.title, style: TextStyle(fontSize: 13, color: Colors.grey.shade800)),
+                              Text(v.title,
+                                  style: TextStyle(
+                                      fontSize: 13,
+                                      color: Colors.grey.shade800)),
                               const SizedBox(height: 4),
                               Text(
                                 'Không giới hạn đơn tối thiểu • HSD: ${v.endDate.day}/${v.endDate.month}/${v.endDate.year}',
-                                style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                                style: TextStyle(
+                                    fontSize: 11, color: Colors.grey.shade600),
                               ),
                             ],
                           ),
                         ),
                         Text(
                           isSelected ? '✓' : '',
-                          style: const TextStyle(color: Colors.deepOrange, fontWeight: FontWeight.bold, fontSize: 20),
+                          style: const TextStyle(
+                              color: Colors.deepOrange,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 20),
                         ),
                       ],
                     ),
@@ -216,7 +258,8 @@ class _VoucherSelectSheetState extends State<VoucherSelectSheet> {
                 style: OutlinedButton.styleFrom(
                   foregroundColor: Colors.red,
                   side: const BorderSide(color: Colors.red),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8)),
                 ),
                 onPressed: () {
                   cart.removeVoucher();
