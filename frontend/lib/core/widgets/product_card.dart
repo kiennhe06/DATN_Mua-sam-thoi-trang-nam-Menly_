@@ -63,10 +63,10 @@ class ProductCard extends StatelessWidget {
                 ),
                 if (badge != null)
                   Positioned(
-                    top: 10,
-                    left: 10,
+                    top: 8,
+                    left: 8,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
                         color: c.inkCard.withValues(alpha: 0.85),
                         borderRadius: BorderRadius.circular(AppTheme.radiusPill),
@@ -92,7 +92,7 @@ class ProductCard extends StatelessWidget {
               ],
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+              padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -102,24 +102,27 @@ class ProductCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       color: c.textPrimary,
-                      fontSize: 13.5,
+                      fontSize: 13.0,
                       height: 1.25,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 4),
                   Text(
                     formatVnd(product.price),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       color: c.secondary,
-                      fontSize: 14.5,
+                      fontSize: 14.0,
                       fontWeight: FontWeight.w800,
                     ),
                   ),
-                  const SizedBox(height: 10),
-                  AddToCartButton(onTap: onAdd ?? onTap),
+                  const SizedBox(height: 8),
+                  AddToCartButton(
+                    onTap: onAdd ?? onTap,
+                    height: 32,
+                  ),
                 ],
               ),
             ),
@@ -186,4 +189,3 @@ class _FavButton extends StatelessWidget {
     );
   }
 }
-

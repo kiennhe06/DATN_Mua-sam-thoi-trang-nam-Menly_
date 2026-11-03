@@ -1,18 +1,14 @@
-import 'package:menly_app/core/utils/app_snackbar.dart';
-import 'package:menly_app/core/widgets/product_card.dart';
-import 'package:menly_app/features/cart/presentation/providers/cart_provider.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:menly_app/core/theme/app_theme.dart';
+import 'package:menly_app/core/utils/app_snackbar.dart';
+import 'package:menly_app/core/widgets/category_pill.dart';
+import 'package:menly_app/core/widgets/product_card.dart';
 import 'package:menly_app/models/product_model.dart';
-import 'package:menly_app/features/address/presentation/pages/address_page.dart';
-import 'package:menly_app/features/auth/presentation/pages/change_password_page.dart';
 import 'package:menly_app/features/auth/presentation/pages/login_page.dart';
-import 'package:menly_app/features/order/presentation/pages/my_orders_page.dart';
-import 'package:menly_app/features/order/presentation/pages/staff_order_management_page.dart';
+import 'package:menly_app/features/cart/presentation/providers/cart_provider.dart';
 import 'package:menly_app/features/product/presentation/pages/product_detail_page.dart';
-import 'package:menly_app/features/product/presentation/pages/product_list_page.dart';
 import 'package:menly_app/features/product/presentation/pages/search_page.dart';
 import 'package:menly_app/features/product/presentation/providers/product_provider.dart';
 import 'package:menly_app/features/support/presentation/pages/about_page.dart';
@@ -22,7 +18,9 @@ import 'package:menly_app/features/support/presentation/pages/policy_page.dart';
 import 'package:menly_app/features/voucher/presentation/pages/voucher_list_page.dart';
 import 'package:menly_app/features/wishlist/presentation/providers/wishlist_provider.dart';
 
-/// Trang chu Menly - Giao dien Thoi trang nam cao cap (AP-BN1, TM11, TM02, TM03, TM10, TM05)
+enum _HomeTabFilter { all, newest, bestSeller }
+
+/// Trang chu Menly - Hien thi tron ven toan bo san pham, bo cuc gon gang khong chiem het man hinh
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
@@ -34,6 +32,7 @@ class _HomePageState extends State<HomePage> {
   final PageController _bannerController = PageController();
   int _currentBannerIndex = 0;
   Timer? _bannerTimer;
+  _HomeTabFilter _tabFilter = _HomeTabFilter.all;
 
   @override
   void initState() {
@@ -45,7 +44,8 @@ class _HomePageState extends State<HomePage> {
     _bannerTimer = Timer.periodic(const Duration(seconds: 4), (timer) {
       final productProv = context.read<ProductProvider>();
       if (productProv.banners.isNotEmpty && _bannerController.hasClients) {
-        _currentBannerIndex = (_currentBannerIndex + 1) % productProv.banners.length;
+        _currentBannerIndex =
+            (_currentBannerIndex + 1) % productProv.banners.length;
         _bannerController.animateToPage(
           _currentBannerIndex,
           duration: const Duration(milliseconds: 600),
@@ -62,10 +62,27 @@ class _HomePageState extends State<HomePage> {
     super.dispose();
   }
 
+  List<ProductModel> _filterProducts(List<ProductModel> baseProducts) {
+    switch (_tabFilter) {
+      case _HomeTabFilter.all:
+        return baseProducts;
+      case _HomeTabFilter.newest:
+        final list = baseProducts.where((p) => p.isNew).toList();
+        return list.isNotEmpty ? list : baseProducts;
+      case _HomeTabFilter.bestSeller:
+        final list = baseProducts.where((p) => p.isBestSeller).toList();
+        return list.isNotEmpty ? list : baseProducts;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final productProv = context.watch<ProductProvider>();
     final wishlistProv = context.watch<WishlistProvider>();
+
+    final currentCategory = productProv.selectedCategory;
+    final baseProducts = productProv.products;
+    final displayedProducts = _filterProducts(baseProducts);
 
     return Scaffold(
       backgroundColor: AppTheme.scaffoldBackground,
@@ -113,12 +130,26 @@ class _HomePageState extends State<HomePage> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const VoucherListPage())),
-            child: const Text('Voucher', style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.accentOrange, fontSize: 13)),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const VoucherListPage()),
+            ),
+            child: const Text('Voucher',
+                style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.accentOrange,
+                    fontSize: 13)),
           ),
           TextButton(
-            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LoginPage())),
-            child: const Text('Tài khoản', style: TextStyle(fontWeight: FontWeight.w600, color: AppTheme.textPrimary, fontSize: 13)),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const LoginPage()),
+            ),
+            child: const Text('Tài khoản',
+                style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.textPrimary,
+                    fontSize: 13)),
           ),
         ],
       ),
@@ -128,25 +159,29 @@ class _HomePageState extends State<HomePage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 1. THANH TIM KIEM HIEN DAI
+              // 1. THANH TIM KIEM TINH GON
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
                 child: InkWell(
-                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SearchPage())),
-                  borderRadius: BorderRadius.circular(12),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const SearchPage()),
+                  ),
+                  borderRadius: BorderRadius.circular(10),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(10),
                       border: Border.all(color: AppTheme.border),
-                      boxShadow: AppTheme.softShadow,
                     ),
                     child: const Row(
                       children: [
                         Text(
-                          'Tìm áo polo, sơ mi, quần âu, blazer...',
-                          style: TextStyle(color: AppTheme.textMuted, fontSize: 13),
+                          'Tìm kiếm sơ mi, polo, quần jeans, phụ kiện...',
+                          style:
+                              TextStyle(color: AppTheme.textMuted, fontSize: 13),
                         ),
                       ],
                     ),
@@ -154,39 +189,40 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
 
-              // 2. HERO BANNER CAROUSEL
+              // 2. HERO BANNER THIET KE NHO GON
               if (productProv.banners.isNotEmpty) ...[
                 SizedBox(
-                  height: 190,
+                  height: 145,
                   child: PageView.builder(
                     controller: _bannerController,
                     itemCount: productProv.banners.length,
-                    onPageChanged: (idx) => setState(() => _currentBannerIndex = idx),
+                    onPageChanged: (idx) =>
+                        setState(() => _currentBannerIndex = idx),
                     itemBuilder: (ctx, i) {
                       final b = productProv.banners[i];
                       return Container(
                         margin: const EdgeInsets.symmetric(horizontal: 16),
                         decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(12),
                           image: DecorationImage(
                             image: NetworkImage(b.imageUrl),
                             fit: BoxFit.cover,
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.12),
-                              blurRadius: 10,
-                              offset: const Offset(0, 4),
+                              color: Colors.black.withValues(alpha: 0.08),
+                              blurRadius: 8,
+                              offset: const Offset(0, 3),
                             ),
                           ],
                         ),
                         child: Container(
-                          padding: const EdgeInsets.all(18),
+                          padding: const EdgeInsets.all(14),
                           decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(12),
                             gradient: LinearGradient(
                               colors: [
-                                Colors.black.withValues(alpha: 0.8),
+                                Colors.black.withValues(alpha: 0.75),
                                 Colors.transparent,
                               ],
                               begin: Alignment.bottomLeft,
@@ -199,24 +235,30 @@ class _HomePageState extends State<HomePage> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 7, vertical: 2),
                                 decoration: BoxDecoration(
                                   color: AppTheme.accentRed,
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                                 child: const Text(
                                   'BỘ SƯU TẬP MỚI',
-                                  style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                                  style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.bold),
                                 ),
                               ),
-                              const SizedBox(height: 6),
+                              const SizedBox(height: 4),
                               Text(
                                 b.title,
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.bold,
-                                  fontSize: 18,
-                                  shadows: [Shadow(color: Colors.black54, blurRadius: 4)],
+                                  fontSize: 15,
+                                  shadows: [
+                                    Shadow(color: Colors.black54, blurRadius: 4)
+                                  ],
                                 ),
                               ),
                             ],
@@ -226,122 +268,214 @@ class _HomePageState extends State<HomePage> {
                     },
                   ),
                 ),
-                // Indicator dots
+                // Indicator dots tinh gon
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: List.generate(
                     productProv.banners.length,
                     (idx) => AnimatedContainer(
                       duration: const Duration(milliseconds: 300),
-                      width: _currentBannerIndex == idx ? 22 : 6,
-                      height: 6,
-                      margin: const EdgeInsets.symmetric(horizontal: 3, vertical: 8),
+                      width: _currentBannerIndex == idx ? 16 : 5,
+                      height: 4,
+                      margin: const EdgeInsets.symmetric(
+                          horizontal: 2, vertical: 6),
                       decoration: BoxDecoration(
-                        color: _currentBannerIndex == idx ? AppTheme.primary : Colors.grey.shade300,
-                        borderRadius: BorderRadius.circular(3),
+                        color: _currentBannerIndex == idx
+                            ? AppTheme.primary
+                            : Colors.grey.shade300,
+                        borderRadius: BorderRadius.circular(2),
                       ),
                     ),
                   ),
                 ),
               ],
 
-
-
-              // 4. DANH MUC & TIEN ICH NHANH
+              // 3. DANH MUC CUON NGANG (Category Pills)
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                padding: const EdgeInsets.only(top: 4, bottom: 8),
+                child: SizedBox(
+                  height: 38,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: productProv.categories.length,
+                    separatorBuilder: (_, __) => const SizedBox(width: 8),
+                    itemBuilder: (ctx, i) {
+                      final cat = productProv.categories[i];
+                      final isSelected = currentCategory == cat;
+                      return CategoryPill(
+                        label: cat,
+                        selected: isSelected,
+                        onTap: () => productProv.setCategory(cat),
+                      );
+                    },
+                  ),
+                ),
+              ),
+
+              // 4. HEADER DIEU HUONG TOAN BO SAN PHAM & BO LOC TAB
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 6),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    _buildQuickAction(
-                      label: 'Voucher',
-                      color: AppTheme.accentOrange,
-                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const VoucherListPage())),
+                    Row(
+                      children: [
+                        Text(
+                          currentCategory == 'Tất cả'
+                              ? 'Tất cả sản phẩm'
+                              : currentCategory,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 16,
+                            color: AppTheme.textPrimary,
+                            letterSpacing: -0.2,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 7, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: AppTheme.primary.withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            '${displayedProducts.length}',
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: AppTheme.primary,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                    _buildQuickAction(
-                      label: 'Đơn của tôi',
-                      color: AppTheme.primaryAccent,
-                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MyOrdersPage())),
-                    ),
-                    _buildQuickAction(
-                      label: 'Sổ địa chỉ',
-                      color: Colors.teal,
-                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AddressPage())),
-                    ),
-                    _buildQuickAction(
-                      label: 'Đổi mật khẩu',
-                      color: Colors.indigo,
-                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ChangePasswordPage())),
-                    ),
-                    _buildQuickAction(
-                      label: 'Quản trị viên',
-                      color: Colors.purple,
-                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const StaffOrderManagementPage())),
+                    // Bo loc tab nhanh: Tat ca | Moi | Ban chay
+                    Row(
+                      children: [
+                        _buildFilterTab(
+                          label: 'Tất cả',
+                          active: _tabFilter == _HomeTabFilter.all,
+                          onTap: () =>
+                              setState(() => _tabFilter = _HomeTabFilter.all),
+                        ),
+                        const SizedBox(width: 4),
+                        _buildFilterTab(
+                          label: 'Mới',
+                          active: _tabFilter == _HomeTabFilter.newest,
+                          onTap: () => setState(
+                              () => _tabFilter = _HomeTabFilter.newest),
+                        ),
+                        const SizedBox(width: 4),
+                        _buildFilterTab(
+                          label: 'Bán chạy',
+                          active: _tabFilter == _HomeTabFilter.bestSeller,
+                          onTap: () => setState(
+                              () => _tabFilter = _HomeTabFilter.bestSeller),
+                        ),
+                      ],
                     ),
                   ],
                 ),
               ),
 
-              const SizedBox(height: 10),
+              // 5. LUOI 2 COT TOAN BO SAN PHAM
+              _buildProductGrid(displayedProducts, wishlistProv),
 
-              // 5. SECTION: SAN PHAM MOI NHAT (NEW IN)
-              _buildSectionHeader(
-                title: 'Sản phẩm mới nhất',
-                badge: 'NEW IN',
-                badgeColor: AppTheme.primary,
-                subtitle: 'Bộ sưu tập xu hướng thiết kế tối giản, lịch lãm',
-                onSeeAll: () {
-                  productProv.setSortBy('newest');
-                  Navigator.push(context, MaterialPageRoute(builder: (_) => const ProductListPage()));
-                },
-              ),
-              _buildProductGrid(productProv.newProducts, wishlistProv),
-
-              const SizedBox(height: 16),
-
-              // 6. SECTION: SAN PHAM BAN CHAY (BEST SELLERS)
-              _buildSectionHeader(
-                title: 'Sản phẩm bán chạy',
-                badge: 'HOT TREND',
-                badgeColor: AppTheme.accentRed,
-                subtitle: 'Những món đồ được quý ông săn đón nhiều nhất',
-                onSeeAll: () {
-                  productProv.setSortBy('best_seller');
-                  Navigator.push(context, MaterialPageRoute(builder: (_) => const ProductListPage()));
-                },
-              ),
-              _buildProductGrid(productProv.bestSellers, wishlistProv),
-
-              const SizedBox(height: 16),
-
-              // 7. SECTION: DA XEM GAN DAY (RECENTLY VIEWED)
+              // 6. SAN PHAM DA XEM GAN DAY (Neu co)
               if (productProv.recentlyViewed.isNotEmpty) ...[
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Đã xem gần đây',
-                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17, letterSpacing: -0.2),
-                          ),
-                          Text('Các sản phẩm bạn vừa tham khảo', style: TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
-                        ],
+                      const Text(
+                        'Đã xem gần đây',
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
+                            color: AppTheme.textPrimary),
                       ),
                       TextButton(
+                        style: TextButton.styleFrom(
+                            padding: EdgeInsets.zero,
+                            visualDensity: VisualDensity.compact),
                         onPressed: () => productProv.clearRecentlyViewed(),
-                        child: const Text('Xóa lịch sử', style: TextStyle(color: AppTheme.accentRed, fontSize: 12)),
+                        child: const Text('Xóa',
+                            style: TextStyle(
+                                color: AppTheme.accentRed, fontSize: 12)),
                       ),
                     ],
                   ),
                 ),
-                _buildProductGrid(productProv.recentlyViewed, wishlistProv),
-                const SizedBox(height: 24),
+                SizedBox(
+                  height: 100,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: productProv.recentlyViewed.length,
+                    separatorBuilder: (_, __) => const SizedBox(width: 10),
+                    itemBuilder: (ctx, i) {
+                      final item = productProv.recentlyViewed[i];
+                      return InkWell(
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) =>
+                                  ProductDetailPage(product: item)),
+                        ),
+                        child: Container(
+                          width: 80,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: AppTheme.border),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              ClipRRect(
+                                borderRadius: const BorderRadius.vertical(
+                                    top: Radius.circular(8)),
+                                child: Image.network(
+                                  item.thumbnailUrl,
+                                  width: 80,
+                                  height: 60,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) => Container(
+                                    width: 80,
+                                    height: 60,
+                                    color: Colors.grey.shade100,
+                                  ),
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.all(4),
+                                child: Text(
+                                  item.name,
+                                  style: const TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w600),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 16),
               ],
+
+              // 7. FOOTER THONG TIN MENLY
               _buildInfoFooter(),
+
+              // Khoang cach duoi tranh bi che boi AppPillNav noi
+              const SizedBox(height: 100),
             ],
           ),
         ),
@@ -349,162 +483,69 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildInfoFooter() {
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-      padding: const EdgeInsets.fromLTRB(8, 16, 8, 8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
-      child: Column(
-        children: [
-          const Text('MENLY', style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1.5)),
-          const SizedBox(height: 4),
-          Text('Thời trang nam', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
-          const SizedBox(height: 8),
-          Wrap(
-            alignment: WrapAlignment.center,
-            spacing: 4,
-            children: [
-              TextButton(
-                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AboutPage())),
-                child: const Text('Giới thiệu'),
-              ),
-              TextButton(
-                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ContactPage())),
-                child: const Text('Liên hệ'),
-              ),
-              TextButton(
-                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PolicyPage())),
-                child: const Text('Chính sách'),
-              ),
-              TextButton(
-                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const FAQPage())),
-                child: const Text('Hỏi đáp'),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildQuickAction({
+  Widget _buildFilterTab({
     required String label,
-    required Color color,
+    required bool active,
     required VoidCallback onTap,
   }) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Text(label.substring(0, 1).toUpperCase(), style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 18)),
+      borderRadius: BorderRadius.circular(6),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+        decoration: BoxDecoration(
+          color: active ? AppTheme.primary : Colors.grey.shade100,
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            color: active ? Colors.white : AppTheme.textSecondary,
           ),
-          const SizedBox(height: 6),
-          Text(
-            label,
-            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.textPrimary),
-          ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildSectionHeader({
-    required String title,
-    required String subtitle,
-    required VoidCallback onSeeAll,
-    String? badge,
-    Color? badgeColor,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                        color: AppTheme.textPrimary,
-                        letterSpacing: -0.3,
-                      ),
-                    ),
-                    if (badge != null) ...[
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: badgeColor ?? AppTheme.primary,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          badge,
-                          style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-                const SizedBox(height: 2),
-                Text(subtitle, style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
-              ],
-            ),
-          ),
-          TextButton(
-            onPressed: onSeeAll,
-            style: TextButton.styleFrom(
-              padding: EdgeInsets.zero,
-              visualDensity: VisualDensity.compact,
-            ),
-            child: const Row(
-              children: [
-                Text('Xem tất cả', style: TextStyle(color: AppTheme.primary, fontWeight: FontWeight.bold, fontSize: 13)),
-
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildProductGrid(List<ProductModel> items, WishlistProvider wishlistProv) {
+  Widget _buildProductGrid(
+      List<ProductModel> items, WishlistProvider wishlistProv) {
     if (items.isEmpty) {
-      return const Padding(
-        padding: EdgeInsets.all(16),
-        child: Center(child: Text('Đang cập nhật sản phẩm...')),
+      return Container(
+        padding: const EdgeInsets.all(32),
+        alignment: Alignment.center,
+        child: Column(
+          children: [
+            const Text(
+              'Không tìm thấy sản phẩm trong danh mục này',
+              style: TextStyle(
+                  color: AppTheme.textSecondary,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500),
+            ),
+            const SizedBox(height: 8),
+            TextButton(
+              onPressed: () =>
+                  context.read<ProductProvider>().setCategory('Tất cả'),
+              child: const Text('Xem tất cả sản phẩm',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
       );
     }
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       child: GridView.builder(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2,
-          childAspectRatio: 0.58,
-          crossAxisSpacing: 14,
-          mainAxisSpacing: 14,
+          childAspectRatio: 0.65,
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 12,
         ),
         itemCount: items.length,
         itemBuilder: (ctx, i) {
@@ -518,19 +559,73 @@ class _HomePageState extends State<HomePage> {
             onTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => ProductDetailPage(product: p)),
+                MaterialPageRoute(
+                    builder: (_) => ProductDetailPage(product: p)),
               );
             },
             onToggleFavorite: () => wishlistProv.toggleFavorite(p),
             onAdd: () {
               final cart = context.read<CartProvider>();
               final s = p.variants.isNotEmpty ? p.variants.first.size : 'M';
-              final col = p.variants.isNotEmpty ? p.variants.first.color : 'Đen';
+              final col =
+                  p.variants.isNotEmpty ? p.variants.first.color : 'Đen';
               cart.addToCart(p, size: s, color: col, quantity: 1);
               AppSnackBar.show(context, message: 'Đã thêm "${p.name}" vào giỏ');
             },
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildInfoFooter() {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+      padding: const EdgeInsets.fromLTRB(12, 14, 12, 10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Column(
+        children: [
+          const Text('MENLY FASHION',
+              style: TextStyle(
+                  fontWeight: FontWeight.w900,
+                  fontSize: 13,
+                  letterSpacing: 1.5)),
+          const SizedBox(height: 2),
+          Text('Thương hiệu thời trang nam cao cấp',
+              style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
+          const SizedBox(height: 6),
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 2,
+            children: [
+              TextButton(
+                onPressed: () => Navigator.push(context,
+                    MaterialPageRoute(builder: (_) => const AboutPage())),
+                child: const Text('Giới thiệu', style: TextStyle(fontSize: 12)),
+              ),
+              TextButton(
+                onPressed: () => Navigator.push(context,
+                    MaterialPageRoute(builder: (_) => const ContactPage())),
+                child: const Text('Liên hệ', style: TextStyle(fontSize: 12)),
+              ),
+              TextButton(
+                onPressed: () => Navigator.push(context,
+                    MaterialPageRoute(builder: (_) => const PolicyPage())),
+                child: const Text('Chính sách', style: TextStyle(fontSize: 12)),
+              ),
+              TextButton(
+                onPressed: () => Navigator.push(context,
+                    MaterialPageRoute(builder: (_) => const FAQPage())),
+                child: const Text('Hỏi đáp', style: TextStyle(fontSize: 12)),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
