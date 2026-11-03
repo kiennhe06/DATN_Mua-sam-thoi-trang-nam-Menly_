@@ -5,7 +5,7 @@ Chạy lần lượt trên Supabase (SQL Editor) theo đúng thứ tự:
 1. `01_types.sql` — tạo kiểu dữ liệu (enum) và tiện ích.
 2. `02_tables.sql` — tạo toàn bộ 26 bảng.
 3. `03_functions.sql` — các hàm nghiệp vụ (kiểm tra admin, tạo đơn hàng, xác nhận thanh toán, hủy đơn quá hạn).
-4. `04_seed.sql` — nhập dữ liệu mẫu (danh mục, sản phẩm, ảnh, mã giảm giá).
+4. `04_seed.sql` — nhập dữ liệu mẫu (5 danh mục, 40 sản phẩm, biến thể size/màu, ảnh, banner trang chủ, mã giảm giá). Chạy lại được nhiều lần, không tạo trùng.
 5. `05_indexes.sql` — tạo index giúp truy vấn nhanh hơn.
 6. `06_triggers.sql` — trigger tự tạo hồ sơ khi đăng ký, tự tính điểm đánh giá.
 7. `07_policies.sql` — phân quyền truy cập (RLS) cho các bảng.
