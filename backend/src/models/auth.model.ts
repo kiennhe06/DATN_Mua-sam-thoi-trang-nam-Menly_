@@ -69,6 +69,8 @@ const ADMIN_ACCOUNT_EMAIL = 'admin@gmail.com';
 const ADMIN_ACCOUNT_PASSWORD = '123456';
 
 export function ensureDemoUser() {
+  // Khong seed tai khoan demo/mat khau hardcode khi che do demo bi tat (production).
+  if (!env.demoAuthEnabled) return;
   const email = DEMO_ACCOUNT_EMAIL.toLowerCase();
   if (!localUsers.has(email)) {
     localUsers.set(email, {
@@ -163,7 +165,7 @@ export class AuthModel {
         throw new AuthError('Email này đã được đăng ký trong hệ thống', 409);
       }
 
-      if (isSupabaseTemporaryAuthFailure(authError)) {
+      if (env.demoAuthEnabled && isSupabaseTemporaryAuthFailure(authError)) {
         const existingLocal = localUsers.get(normalizedEmail);
         if (existingLocal) {
           throw new AuthError('Email này đã được đăng ký trong hệ thống', 409);
@@ -485,7 +487,7 @@ export class AuthModel {
    * Cấp lại accessToken mới từ refreshToken
    */
   async refreshToken(refreshToken: string) {
-    if (refreshToken.startsWith('demo-refresh-')) {
+    if (env.demoAuthEnabled && refreshToken.startsWith('demo-refresh-')) {
       const rawId = refreshToken.replace('demo-refresh-', '');
       const localUser = getLocalUserById(rawId);
       const id = localUser ? localUser.id : rawId;
