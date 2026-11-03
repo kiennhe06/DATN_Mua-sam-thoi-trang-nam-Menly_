@@ -1,6 +1,60 @@
 import { supabase } from '../config/supabase.js';
 import type { CalculateShippingFeeInput } from '../validators/shipping.validator.js';
 
+// =========== INTERFACES CHO ĐƠN HÀNG ===========
+
+export interface CreateOrderInput {
+  userId: string;
+  payment_method: 'cod' | 'vnpay';
+  ship_name: string;
+  ship_phone: string;
+  ship_address: string;
+  subtotal: number;
+  shipping_fee: number;
+  discount_amount?: number;
+  total: number;
+  voucher_code?: string;
+  items: Array<{
+    variant_id?: string;
+    product_name: string;
+    size: string;
+    color: string;
+    unit_price: number;
+    quantity: number;
+  }>;
+}
+
+export interface OrderRow {
+  id: string;
+  code: string;
+  user_id: string;
+  status: string;
+  payment_method: string;
+  is_paid: boolean;
+  subtotal: number;
+  discount_amount: number;
+  shipping_fee: number;
+  total: number;
+  ship_name: string;
+  ship_phone: string;
+  ship_address: string;
+  cancel_reason?: string;
+  created_at: string;
+  order_items?: OrderItemRow[];
+}
+
+export interface OrderItemRow {
+  id: string;
+  order_id: string;
+  variant_id?: string;
+  product_name: string;
+  size: string;
+  color: string;
+  unit_price: number;
+  quantity: number;
+  thumbnail_url?: string;
+}
+
 export interface ShippingPolicy {
   standardBaseFee: number;
   expressBaseFee: number;
@@ -144,4 +198,114 @@ export class OrderModel {
       note,
     };
   }
+
+  // =========== CRUD ĐƠN HÀNG ===========
+
+  /** Tạo đơn hàng mới, lưu vào bảng orders + order_items trên Supabase */
+  async createOrder(input: CreateOrderInput): Promise<OrderRow> {
+    const code = `MNL-${Date.now() % 100000}`;
+    const status = input.payment_method === 'vnpay' ? 'pending_payment' : 'processing';
+
+    const { data: order, error } = await this.db
+      .from('orders')
+      .insert({
+        code,
+        user_id: input.userId,
+        status,
+        payment_method: input.payment_method,
+        is_paid: false,
+        subtotal: input.subtotal,
+        discount_amount: input.discount_amount ?? 0,
+        shipping_fee: input.shipping_fee,
+        total: input.total,
+        ship_name: input.ship_name,
+        ship_phone: input.ship_phone,
+        ship_address: input.ship_address,
+        voucher_code: input.voucher_code ?? null,
+      })
+      .select()
+      .single();
+
+    if (error || !order) {
+      throw new Error(error?.message ?? 'Không thể tạo đơn hàng');
+    }
+
+    // Lưu các items vào bảng order_items
+    if (input.items.length > 0) {
+      const itemRows = input.items.map((item) => ({
+        order_id: order.id,
+        variant_id: item.variant_id ?? null,
+        product_name: item.product_name,
+        size: item.size,
+        color: item.color,
+        unit_price: item.unit_price,
+        quantity: item.quantity,
+      }));
+      const { error: itemError } = await this.db.from('order_items').insert(itemRows);
+      if (itemError) {
+        console.error('Loi khi luu order items:', itemError.message);
+      }
+    }
+
+    return order as OrderRow;
+  }
+
+  /** Lấy danh sách đơn hàng của 1 user (kèm items) */
+  async getOrdersByUser(userId: string): Promise<OrderRow[]> {
+    const { data, error } = await this.db
+      .from('orders')
+      .select('*, order_items(*)')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (error) throw new Error(error.message);
+    return (data ?? []) as OrderRow[];
+  }
+
+  /** Lấy chi tiết 1 đơn hàng (kèm items), kiểm tra quyền sở hữu */
+  async getOrderById(orderId: string, userId: string): Promise<OrderRow | null> {
+    const { data, error } = await this.db
+      .from('orders')
+      .select('*, order_items(*)')
+      .eq('id', orderId)
+      .eq('user_id', userId)
+      .single();
+
+    if (error || !data) return null;
+    return data as OrderRow;
+  }
+
+  /** Hủy đơn hàng (chỉ khi status là processing hoặc pending_payment) */
+  async cancelOrder(orderId: string, userId: string, reason: string): Promise<OrderRow> {
+    // Kiểm tra tồn tại và quyền sở hữu
+    const { data: existing, error: fetchErr } = await this.db
+      .from('orders')
+      .select('id, status, user_id')
+      .eq('id', orderId)
+      .eq('user_id', userId)
+      .single();
+
+    if (fetchErr || !existing) {
+      throw new Error('Không tìm thấy đơn hàng');
+    }
+
+    const cancellable = ['processing', 'pending_payment', 'pending'];
+    if (!cancellable.includes(existing.status)) {
+      throw new Error('Đơn hàng không thể hủy ở trạng thái hiện tại');
+    }
+
+    const { data: updated, error: updateErr } = await this.db
+      .from('orders')
+      .update({ status: 'canceled', cancel_reason: reason })
+      .eq('id', orderId)
+      .select('*, order_items(*)')
+      .single();
+
+    if (updateErr || !updated) {
+      throw new Error(updateErr?.message ?? 'Không thể hủy đơn hàng');
+    }
+
+    return updated as OrderRow;
+  }
 }
+

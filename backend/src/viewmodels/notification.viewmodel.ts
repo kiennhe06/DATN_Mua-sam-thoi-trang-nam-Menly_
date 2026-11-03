@@ -1,7 +1,22 @@
-import { NotificationModel } from '../models/notification.model.js';
+import { NotificationModel, type NotificationRow } from '../models/notification.model.js';
 
 // Lop xu ly nghiep vu cho: Thong bao
 export class NotificationViewModel {
   private model = new NotificationModel();
-  // TODO: viet logic nghiep vu (kiem tra du lieu, tinh toan...)
+
+  async list(userId: string): Promise<NotificationRow[]> {
+    return this.model.findByUser(userId);
+  }
+
+  async markRead(id: string, userId: string): Promise<void> {
+    return this.model.markRead(id, userId);
+  }
+
+  async markAllRead(userId: string): Promise<void> {
+    return this.model.markAllRead(userId);
+  }
+
+  async delete(id: string, userId: string): Promise<void> {
+    return this.model.delete(id, userId);
+  }
 }

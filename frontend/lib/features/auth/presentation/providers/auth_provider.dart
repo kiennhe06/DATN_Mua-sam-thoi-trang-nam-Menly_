@@ -122,7 +122,7 @@ class AuthProvider extends ChangeNotifier {
       await prefs.setString('user_profile', jsonEncode(_user!.toJson()));
 
       try {
-        await _api.dio.put('/auth/profile', data: {
+        await _api.dio.put('/profile', data: {
           'full_name': _user!.fullName,
           'phone': _user!.phone,
           'avatar_url': _user!.avatarUrl,
