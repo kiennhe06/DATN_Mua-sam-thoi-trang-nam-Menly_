@@ -1,0 +1,81 @@
+import 'package:flutter/material.dart';
+
+/// Trang Chinh sach mua hang, van chuyen, doi tra va bao mat
+class PolicyPage extends StatelessWidget {
+  const PolicyPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Chính sách'),
+        centerTitle: true,
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          Text(
+            'Các chính sách áp dụng khi mua sắm tại Menly.',
+            style: TextStyle(fontSize: 14, color: Colors.grey.shade700, height: 1.4),
+          ),
+          const SizedBox(height: 12),
+          _section(
+            context,
+            title: 'Chính sách mua hàng',
+            body:
+                'Bạn chọn sản phẩm, size và màu, thêm vào giỏ rồi thanh toán COD hoặc VNPay. '
+                'Đơn ở trạng thái Chờ thanh toán hoặc Đang xử lý có thể hủy trong mục Đơn của tôi. '
+                'Đơn Đang giao cần liên hệ hotline 1900 6868.',
+          ),
+          _section(
+            context,
+            title: 'Chính sách vận chuyển',
+            body:
+                'Phí giao tiêu chuẩn 25.000 đ toàn quốc, hỏa tốc 45.000 đ. '
+                'Nội thành Hà Nội / TP.HCM / Đà Nẵng khoảng 1–2 ngày; tỉnh khác 3–4 ngày. '
+                'Đơn từ 499.000 đ được miễn phí vận chuyển. Menly hỗ trợ đồng kiểm khi nhận hàng.',
+          ),
+          _section(
+            context,
+            title: 'Chính sách đổi trả',
+            body:
+                'Đổi trả trong 7 ngày kể từ ngày nhận hàng nếu còn tem mác, chưa giặt ủi và chưa qua sử dụng. '
+                'Lỗi nhà sản xuất, giao sai size hoặc màu: Menly chịu phí vận chuyển hai chiều.',
+          ),
+          _section(
+            context,
+            title: 'Chính sách bảo mật',
+            body:
+                'Menly chỉ dùng thông tin tài khoản, địa chỉ và đơn hàng để xử lý mua sắm và hỗ trợ. '
+                'Không chia sẻ dữ liệu cho bên thứ ba ngoài đối tác vận chuyển và cổng thanh toán. '
+                'Bạn có thể yêu cầu cập nhật hoặc xóa thông tin qua email support@menly.vn.',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _section(BuildContext context, {required String title, required String body}) {
+    return Card(
+      elevation: 0,
+      margin: const EdgeInsets.only(bottom: 12),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: Colors.grey.shade200),
+      ),
+      child: Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          initiallyExpanded: title.contains('mua hàng'),
+          title: Text(title, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: Text(body, style: TextStyle(fontSize: 14, color: Colors.grey.shade800, height: 1.5)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

@@ -11,7 +11,10 @@ import 'package:menly_app/features/product/presentation/pages/product_detail_pag
 import 'package:menly_app/features/product/presentation/pages/product_list_page.dart';
 import 'package:menly_app/features/product/presentation/pages/search_page.dart';
 import 'package:menly_app/features/product/presentation/providers/product_provider.dart';
+import 'package:menly_app/features/support/presentation/pages/about_page.dart';
+import 'package:menly_app/features/support/presentation/pages/contact_page.dart';
 import 'package:menly_app/features/support/presentation/pages/faq_page.dart';
+import 'package:menly_app/features/support/presentation/pages/policy_page.dart';
 import 'package:menly_app/features/voucher/presentation/pages/voucher_list_page.dart';
 import 'package:menly_app/features/wishlist/presentation/providers/wishlist_provider.dart';
 
@@ -316,11 +319,51 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
                 _buildHorizontalProductList(productProv.recentlyViewed, wishlistProv),
-                const SizedBox(height: 24),
+                const SizedBox(height: 8),
               ],
+              _buildInfoFooter(),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildInfoFooter() {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+      padding: const EdgeInsets.fromLTRB(8, 16, 8, 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Column(
+        children: [
+          const Text('MENLY', style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1.5)),
+          const SizedBox(height: 4),
+          Text('Thời trang nam', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+          const SizedBox(height: 8),
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 4,
+            children: [
+              TextButton(
+                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AboutPage())),
+                child: const Text('Giới thiệu'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ContactPage())),
+                child: const Text('Liên hệ'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PolicyPage())),
+                child: const Text('Chính sách'),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
