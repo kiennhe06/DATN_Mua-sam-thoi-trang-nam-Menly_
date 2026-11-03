@@ -1,7 +1,5 @@
 import type { Request, Response, NextFunction } from 'express';
 import { supabase } from '../config/supabase.js';
-import { env } from '../config/env.js';
-import { getLocalUserById } from '../models/auth.model.js';
 
 export interface AuthenticatedUser {
   id: string;
@@ -27,48 +25,6 @@ function extractBearerToken(req: Request): string | null {
 }
 
 async function verifyTokenAndGetProfile(token: string) {
-  // Che do dang nhap demo/local fallback: chi hoat dong khi duoc bat tuong minh
-  // (moi truong dev). O production demoAuthEnabled = false nen moi token demo
-  // deu roi xuong nhanh xac thuc Supabase that ben duoi va bi tu choi.
-  if (env.demoAuthEnabled && (token.startsWith('demo-access-') || token === 'ui-preview')) {
-    const rawId = token === 'ui-preview'
-      ? 'a0000000-0000-0000-0000-000000000001'
-      : token.replace('demo-access-', '');
-    const localUser = getLocalUserById(rawId);
-    if (localUser) {
-      return {
-        error: null,
-        user: { id: localUser.id, email: localUser.email } as any,
-        profile: {
-          id: localUser.id,
-          email: localUser.email,
-          full_name: localUser.fullName,
-          role: localUser.role,
-          is_active: localUser.isActive,
-          is_locked: localUser.isLocked,
-        },
-      };
-    }
-
-    // Chi token xem truoc giao dien (ui-preview) duoc map san sang tai khoan admin demo.
-    // Token demo-access khong khop user local nao thi mac dinh la khach (customer),
-    // tuyet doi khong cap quyen admin dua tren noi dung chuoi token.
-    const isPreviewAdmin = token === 'ui-preview';
-    const id = isPreviewAdmin ? 'a0000000-0000-0000-0000-000000000001' : 'd0000000-0000-0000-0000-000000000001';
-    return {
-      error: null,
-      user: { id, email: isPreviewAdmin ? 'admin@gmail.com' : 'demo@menly.local' } as any,
-      profile: {
-        id,
-        email: isPreviewAdmin ? 'admin@gmail.com' : 'demo@menly.local',
-        full_name: isPreviewAdmin ? 'Quản trị viên MenShop' : 'Demo User',
-        role: isPreviewAdmin ? 'admin' : 'customer',
-        is_active: true,
-        is_locked: false,
-      },
-    };
-  }
-
   const { data: authData, error: authError } = await supabase.auth.getUser(token);
   if (authError || !authData.user) {
     return { error: 'invalid_token', user: null, profile: null };

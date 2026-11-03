@@ -50,92 +50,6 @@ function getAuthClient() {
   });
 }
 
-export type LocalUserRecord = {
-  id: string;
-  email: string;
-  fullName: string;
-  phone: string | null;
-  role: string;
-  password: string;
-  isActive: boolean;
-  isLocked: boolean;
-  createdAt: string;
-};
-
-const localUsers = new Map<string, LocalUserRecord>();
-const DEMO_ACCOUNT_EMAIL = 'demo@menly.local';
-const DEMO_ACCOUNT_PASSWORD = '123456';
-const ADMIN_ACCOUNT_EMAIL = 'admin@gmail.com';
-const ADMIN_ACCOUNT_PASSWORD = '123456';
-
-export function ensureDemoUser() {
-  // Khong seed tai khoan demo/mat khau hardcode khi che do demo bi tat (production).
-  if (!env.demoAuthEnabled) return;
-  const email = DEMO_ACCOUNT_EMAIL.toLowerCase();
-  if (!localUsers.has(email)) {
-    localUsers.set(email, {
-      id: 'd0000000-0000-0000-0000-000000000001',
-      email,
-      fullName: 'Demo User',
-      phone: '0900000000',
-      role: 'customer',
-      password: DEMO_ACCOUNT_PASSWORD,
-      isActive: true,
-      isLocked: false,
-      createdAt: new Date().toISOString(),
-    });
-  }
-
-  const adminEmail = ADMIN_ACCOUNT_EMAIL.toLowerCase();
-  if (!localUsers.has(adminEmail)) {
-    localUsers.set(adminEmail, {
-      id: 'a0000000-0000-0000-0000-000000000001',
-      email: adminEmail,
-      fullName: 'Quản trị viên MenShop',
-      phone: '0988888888',
-      role: 'admin',
-      password: ADMIN_ACCOUNT_PASSWORD,
-      isActive: true,
-      isLocked: false,
-      createdAt: new Date().toISOString(),
-    });
-  }
-
-  const kienEmail = 'kien@gmail.com';
-  if (!localUsers.has(kienEmail)) {
-    localUsers.set(kienEmail, {
-      id: 'c0000000-0000-0000-0000-000000000001',
-      email: kienEmail,
-      fullName: 'Phạm Đức Kiên',
-      phone: '0973735876',
-      role: 'customer',
-      password: 'kiennhe',
-      isActive: true,
-      isLocked: false,
-      createdAt: new Date().toISOString(),
-    });
-  }
-}
-
-export function getLocalUserById(id: string): LocalUserRecord | undefined {
-  ensureDemoUser();
-  for (const user of localUsers.values()) {
-    if (user.id === id) return user;
-  }
-  return undefined;
-}
-
-export function getLocalUserByEmail(email: string): LocalUserRecord | undefined {
-  ensureDemoUser();
-  return localUsers.get(email.toLowerCase());
-}
-
-function isSupabaseTemporaryAuthFailure(error: unknown) {
-  if (!error) return false;
-  const message = String((error as { message?: string })?.message ?? error);
-  return /rate limit|too many requests|email rate limit|email_address_invalid|is invalid|invalid|temporar|fetch failed/i.test(message);
-}
-
 export class AuthModel {
   /**
    * Đăng ký tài khoản mới qua Supabase Auth
@@ -145,8 +59,6 @@ export class AuthModel {
     const { email, password, fullName, phone, role } = input;
     const userRole = role ?? 'customer';
     const normalizedEmail = email.toLowerCase();
-
-    ensureDemoUser();
 
     const { data: authData, error: authError } = await authClient.auth.signUp({
       email: normalizedEmail,
@@ -163,41 +75,6 @@ export class AuthModel {
     if (authError) {
       if (authError.message.includes('already registered')) {
         throw new AuthError('Email này đã được đăng ký trong hệ thống', 409);
-      }
-
-      if (env.demoAuthEnabled && isSupabaseTemporaryAuthFailure(authError)) {
-        const existingLocal = localUsers.get(normalizedEmail);
-        if (existingLocal) {
-          throw new AuthError('Email này đã được đăng ký trong hệ thống', 409);
-        }
-
-        const localUser: LocalUserRecord = {
-          id: `local-user-${Date.now()}`,
-          email: normalizedEmail,
-          fullName,
-          phone: phone || null,
-          role: userRole,
-          password,
-          isActive: true,
-          isLocked: false,
-          createdAt: new Date().toISOString(),
-        };
-
-        localUsers.set(normalizedEmail, localUser);
-
-        return {
-          message: 'Đăng ký tài khoản demo thành công. Chế độ local fallback đang được bật.',
-          accessToken: `demo-access-${localUser.id}`,
-          refreshToken: `demo-refresh-${localUser.id}`,
-          expiresAt: Date.now() + 86400000,
-          user: {
-            id: localUser.id,
-            email: localUser.email,
-            fullName: localUser.fullName,
-            phone: localUser.phone,
-            role: localUser.role,
-          },
-        };
       }
 
       throw new AuthError(authError.message, 400);
@@ -248,28 +125,7 @@ export class AuthModel {
    * Đăng nhập qua Supabase Auth và kiểm tra trạng thái hồ sơ người dùng
    */
   async login(email: string, password: string, requiredRole?: string) {
-    ensureDemoUser();
     const normalizedEmail = email.toLowerCase();
-    const localUser = localUsers.get(normalizedEmail);
-
-    if (localUser && localUser.password === password) {
-      if (requiredRole && localUser.role !== requiredRole) {
-        throw new LoginCredentialsError('Tài khoản không có quyền truy cập');
-      }
-      return {
-        accessToken: `demo-access-${localUser.id}`,
-        refreshToken: `demo-refresh-${localUser.id}`,
-        expiresAt: Date.now() + 86400000,
-        user: {
-          id: localUser.id,
-          email: localUser.email,
-          fullName: localUser.fullName,
-          phone: localUser.phone,
-          role: localUser.role,
-          avatarUrl: null,
-        },
-      };
-    }
 
     const authClient = getAuthClient();
     const { data: authData, error: authError } = await authClient.auth.signInWithPassword({
@@ -347,18 +203,6 @@ export class AuthModel {
    * Đổi mật khẩu cho người dùng hiện tại (yêu cầu mật khẩu cũ)
    */
   async changePassword(userId: string, email: string, currentPassword: string, newPassword: string) {
-    ensureDemoUser();
-
-    // 1. Kiểm tra tài khoản local fallback
-    const localUser = (email ? getLocalUserByEmail(email) : undefined) || (userId ? getLocalUserById(userId) : undefined);
-    if (localUser) {
-      if (localUser.password !== currentPassword) {
-        throw new InvalidPasswordError('Mật khẩu hiện tại không chính xác');
-      }
-      localUser.password = newPassword;
-      return { success: true, message: 'Đổi mật khẩu thành công' };
-    }
-
     const authClient = getAuthClient();
 
     // Xác thực lại mật khẩu hiện tại với Supabase
@@ -387,15 +231,6 @@ export class AuthModel {
    * Yêu cầu gửi email đặt lại mật khẩu
    */
   async forgotPassword(email: string, redirectTo?: string) {
-    ensureDemoUser();
-    const localUser = getLocalUserByEmail(email);
-    if (localUser) {
-      return {
-        success: true,
-        message: 'Nếu email tồn tại trong hệ thống, hướng dẫn đặt lại mật khẩu đã được gửi đến email của bạn.',
-      };
-    }
-
     const authClient = getAuthClient();
     const { error } = await authClient.auth.resetPasswordForEmail(email, {
       redirectTo: redirectTo || undefined,
@@ -426,15 +261,6 @@ export class AuthModel {
     newPassword: string;
   }) {
     const { token, accessToken, otp, email, newPassword } = params;
-
-    if (email) {
-      ensureDemoUser();
-      const localUser = getLocalUserByEmail(email);
-      if (localUser) {
-        localUser.password = newPassword;
-        return { success: true, message: 'Đặt lại mật khẩu thành công. Vui lòng đăng nhập với mật khẩu mới.' };
-      }
-    }
 
     const authClient = getAuthClient();
 
@@ -487,17 +313,6 @@ export class AuthModel {
    * Cấp lại accessToken mới từ refreshToken
    */
   async refreshToken(refreshToken: string) {
-    if (env.demoAuthEnabled && refreshToken.startsWith('demo-refresh-')) {
-      const rawId = refreshToken.replace('demo-refresh-', '');
-      const localUser = getLocalUserById(rawId);
-      const id = localUser ? localUser.id : rawId;
-      return {
-        accessToken: `demo-access-${id}`,
-        refreshToken: `demo-refresh-${id}`,
-        expiresAt: Date.now() + 86400000,
-      };
-    }
-
     const authClient = getAuthClient();
     const { data, error } = await authClient.auth.refreshSession({ refresh_token: refreshToken });
 
@@ -516,22 +331,6 @@ export class AuthModel {
    * Lấy thông tin hồ sơ tài khoản hiện tại
    */
   async getProfile(userId: string) {
-    ensureDemoUser();
-    const localUser = getLocalUserById(userId);
-    if (localUser) {
-      return {
-        id: localUser.id,
-        email: localUser.email,
-        full_name: localUser.fullName,
-        phone: localUser.phone,
-        avatar_url: null,
-        role: localUser.role,
-        is_active: localUser.isActive,
-        is_locked: localUser.isLocked,
-        created_at: localUser.createdAt,
-      };
-    }
-
     const { data: profile, error } = await supabase
       .from('profiles')
       .select('id, email, full_name, phone, avatar_url, role, is_active, is_locked, created_at')
@@ -552,18 +351,6 @@ export class AuthModel {
    * Kiểm tra trạng thái tài khoản (khóa / kích hoạt)
    */
   async checkAccountStatus(emailOrId: string) {
-    ensureDemoUser();
-    const localUser = getLocalUserById(emailOrId) || getLocalUserByEmail(emailOrId);
-    if (localUser) {
-      return {
-        id: localUser.id,
-        email: localUser.email,
-        role: localUser.role,
-        is_active: localUser.isActive,
-        is_locked: localUser.isLocked,
-      };
-    }
-
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(emailOrId);
     let query = supabase.from('profiles').select('id, email, role, is_active, is_locked');
 
