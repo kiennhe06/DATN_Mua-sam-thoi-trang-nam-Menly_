@@ -1,6 +1,7 @@
 import { Router, type Response } from 'express';
 import { requireAdmin } from '../../middlewares/auth.js';
 import { ProductModel } from '../../models/product.model.js';
+import { OrderModel } from '../../models/order.model.js';
 import {
   adminProductListSchema,
   adminProductSchema,
@@ -12,6 +13,19 @@ import {
 const router = Router();
 router.use(requireAdmin);
 const productModel = new ProductModel();
+const orderModel = new OrderModel();
+
+// Cac trang thai don hang hop le (khop enum order_status trong DB)
+const ORDER_STATUSES = [
+  'pending_payment',
+  'paid',
+  'processing',
+  'shipping',
+  'delivered',
+  'completed',
+  'cancelled',
+  'expired',
+];
 
 function parseProductId(id: string, res: Response) {
   const parsed = productIdSchema.safeParse(id);
@@ -122,16 +136,43 @@ router.patch('/products/:id/approve', async (req, res, next) => {
   }
 });
 
-// GET /api/v1/admin/orders - DS don
-router.get('/orders', (_req, res) => {
-  // TODO: implement
-  res.status(501).json({ message: 'Chua duoc cai dat' });
+// GET /api/v1/admin/orders - DS don (loc theo status, gioi han limit)
+router.get('/orders', async (req, res, next) => {
+  const statusRaw = typeof req.query.status === 'string' ? req.query.status : undefined;
+  if (statusRaw && !ORDER_STATUSES.includes(statusRaw)) {
+    return res.status(400).json({ error: 'Trạng thái đơn hàng không hợp lệ' });
+  }
+
+  const limitRaw = typeof req.query.limit === 'string' ? Number.parseInt(req.query.limit, 10) : NaN;
+  const limit = Number.isInteger(limitRaw) && limitRaw > 0 ? limitRaw : undefined;
+
+  try {
+    const data = await orderModel.adminListOrders({ status: statusRaw, limit });
+    return res.json({ data });
+  } catch (error) {
+    return next(error);
+  }
 });
 
 // PUT /api/v1/admin/orders/:id/status - doi trang thai don
-router.put('/orders/:id/status', (_req, res) => {
-  // TODO: implement
-  res.status(501).json({ message: 'Chua duoc cai dat' });
+router.put('/orders/:id/status', async (req, res, next) => {
+  const { status, note } = (req.body ?? {}) as { status?: unknown; note?: unknown };
+  if (typeof status !== 'string' || !ORDER_STATUSES.includes(status)) {
+    return res.status(400).json({ error: 'Trạng thái đơn hàng không hợp lệ' });
+  }
+
+  try {
+    const data = await orderModel.adminUpdateOrderStatus(
+      req.params.id,
+      status,
+      req.user?.id ?? '',
+      typeof note === 'string' ? note : undefined,
+    );
+    if (!data) return res.status(404).json({ error: 'Không tìm thấy đơn hàng' });
+    return res.json({ data, message: 'Đã cập nhật trạng thái đơn hàng' });
+  } catch (error) {
+    return next(error);
+  }
 });
 
 // POST /api/v1/admin/inventory/adjust - dieu chinh kho
