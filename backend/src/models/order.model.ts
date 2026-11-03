@@ -307,5 +307,64 @@ export class OrderModel {
 
     return updated as OrderRow;
   }
+
+  // =========== ADMIN: QUAN LY DON HANG ===========
+
+  /** [Admin] Danh sach tat ca don hang (kem items), loc theo trang thai, gioi han so luong */
+  async adminListOrders(params: { status?: string; limit?: number }): Promise<OrderRow[]> {
+    let query = this.db
+      .from('orders')
+      .select('*, order_items(*)')
+      .order('created_at', { ascending: false });
+
+    if (params.status) query = query.eq('status', params.status);
+    if (params.limit && params.limit > 0) query = query.limit(params.limit);
+
+    const { data, error } = await query;
+    if (error) throw new Error(error.message);
+    return (data ?? []) as OrderRow[];
+  }
+
+  /** [Admin] Doi trang thai 1 don hang + ghi lich su trang thai */
+  async adminUpdateOrderStatus(
+    orderId: string,
+    toStatus: string,
+    adminId: string,
+    note?: string
+  ): Promise<OrderRow | null> {
+    const { data: current, error: fetchErr } = await this.db
+      .from('orders')
+      .select('id, status')
+      .eq('id', orderId)
+      .maybeSingle();
+
+    if (fetchErr) throw new Error(fetchErr.message);
+    if (!current) return null;
+
+    const { data: updated, error: updateErr } = await this.db
+      .from('orders')
+      .update({ status: toStatus })
+      .eq('id', orderId)
+      .select('*, order_items(*)')
+      .single();
+
+    if (updateErr || !updated) {
+      throw new Error(updateErr?.message ?? 'Không thể cập nhật trạng thái đơn hàng');
+    }
+
+    // Ghi lich su trang thai (khong lam hong request neu bang chua co)
+    const { error: historyErr } = await this.db.from('order_status_history').insert({
+      order_id: orderId,
+      from_status: current.status,
+      to_status: toStatus,
+      changed_by: adminId || null,
+      note: note ?? null,
+    });
+    if (historyErr) {
+      console.error('Khong ghi duoc lich su trang thai don:', historyErr.message);
+    }
+
+    return updated as OrderRow;
+  }
 }
 
