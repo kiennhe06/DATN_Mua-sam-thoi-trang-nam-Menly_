@@ -97,8 +97,7 @@ class _LoginPageState extends State<LoginPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const Icon(Icons.person_rounded, size: 72, color: Colors.black87),
-                    const SizedBox(height: 16),
+
                     const Text(
                       'Chào mừng bạn quay lại',
                       textAlign: TextAlign.center,
@@ -116,7 +115,7 @@ class _LoginPageState extends State<LoginPage> {
                       keyboardType: TextInputType.emailAddress,
                       decoration: const InputDecoration(
                         labelText: 'Email',
-                        prefixIcon: Icon(Icons.email_outlined),
+                        
                         border: OutlineInputBorder(),
                       ),
                       validator: (value) {
@@ -136,10 +135,10 @@ class _LoginPageState extends State<LoginPage> {
                       obscureText: _obscurePassword,
                       decoration: InputDecoration(
                         labelText: 'Mật khẩu',
-                        prefixIcon: const Icon(Icons.lock_outline),
+                        
                         border: const OutlineInputBorder(),
-                        suffixIcon: IconButton(
-                          icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility),
+                        suffixIcon: TextButton(
+                          child: Text(_obscurePassword ? 'Hiện' : 'Ẩn', style: const TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
                           onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                         ),
                       ),
@@ -163,14 +162,13 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    FilledButton.icon(
+                    FilledButton(
                       onPressed: _isSubmitting ? null : _submitLogin,
                       style: FilledButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         backgroundColor: Colors.black87,
                       ),
-                      icon: const Icon(Icons.login_rounded),
-                      label: Text(_isSubmitting ? 'Đang đăng nhập...' : 'Đăng nhập'),
+                      child: Text(_isSubmitting ? 'Đang đăng nhập...' : 'Đăng nhập'),
                     ),
                     const SizedBox(height: 16),
                     Wrap(

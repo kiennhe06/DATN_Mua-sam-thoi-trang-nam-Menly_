@@ -1,12 +1,19 @@
 import 'package:flutter/foundation.dart';
-import '../../../../core/mock_data.dart';
+import '../../../../core/network/api_client.dart';
 import '../../../../models/cart_item_model.dart';
 import '../../../../models/order_model.dart';
 
 /// Provider quan ly Don hang khach hang & Don hang nhan vien tren app
 /// Phu trach boi: Thanh Toan (AP-DH2, TM07, AP-QT9, AP-TT1)
+/// Ket noi truc tiep cac API:
+/// - GET /api/v1/orders (Danh sach don cua toi)
+/// - POST /api/v1/orders (Tao don hang moi)
+/// - GET /api/v1/orders/:id (Chi tiet don hang)
+/// - PUT /api/v1/orders/:id/cancel (Huy don hang)
 class OrderProvider extends ChangeNotifier {
+  final ApiClient _api = ApiClient();
   List<OrderModel> _orders = [];
+  bool _isLoading = false;
   String _selectedStatusFilter = 'all'; // 'all', 'pending_payment', 'processing', 'shipping', 'delivered', 'canceled'
 
   // Staff management state (AP-QT9)
@@ -14,15 +21,39 @@ class OrderProvider extends ChangeNotifier {
   String _staffSearchQuery = '';
 
   OrderProvider() {
-    _orders = List.from(MockData.initialOrders);
+    loadOrders();
   }
 
   List<OrderModel> get allOrders => _orders;
+  bool get isLoading => _isLoading;
   String get selectedStatusFilter => _selectedStatusFilter;
   String get staffStatusFilter => _staffStatusFilter;
   String get staffSearchQuery => _staffSearchQuery;
 
   // =================== AP-DH2 & TM07: ĐƠN CỦA TÔI ===================
+
+  /// Tai danh sach don hang tu Backend API (GET /api/v1/orders)
+  Future<void> loadOrders() async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      final res = await _api.dio.get('/orders');
+      if (res.statusCode == 200 && res.data != null) {
+        final rawList = res.data['data'] ?? res.data;
+        if (rawList is List) {
+          _orders = rawList
+              .map((item) => OrderModel.fromJson(Map<String, dynamic>.from(item)))
+              .toList();
+        }
+      }
+    } catch (_) {
+      // Giu nguyen don hang cuc bo khi backend chua san sang hoac khong co mang
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
 
   /// Danh sach don hang da loc theo trang thai (TM07)
   List<OrderModel> get myFilteredOrders {
@@ -53,8 +84,13 @@ class OrderProvider extends ChangeNotifier {
     }
   }
 
-  /// Huy don hang (AP-DH2)
-  bool cancelOrder(String orderId, {String reason = 'Khách hàng yêu cầu hủy'}) {
+  OrderModel? findById(String orderId) => getOrderById(orderId);
+
+  Future<bool> cancelOrderApi(String orderId, {String reason = 'Khách hàng yêu cầu hủy'}) =>
+      cancelOrder(orderId, reason: reason);
+
+  /// Huy don hang (AP-DH2) - Dong bo PUT /api/v1/orders/:id/cancel
+  Future<bool> cancelOrder(String orderId, {String reason = 'Khách hàng yêu cầu hủy'}) async {
     final index = _orders.indexWhere((o) => o.id == orderId);
     if (index >= 0) {
       final order = _orders[index];
@@ -62,24 +98,30 @@ class OrderProvider extends ChangeNotifier {
         order.status = OrderStatus.canceled;
         order.cancelReason = reason;
         notifyListeners();
+
+        try {
+          await _api.dio.put('/orders/$orderId/cancel', data: {'reason': reason});
+        } catch (_) {}
+
         return true;
       }
     }
     return false;
   }
 
-  /// Tao don hang moi (tu gio hang hoac mua ngay)
-  OrderModel createOrder({
+  /// Tao don hang moi (tu gio hang hoac mua ngay) - Ket noi POST /api/v1/orders
+  Future<OrderModel> createOrder({
     required List<CartItemModel> items,
     required String shipName,
     required String shipPhone,
     required String shipAddress,
-    required String paymentMethod,
+    required String paymentMethod, // 'cod' hoac 'vnpay'
     required int subtotal,
     required int discountAmount,
     required int shippingFee,
     required int total,
-  }) {
+    String? voucherCode,
+  }) async {
     final orderItems = items.map((item) {
       return OrderItemModel(
         id: 'ord-item-${DateTime.now().millisecondsSinceEpoch}-${item.id}',
@@ -92,7 +134,7 @@ class OrderProvider extends ChangeNotifier {
       );
     }).toList();
 
-    final newOrder = OrderModel(
+    OrderModel createdOrder = OrderModel(
       id: 'ord-${DateTime.now().millisecondsSinceEpoch}',
       code: 'MNL-${DateTime.now().millisecondsSinceEpoch % 100000}',
       status: paymentMethod == 'vnpay' ? OrderStatus.pendingPayment : OrderStatus.processing,
@@ -109,9 +151,41 @@ class OrderProvider extends ChangeNotifier {
       items: orderItems,
     );
 
-    _orders.insert(0, newOrder);
+    // Goi Backend API POST /api/v1/orders
+    try {
+      final res = await _api.dio.post('/orders', data: {
+        'payment_method': paymentMethod,
+        'ship_name': shipName,
+        'ship_phone': shipPhone,
+        'ship_address': shipAddress,
+        'subtotal': subtotal,
+        'shipping_fee': shippingFee,
+        'discount_amount': discountAmount,
+        'total': total,
+        if (voucherCode != null && voucherCode.isNotEmpty) 'voucher_code': voucherCode,
+        'items': items
+            .map((i) => {
+                  'variant_id': i.variantId,
+                  'quantity': i.quantity,
+                  'product_name': i.product.name,
+                  'size': i.size,
+                  'color': i.color,
+                  'unit_price': i.product.price,
+                })
+            .toList(),
+      });
+
+      if ((res.statusCode == 200 || res.statusCode == 201) && res.data != null) {
+        final data = res.data['data'] ?? res.data;
+        if (data is Map<String, dynamic>) {
+          createdOrder = OrderModel.fromJson(data);
+        }
+      }
+    } catch (_) {}
+
+    _orders.insert(0, createdOrder);
     notifyListeners();
-    return newOrder;
+    return createdOrder;
   }
 
   /// AP-TT1: Xac nhan thanh toan VNPay thanh cong

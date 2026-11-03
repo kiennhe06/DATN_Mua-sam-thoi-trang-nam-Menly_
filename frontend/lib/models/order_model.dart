@@ -200,5 +200,14 @@ class OrderModel {
     'items': items.map((i) => i.toJson()).toList(),
     'cancel_reason': cancelReason,
   };
+
+  String get statusStr => status.value;
+  String get recipientName => shipName;
+  String get recipientPhone => shipPhone;
+  String get recipientAddress => shipAddress;
+  String get shippingAddress => shipAddress;
 }
+
+typedef Order = OrderModel;
+typedef OrderItem = OrderItemModel;
 

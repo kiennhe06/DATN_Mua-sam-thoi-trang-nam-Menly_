@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'core/theme/theme_controller.dart';
+import 'core/widgets/app_pill_nav.dart';
 import 'features/address/presentation/providers/address_provider.dart';
+import 'features/auth/presentation/pages/profile_page.dart';
+import 'features/auth/presentation/providers/auth_provider.dart';
 import 'features/cart/presentation/pages/cart_page.dart';
 import 'features/cart/presentation/providers/cart_provider.dart';
 import 'features/home/presentation/pages/home_page.dart';
-import 'features/order/presentation/pages/my_orders_page.dart';
 import 'features/order/presentation/providers/order_provider.dart';
-import 'features/product/presentation/pages/product_list_page.dart';
 import 'features/product/presentation/providers/product_provider.dart';
 import 'features/voucher/presentation/providers/voucher_provider.dart';
 import 'features/wishlist/presentation/pages/wishlist_page.dart';
@@ -24,6 +26,8 @@ class MenlyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        ChangeNotifierProvider(create: (_) => ThemeController()..load()),
+        ChangeNotifierProvider(create: (_) => AuthProvider()..init()),
         ChangeNotifierProvider(create: (_) => ProductProvider()),
         ChangeNotifierProvider(create: (_) => CartProvider()),
         ChangeNotifierProvider(create: (_) => WishlistProvider()),
@@ -31,30 +35,23 @@ class MenlyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => OrderProvider()),
         ChangeNotifierProvider(create: (_) => VoucherProvider()),
       ],
-      child: MaterialApp(
-        title: 'Menly',
-        debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-          useMaterial3: true,
-          colorScheme: ColorScheme.fromSeed(
-            seedColor: Colors.black,
-            primary: Colors.black87,
-          ),
-          scaffoldBackgroundColor: const Color(0xFFF8F9FA),
-          appBarTheme: const AppBarTheme(
-            backgroundColor: Colors.white,
-            foregroundColor: Colors.black87,
-            elevation: 0,
-            scrolledUnderElevation: 1,
-          ),
-        ),
-        home: const MainNavigationShell(),
+      child: Consumer<ThemeController>(
+        builder: (context, themeCtrl, _) {
+          return MaterialApp(
+            title: 'Menly',
+            debugShowCheckedModeBanner: false,
+            theme: themeCtrl.lightTheme,
+            darkTheme: themeCtrl.darkTheme,
+            themeMode: themeCtrl.mode,
+            home: const MainNavigationShell(),
+          );
+        },
       ),
     );
   }
 }
 
-/// Khung dieu huong chinh voi BottomNavigationBar
+/// Khung dieu huong chinh voi thanh Tab AppPillNav noi (4 tab: Trang chu, Yeu thich, Gio hang, Ca nhan)
 class MainNavigationShell extends StatefulWidget {
   const MainNavigationShell({super.key});
 
@@ -67,10 +64,9 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
 
   final List<Widget> _pages = const [
     HomePage(),
-    ProductListPage(),
     WishlistPage(),
     CartPage(),
-    MyOrdersPage(),
+    ProfilePage(),
   ];
 
   @override
@@ -79,55 +75,36 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
     final wishlist = context.watch<WishlistProvider>();
 
     return Scaffold(
+      extendBody: true,
       body: IndexedStack(
         index: _currentIndex,
         children: _pages,
       ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _currentIndex,
-        onDestinationSelected: (idx) => setState(() => _currentIndex = idx),
-        indicatorColor: Colors.grey.shade200,
-        destinations: [
-          const NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home),
+      bottomNavigationBar: AppPillNav(
+        currentIndex: _currentIndex,
+        onTap: (idx) => setState(() => _currentIndex = idx),
+        items: [
+          const PillNavItem(
+            Icons.home_outlined,
+            selectedIcon: Icons.home,
             label: 'Trang chủ',
           ),
-          const NavigationDestination(
-            icon: Icon(Icons.checkroom_outlined),
-            selectedIcon: Icon(Icons.checkroom),
-            label: 'Sản phẩm',
-          ),
-          NavigationDestination(
-            icon: Badge(
-              isLabelVisible: wishlist.count > 0,
-              label: Text('${wishlist.count}'),
-              child: const Icon(Icons.favorite_border),
-            ),
-            selectedIcon: Badge(
-              isLabelVisible: wishlist.count > 0,
-              label: Text('${wishlist.count}'),
-              child: const Icon(Icons.favorite, color: Colors.red),
-            ),
+          PillNavItem(
+            Icons.favorite_border,
+            selectedIcon: Icons.favorite,
+            badge: wishlist.count,
             label: 'Yêu thích',
           ),
-          NavigationDestination(
-            icon: Badge(
-              isLabelVisible: cart.totalItemCount > 0,
-              label: Text('${cart.totalItemCount}'),
-              child: const Icon(Icons.shopping_bag_outlined),
-            ),
-            selectedIcon: Badge(
-              isLabelVisible: cart.totalItemCount > 0,
-              label: Text('${cart.totalItemCount}'),
-              child: const Icon(Icons.shopping_bag),
-            ),
+          PillNavItem(
+            Icons.shopping_bag_outlined,
+            selectedIcon: Icons.shopping_bag,
+            badge: cart.totalItemCount,
             label: 'Giỏ hàng',
           ),
-          const NavigationDestination(
-            icon: Icon(Icons.receipt_long_outlined),
-            selectedIcon: Icon(Icons.receipt_long),
-            label: 'Đơn hàng',
+          const PillNavItem(
+            Icons.person_outline,
+            selectedIcon: Icons.person,
+            label: 'Cá nhân',
           ),
         ],
       ),

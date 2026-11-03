@@ -53,17 +53,14 @@ class AboutPage extends StatelessWidget {
           ),
           const SizedBox(height: 20),
           _infoCard(
-            icon: Icons.checkroom,
             title: 'Sản phẩm chọn lọc',
             body: 'Mỗi mẫu được chọn theo xu hướng nhưng vẫn dễ phối. Ưu tiên vải thoáng, đứng form và bền sau nhiều lần giặt.',
           ),
           _infoCard(
-            icon: Icons.straighten,
             title: 'Size rõ ràng',
             body: 'Bảng size theo chiều cao – cân nặng giúp bạn chọn vừa hơn: Size M (50–62kg), L (63–72kg), XL (73–82kg).',
           ),
           _infoCard(
-            icon: Icons.local_shipping_outlined,
             title: 'Giao hàng toàn quốc',
             body: 'Đơn tiêu chuẩn 25.000 đ, hỏa tốc 45.000 đ. Miễn phí vận chuyển khi đơn từ 499.000 đ.',
           ),
@@ -78,7 +75,7 @@ class AboutPage extends StatelessWidget {
     );
   }
 
-  Widget _infoCard({required IconData icon, required String title, required String body}) {
+  Widget _infoCard({required String title, required String body}) {
     return Card(
       elevation: 0,
       margin: const EdgeInsets.only(bottom: 12),
@@ -87,16 +84,11 @@ class AboutPage extends StatelessWidget {
         side: BorderSide(color: Colors.grey.shade200),
       ),
       child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: Colors.grey.shade100,
-          child: Icon(icon, color: Colors.black87),
-        ),
         title: Text(title, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
         subtitle: Padding(
           padding: const EdgeInsets.only(top: 4),
           child: Text(body, style: TextStyle(fontSize: 13, color: Colors.grey.shade700, height: 1.4)),
         ),
-        isThreeLine: true,
       ),
     );
   }

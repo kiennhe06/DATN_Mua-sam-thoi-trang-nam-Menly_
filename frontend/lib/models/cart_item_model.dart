@@ -21,6 +21,7 @@ class CartItemModel {
   });
 
   int get totalPrice => product.price * quantity;
+  int get subtotal => totalPrice;
 
   factory CartItemModel.fromJson(Map<String, dynamic> json) {
     return CartItemModel(

@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:menly_app/core/theme/app_theme.dart';
+import 'package:menly_app/models/cart_item_model.dart';
 import 'package:menly_app/models/product_model.dart';
 import 'package:menly_app/features/cart/presentation/providers/cart_provider.dart';
+import 'package:menly_app/features/order/presentation/pages/checkout_page.dart';
 import 'package:menly_app/features/wishlist/presentation/providers/wishlist_provider.dart';
 import 'package:menly_app/features/product/presentation/providers/product_provider.dart';
 
-/// Trang Chi tiet san pham (TM02: Da xem gan day, AP-YT1: Yeu thich, AP-GH1: Them vao gio)
+/// Trang Chi tiet san pham cao cap (TM02: Da xem gan day, AP-YT1: Yeu thich, AP-GH1: Them vao gio & Mua ngay)
 class ProductDetailPage extends StatefulWidget {
   final ProductModel product;
 
@@ -26,7 +29,6 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
   void initState() {
     super.initState();
     _product = widget.product;
-    // TM02: Tu dong them san pham vao danh sach da xem gan day va goi API GET /api/v1/products/:id
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final productProv = context.read<ProductProvider>();
       productProv.addToRecentlyViewed(_product);
@@ -38,10 +40,10 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
       if (detail != null && mounted) {
         setState(() {
           _product = detail;
-          if (_product.variants.isNotEmpty) {
-            _selectedSize = _product.variants.first.size;
-            _selectedColor = _product.variants.first.color;
-          }
+          final sList = _product.variants.map((v) => v.size).toSet().take(2).toList();
+          final cList = _product.variants.map((v) => v.color).toSet().take(2).toList();
+          if (sList.isNotEmpty) _selectedSize = sList.first;
+          if (cList.isNotEmpty) _selectedColor = cList.first;
         });
       }
 
@@ -51,10 +53,76 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
       }
     });
 
-    if (_product.variants.isNotEmpty) {
-      _selectedSize = _product.variants.first.size;
-      _selectedColor = _product.variants.first.color;
-    }
+    final sInit = widget.product.variants.map((v) => v.size).toSet().take(2).toList();
+    final cInit = widget.product.variants.map((v) => v.color).toSet().take(2).toList();
+    if (sInit.isNotEmpty) _selectedSize = sInit.first;
+    if (cInit.isNotEmpty) _selectedColor = cInit.first;
+  }
+
+  void _showSizeGuideModal(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Bảng quy đổi kích cỡ chuẩn Menly',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    child: const Text('Đóng', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Table(
+                border: TableBorder.all(color: AppTheme.border),
+                children: const [
+                  TableRow(
+                    decoration: BoxDecoration(color: Color(0xFFF1F5F9)),
+                    children: [
+                      Padding(padding: EdgeInsets.all(8), child: Text('Size', style: TextStyle(fontWeight: FontWeight.bold))),
+                      Padding(padding: EdgeInsets.all(8), child: Text('Chiều cao', style: TextStyle(fontWeight: FontWeight.bold))),
+                      Padding(padding: EdgeInsets.all(8), child: Text('Cân nặng', style: TextStyle(fontWeight: FontWeight.bold))),
+                    ],
+                  ),
+                  TableRow(
+                    children: [
+                      Padding(padding: EdgeInsets.all(8), child: Text('M')),
+                      Padding(padding: EdgeInsets.all(8), child: Text('1m65 - 1m72')),
+                      Padding(padding: EdgeInsets.all(8), child: Text('59 - 68 kg')),
+                    ],
+                  ),
+                  TableRow(
+                    children: [
+                      Padding(padding: EdgeInsets.all(8), child: Text('L')),
+                      Padding(padding: EdgeInsets.all(8), child: Text('1m72 - 1m78')),
+                      Padding(padding: EdgeInsets.all(8), child: Text('69 - 76 kg')),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Text(
+                '* Nếu phân vân giữa 2 kích cỡ, bạn nên chọn kích cỡ lớn hơn để mặc thoải mái.',
+                style: TextStyle(color: Colors.grey.shade600, fontSize: 12, fontStyle: FontStyle.italic),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -64,27 +132,37 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
     final cart = context.read<CartProvider>();
     final isFav = wishlist.isFavorite(p.id);
 
-    final availableSizes = p.variants.map((v) => v.size).toSet().toList();
-    final availableColors = p.variants.map((v) => v.color).toSet().toList();
+    // Bảng sản phẩm chi tiết chỉ hiển thị 2 size và 2 màu
+    final rawSizes = p.variants.map((v) => v.size).toSet().toList();
+    final availableSizes = (rawSizes.isEmpty ? ['M', 'L'] : rawSizes).take(2).toList();
+
+    final rawColors = p.variants.map((v) => v.color).toSet().toList();
+    final availableColors = (rawColors.isEmpty ? ['Đen', 'Trắng'] : rawColors).take(2).toList();
+
+    if (!availableSizes.contains(_selectedSize) && availableSizes.isNotEmpty) {
+      _selectedSize = availableSizes.first;
+    }
+    if (!availableColors.contains(_selectedColor) && availableColors.isNotEmpty) {
+      _selectedColor = availableColors.first;
+    }
 
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
         title: Text(p.name),
         actions: [
-          // AP-YT1: Nut trai tim yeu thich
+          // Nút yêu thích giữ lại theo yêu cầu người dùng
           IconButton(
             icon: Icon(
               isFav ? Icons.favorite : Icons.favorite_border,
-              color: isFav ? Colors.red : Colors.black87,
+              color: isFav ? AppTheme.accentRed : AppTheme.textPrimary,
             ),
             onPressed: () async {
               final added = await wishlist.toggleFavorite(p);
               if (!context.mounted) return;
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text(added
-                      ? 'Đã thêm "${p.name}" vào danh sách yêu thích'
-                      : 'Đã xóa khỏi danh sách yêu thích'),
+                  content: Text(added ? 'Đã lưu "${p.name}" vào danh sách yêu thích' : 'Đã xóa khỏi danh sách yêu thích'),
                   duration: const Duration(seconds: 2),
                 ),
               );
@@ -96,127 +174,162 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Anh san pham
-            Image.network(
-              p.thumbnailUrl,
-              width: double.infinity,
-              height: 380,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Container(
+            // 1. ANH SAN PHAM
+            Hero(
+              tag: 'product-${p.id}',
+              child: Image.network(
+                p.thumbnailUrl,
                 width: double.infinity,
-                height: 380,
-                color: Colors.grey.shade200,
-                child: const Icon(Icons.checkroom, size: 80, color: Colors.grey),
+                height: 400,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Container(
+                  width: double.infinity,
+                  height: 400,
+                  color: Colors.grey.shade100,
+                  alignment: Alignment.center,
+                  child: const Text('Menly', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppTheme.textMuted)),
+                ),
               ),
             ),
 
             Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Danh muc va danh gia
+                  // Danh muc, danh gia
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
-                          color: Colors.grey.shade100,
-                          borderRadius: BorderRadius.circular(4),
+                          color: AppTheme.primary.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
-                          p.categoryName,
-                          style: TextStyle(fontSize: 12, color: Colors.grey.shade700, fontWeight: FontWeight.w600),
+                          p.categoryName.toUpperCase(),
+                          style: const TextStyle(fontSize: 11, color: AppTheme.primary, fontWeight: FontWeight.bold),
                         ),
                       ),
                       Row(
                         children: [
-                          const Icon(Icons.star, color: Colors.amber, size: 18),
-                          const SizedBox(width: 4),
-                          Text('${p.ratingAvg} (${p.ratingCount} đánh giá)',
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                          const Text('★ ', style: TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 16)),
+                          Text('${p.ratingAvg}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                          Text(' (${p.ratingCount} đánh giá)', style: const TextStyle(color: AppTheme.textSecondary, fontSize: 13)),
                         ],
                       ),
                     ],
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 12),
 
                   // Ten san pham
                   Text(
                     p.name,
-                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                    style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, letterSpacing: -0.3, height: 1.3),
                   ),
                   const SizedBox(height: 8),
 
                   // Gia tien
-                  Text(
-                    '${p.price} đ',
-                    style: const TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.redAccent,
-                    ),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.baseline,
+                    textBaseline: TextBaseline.alphabetic,
+                    children: [
+                      Text(
+                        '${p.price} đ',
+                        style: const TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.w900,
+                          color: AppTheme.accentRed,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Text(
+                        '${(p.price * 1.25).toInt()} đ',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: AppTheme.textMuted,
+                          decoration: TextDecoration.lineThrough,
+                        ),
+                      ),
+                    ],
                   ),
-                  const Divider(height: 24),
+                  const Divider(height: 32),
 
-                  // Chon Size
-                  const Text('Chọn kích cỡ (Size):', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                  const SizedBox(height: 8),
+                  // 2. CHON KICH CO (2 SIZE)
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('Kích cỡ:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                      TextButton(
+                        style: TextButton.styleFrom(visualDensity: VisualDensity.compact, padding: EdgeInsets.zero),
+                        onPressed: () => _showSizeGuideModal(context),
+                        child: const Text('Bảng quy đổi size', style: TextStyle(fontSize: 12, color: AppTheme.primaryAccent, fontWeight: FontWeight.bold)),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
                   Wrap(
-                    spacing: 8,
-                    children: (availableSizes.isEmpty ? ['M', 'L', 'XL'] : availableSizes).map((size) {
+                    spacing: 10,
+                    children: availableSizes.map((size) {
                       final isSelected = _selectedSize == size;
                       return ChoiceChip(
-                        label: Text(size, style: TextStyle(color: isSelected ? Colors.white : Colors.black87)),
+                        label: Text(size, style: TextStyle(color: isSelected ? Colors.white : AppTheme.textPrimary, fontWeight: FontWeight.w600)),
                         selected: isSelected,
-                        selectedColor: Colors.black87,
+                        selectedColor: AppTheme.primary,
                         backgroundColor: Colors.grey.shade100,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                         onSelected: (_) => setState(() => _selectedSize = size),
                       );
                     }).toList(),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 20),
 
-                  // Chon Mau
-                  const Text('Chọn màu sắc:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                  // 3. CHON MAU SAC (2 MAU)
+                  const Text('Màu sắc:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                   const SizedBox(height: 8),
                   Wrap(
-                    spacing: 8,
-                    children: (availableColors.isEmpty ? ['Đen', 'Trắng'] : availableColors).map((color) {
+                    spacing: 10,
+                    children: availableColors.map((color) {
                       final isSelected = _selectedColor == color;
                       return ChoiceChip(
-                        label: Text(color, style: TextStyle(color: isSelected ? Colors.white : Colors.black87)),
+                        label: Text(color, style: TextStyle(color: isSelected ? Colors.white : AppTheme.textPrimary, fontWeight: FontWeight.w600)),
                         selected: isSelected,
-                        selectedColor: Colors.black87,
+                        selectedColor: AppTheme.primary,
                         backgroundColor: Colors.grey.shade100,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                         onSelected: (_) => setState(() => _selectedColor = color),
                       );
                     }).toList(),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 20),
 
-                  // Chon so luong
+                  // 4. CHON SO LUONG
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       const Text('Số lượng:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                       Container(
                         decoration: BoxDecoration(
-                          border: Border.all(color: Colors.grey.shade300),
-                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: AppTheme.border),
+                          borderRadius: BorderRadius.circular(8),
                         ),
                         child: Row(
                           children: [
                             IconButton(
-                              icon: const Icon(Icons.remove, size: 18),
+                              icon: const Text('-', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                               onPressed: () {
                                 if (_quantity > 1) setState(() => _quantity--);
                               },
                             ),
-                            Text('$_quantity', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 12),
+                              child: Text('$_quantity', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                            ),
                             IconButton(
-                              icon: const Icon(Icons.add, size: 18),
+                              icon: const Text('+', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                               onPressed: () {
                                 if (_quantity < 20) setState(() => _quantity++);
                               },
@@ -226,14 +339,35 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                       ),
                     ],
                   ),
-                  const Divider(height: 28),
+                  const Divider(height: 36),
 
-                  // Mo ta chi tiet
-                  const Text('Mô tả sản phẩm', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  // 5. CHINH SACH THOI TRANG MENLY
+                  Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: AppTheme.scaffoldBackground,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AppTheme.border),
+                    ),
+                    child: const Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _DetailPerk(title: 'Đổi trả 30 ngày', subtitle: 'Miễn phí đổi size/màu tận nhà'),
+                        Divider(height: 16),
+                        _DetailPerk(title: 'Giao nhanh 24h', subtitle: 'Nội thành nhận ngay trong ngày'),
+                        Divider(height: 16),
+                        _DetailPerk(title: 'Chất lượng cam kết', subtitle: '100% Cotton chải kỹ, thấm hút tốt'),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  // 6. MO TA CHI TIET
+                  const Text('Mô tả sản phẩm', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
                   const SizedBox(height: 8),
                   Text(
                     p.description,
-                    style: TextStyle(fontSize: 14, color: Colors.grey.shade800, height: 1.5),
+                    style: const TextStyle(fontSize: 14, height: 1.6, color: AppTheme.textSecondary),
                   ),
                   const SizedBox(height: 30),
                   _buildRelatedProducts(),
@@ -244,55 +378,91 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
           ],
         ),
       ),
+
+      // Thanh thao tac duoi cung: Nut Them vao gio & Nut Mua ngay
       bottomNavigationBar: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Colors.white,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.08),
-              blurRadius: 8,
-              offset: const Offset(0, -2),
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 10,
+              offset: const Offset(0, -4),
             ),
           ],
         ),
         child: SafeArea(
           child: Row(
             children: [
-              // Nut trai tim
-              Container(
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey.shade300),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: IconButton(
-                  icon: Icon(isFav ? Icons.favorite : Icons.favorite_border,
-                      color: isFav ? Colors.red : Colors.black87),
-                  onPressed: () => wishlist.toggleFavorite(p),
-                ),
-              ),
-              const SizedBox(width: 12),
-              // Nut them vao gio hang (AP-GH1)
+              // Nut Them vao gio
               Expanded(
-                child: ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.black87,
-                    foregroundColor: Colors.white,
+                child: OutlinedButton(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppTheme.primary,
+                    side: const BorderSide(color: AppTheme.primary, width: 1.5),
                     padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
-                  icon: const Icon(Icons.add_shopping_cart),
-                  label: const Text('Thêm vào giỏ hàng', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
                   onPressed: () {
-                    cart.addToCart(p, size: _selectedSize, color: _selectedColor, quantity: _quantity);
+                    cart.addToCart(
+                      p,
+                      size: _selectedSize,
+                      color: _selectedColor,
+                      quantity: _quantity,
+                    );
+
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text('Đã thêm $_quantity x "${p.name}" vào giỏ hàng'),
-                        backgroundColor: Colors.black87,
+                        backgroundColor: AppTheme.primary,
                         duration: const Duration(seconds: 2),
                       ),
                     );
                   },
+                  child: const Text('Thêm vào giỏ', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                ),
+              ),
+              const SizedBox(width: 10),
+
+              // Nut Mua ngay
+              Expanded(
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  onPressed: () {
+                    // Chuyen truc tiep sang man hinh dat hang Checkout
+                    String variantId = '';
+                    if (p.variants.isNotEmpty) {
+                      try {
+                        variantId = p.variants.firstWhere((v) => v.size == _selectedSize && v.color == _selectedColor).id;
+                      } catch (_) {
+                        variantId = p.variants.first.id;
+                      }
+                    }
+
+                    final directItem = CartItemModel(
+                      id: 'buy-now-${DateTime.now().millisecondsSinceEpoch}',
+                      product: p,
+                      variantId: variantId,
+                      size: _selectedSize,
+                      color: _selectedColor,
+                      quantity: _quantity,
+                      isSelected: true,
+                    );
+
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => CheckoutPage(customItems: [directItem]),
+                      ),
+                    );
+                  },
+                  child: const Text('Mua ngay', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                 ),
               ),
             ],
@@ -365,7 +535,9 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                                 width: 150,
                                 height: 140,
                                 color: Colors.grey.shade200,
-                                child: const Icon(Icons.checkroom, size: 30),
+                                child: const Center(
+                                  child: Text('Menly', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold, fontSize: 13)),
+                                ),
                               ),
                             ),
                           ),
@@ -418,6 +590,25 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
             },
           ),
         ),
+      ],
+    );
+  }
+}
+
+class _DetailPerk extends StatelessWidget {
+  final String title;
+  final String subtitle;
+
+  const _DetailPerk({required this.title, required this.subtitle});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.textPrimary)),
+        const SizedBox(height: 2),
+        Text(subtitle, style: const TextStyle(fontSize: 11, color: AppTheme.textSecondary)),
       ],
     );
   }

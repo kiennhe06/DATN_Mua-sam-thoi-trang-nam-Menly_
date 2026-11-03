@@ -81,7 +81,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const Icon(Icons.security_rounded, size: 72, color: Colors.black87),
+                    
                     const SizedBox(height: 20),
                     const Text(
                       'Bảo mật tài khoản',
@@ -94,12 +94,9 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                       obscureText: _obscureCurrent,
                       decoration: InputDecoration(
                         labelText: 'Mật khẩu hiện tại',
-                        prefixIcon: const Icon(Icons.lock_outline),
+                        
                         border: const OutlineInputBorder(),
-                        suffixIcon: IconButton(
-                          icon: Icon(_obscureCurrent ? Icons.visibility_off : Icons.visibility),
-                          onPressed: () => setState(() => _obscureCurrent = !_obscureCurrent),
-                        ),
+                        suffixIcon: TextButton(child: Text(_obscureCurrent ? 'Hiện' : 'Ẩn', style: const TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)), onPressed: () => setState(() => _obscureCurrent = !_obscureCurrent)),
                       ),
                       validator: (value) => (value == null || value.trim().isEmpty) ? 'Vui lòng nhập mật khẩu hiện tại' : null,
                     ),
@@ -109,12 +106,9 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                       obscureText: _obscureNew,
                       decoration: InputDecoration(
                         labelText: 'Mật khẩu mới',
-                        prefixIcon: const Icon(Icons.lock_reset_rounded),
+                        
                         border: const OutlineInputBorder(),
-                        suffixIcon: IconButton(
-                          icon: Icon(_obscureNew ? Icons.visibility_off : Icons.visibility),
-                          onPressed: () => setState(() => _obscureNew = !_obscureNew),
-                        ),
+                        suffixIcon: TextButton(child: Text(_obscureNew ? 'Hiện' : 'Ẩn', style: const TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)), onPressed: () => setState(() => _obscureNew = !_obscureNew)),
                       ),
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) return 'Vui lòng nhập mật khẩu mới';
@@ -128,12 +122,9 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                       obscureText: _obscureConfirm,
                       decoration: InputDecoration(
                         labelText: 'Xác nhận mật khẩu mới',
-                        prefixIcon: const Icon(Icons.check_circle_outline),
+                        
                         border: const OutlineInputBorder(),
-                        suffixIcon: IconButton(
-                          icon: Icon(_obscureConfirm ? Icons.visibility_off : Icons.visibility),
-                          onPressed: () => setState(() => _obscureConfirm = !_obscureConfirm),
-                        ),
+                        suffixIcon: TextButton(child: Text(_obscureConfirm ? 'Hiện' : 'Ẩn', style: const TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)), onPressed: () => setState(() => _obscureConfirm = !_obscureConfirm)),
                       ),
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) return 'Vui lòng xác nhận mật khẩu mới';
@@ -142,14 +133,14 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                       },
                     ),
                     const SizedBox(height: 24),
-                    FilledButton.icon(
+                    FilledButton(
                       onPressed: _isSubmitting ? null : _submit,
                       style: FilledButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         backgroundColor: Colors.black87,
                       ),
-                      icon: const Icon(Icons.save_rounded),
-                      label: Text(_isSubmitting ? 'Đang cập nhật...' : 'Cập nhật mật khẩu'),
+                      
+                      child: Text(_isSubmitting ? 'Đang cập nhật...' : 'Cập nhật mật khẩu'),
                     ),
                   ],
                 ),

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:menly_app/core/mock_data.dart';
 import 'package:menly_app/features/cart/presentation/providers/cart_provider.dart';
+import 'package:menly_app/features/voucher/presentation/providers/voucher_provider.dart';
 
 /// Bottom Sheet chon hoac nhap ma giam gia khi dat hang (AP-VC1)
 class VoucherSelectSheet extends StatefulWidget {
@@ -40,7 +40,8 @@ class _VoucherSelectSheetState extends State<VoucherSelectSheet> {
   @override
   Widget build(BuildContext context) {
     final cart = context.watch<CartProvider>();
-    final vouchers = MockData.vouchers;
+    final voucherProv = context.watch<VoucherProvider>();
+    final vouchers = voucherProv.vouchers;
 
     return Container(
       padding: EdgeInsets.only(
@@ -63,9 +64,9 @@ class _VoucherSelectSheetState extends State<VoucherSelectSheet> {
                 'Mã giảm giá Menly',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
-              IconButton(
-                icon: const Icon(Icons.close),
+              TextButton(
                 onPressed: () => Navigator.pop(context),
+                child: const Text('Đóng', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
               ),
             ],
           ),
@@ -78,7 +79,7 @@ class _VoucherSelectSheetState extends State<VoucherSelectSheet> {
                   controller: _codeController,
                   textCapitalization: TextCapitalization.characters,
                   decoration: InputDecoration(
-                    hintText: 'Nhập mã voucher (VD: WELCOME10)',
+                    hintText: 'Nhập mã voucher (VD: WELCOME20, MENLY10)',
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                     contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                     isDense: true,
@@ -98,42 +99,41 @@ class _VoucherSelectSheetState extends State<VoucherSelectSheet> {
               ),
             ],
           ),
-          if (_errorMessage != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: Text(
-                _errorMessage!,
-                style: const TextStyle(color: Colors.red, fontSize: 13),
-              ),
+          if (_errorMessage != null) ...[
+            const SizedBox(height: 6),
+            Text(
+              _errorMessage!,
+              style: const TextStyle(color: Colors.red, fontSize: 12),
             ),
+          ],
           const SizedBox(height: 16),
           const Text(
-            'Mã giảm giá có sẵn cho bạn:',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+            'Mã giảm giá khả dụng',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
           ),
           const SizedBox(height: 8),
+          // Danh sach voucher
           Flexible(
             child: ListView.separated(
               shrinkWrap: true,
               itemCount: vouchers.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 8),
-              itemBuilder: (ctx, i) {
-                final v = vouchers[i];
+              separatorBuilder: (_, __) => const SizedBox(height: 10),
+              itemBuilder: (ctx, index) {
+                final v = vouchers[index];
                 final isSelected = cart.appliedVoucher?.id == v.id;
-                final isEligible = cart.selectedSubtotal >= v.minOrderValue;
-
+                
                 return InkWell(
                   onTap: () {
                     final err = cart.applyVoucher(v);
                     if (err != null) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text(err), backgroundColor: Colors.orange),
+                        SnackBar(content: Text(err), backgroundColor: Colors.red),
                       );
                     } else {
                       Navigator.pop(context);
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text('Đã chọn voucher: ${v.code}'),
+                          content: Text('Đã áp dụng mã "${v.code}"!'),
                           backgroundColor: Colors.green,
                         ),
                       );
@@ -144,31 +144,23 @@ class _VoucherSelectSheetState extends State<VoucherSelectSheet> {
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       border: Border.all(
-                        color: isSelected
-                            ? Colors.black
-                            : isEligible
-                                ? Colors.grey.shade300
-                                : Colors.grey.shade200,
+                        color: isSelected ? Colors.deepOrange : Colors.grey.shade300,
                         width: isSelected ? 2 : 1,
                       ),
                       borderRadius: BorderRadius.circular(10),
-                      color: isSelected
-                          ? Colors.amber.shade50
-                          : isEligible
-                              ? Colors.white
-                              : Colors.grey.shade50,
+                      color: isSelected ? Colors.amber.shade50 : Colors.white,
                     ),
                     child: Row(
                       children: [
                         Container(
-                          padding: const EdgeInsets.all(10),
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                           decoration: BoxDecoration(
-                            color: isEligible ? Colors.orange.shade100 : Colors.grey.shade200,
-                            borderRadius: BorderRadius.circular(8),
+                            color: Colors.orange.shade100,
+                            borderRadius: BorderRadius.circular(6),
                           ),
-                          child: Icon(
-                            Icons.confirmation_num_outlined,
-                            color: isEligible ? Colors.deepOrange : Colors.grey,
+                          child: Text(
+                            v.discountType == 'percentage' ? '${v.discountValue}%' : '${v.discountValue ~/ 1000}k',
+                            style: const TextStyle(color: Colors.deepOrange, fontWeight: FontWeight.bold, fontSize: 13),
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -199,15 +191,15 @@ class _VoucherSelectSheetState extends State<VoucherSelectSheet> {
                               Text(v.title, style: TextStyle(fontSize: 13, color: Colors.grey.shade800)),
                               const SizedBox(height: 4),
                               Text(
-                                'Đơn tối thiểu ${v.minOrderValue} đ • HSD: ${v.endDate.day}/${v.endDate.month}/${v.endDate.year}',
-                                style: TextStyle(fontSize: 11, color: isEligible ? Colors.grey.shade600 : Colors.red),
+                                'Không giới hạn đơn tối thiểu • HSD: ${v.endDate.day}/${v.endDate.month}/${v.endDate.year}',
+                                style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
                               ),
                             ],
                           ),
                         ),
-                        Icon(
-                          isSelected ? Icons.check_circle : Icons.radio_button_unchecked,
-                          color: isSelected ? Colors.deepOrange : Colors.grey,
+                        Text(
+                          isSelected ? '✓' : '',
+                          style: const TextStyle(color: Colors.deepOrange, fontWeight: FontWeight.bold, fontSize: 20),
                         ),
                       ],
                     ),

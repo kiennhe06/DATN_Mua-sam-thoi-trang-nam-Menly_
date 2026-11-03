@@ -46,7 +46,7 @@ class AddressPage extends StatelessWidget {
                           addressToEdit == null ? 'Thêm địa chỉ nhận hàng' : 'Cập nhật địa chỉ',
                           style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                         ),
-                        IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(ctx)),
+                        TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Đóng', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold))),
                       ],
                     ),
                     const SizedBox(height: 12),
@@ -188,16 +188,14 @@ class AddressPage extends StatelessWidget {
         centerTitle: true,
       ),
       body: addrProv.addresses.isEmpty
-          ? Center(
+          ? const Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.location_off_outlined, size: 70, color: Colors.grey.shade400),
-                  const SizedBox(height: 12),
-                  const Text('Bạn chưa có địa chỉ nhận hàng nào',
+                  Text('Bạn chưa có địa chỉ nhận hàng nào',
                       style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 6),
-                  const Text('Thêm địa chỉ ngay để thuận tiện khi mua sắm nhé!'),
+                  SizedBox(height: 6),
+                  Text('Thêm địa chỉ ngay để thuận tiện khi mua sắm nhé!'),
                 ],
               ),
             )
@@ -278,15 +276,13 @@ class AddressPage extends StatelessWidget {
                                 onPressed: () => addrProv.setDefaultAddress(addr.id),
                                 child: const Text('Đặt làm mặc định', style: TextStyle(fontSize: 12, color: Colors.grey)),
                               ),
-                            IconButton(
-                              icon: const Icon(Icons.edit_outlined, size: 20, color: Colors.blueGrey),
-                              tooltip: 'Chỉnh sửa',
+                            TextButton(
                               onPressed: () => _showAddressDialog(context, addressToEdit: addr),
+                              child: const Text('Sửa', style: TextStyle(color: Colors.blueGrey, fontWeight: FontWeight.bold)),
                             ),
-                            IconButton(
-                              icon: const Icon(Icons.delete_outline, size: 20, color: Colors.redAccent),
-                              tooltip: 'Xóa',
+                            TextButton(
                               onPressed: () => addrProv.deleteAddress(addr.id),
+                              child: const Text('Xóa', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
                             ),
                           ],
                         ),
@@ -299,15 +295,14 @@ class AddressPage extends StatelessWidget {
       bottomNavigationBar: Container(
         padding: const EdgeInsets.all(16),
         child: SafeArea(
-          child: ElevatedButton.icon(
+          child: ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.black87,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 14),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             ),
-            icon: const Icon(Icons.add_location_alt_outlined),
-            label: const Text('Thêm địa chỉ nhận hàng mới', style: TextStyle(fontWeight: FontWeight.bold)),
+            child: const Text('Thêm địa chỉ nhận hàng mới', style: TextStyle(fontWeight: FontWeight.bold)),
             onPressed: () => _showAddressDialog(context),
           ),
         ),
