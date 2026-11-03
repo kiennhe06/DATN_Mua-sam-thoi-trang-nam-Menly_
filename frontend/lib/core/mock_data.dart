@@ -44,9 +44,14 @@ class MockData {
       isNew: true,
       isBestSeller: true,
       variants: [
+        ProductVariantModel(id: 'v-01-s', size: 'S', color: 'Trắng', sku: 'SM-TRANG-S', stock: 35),
         ProductVariantModel(id: 'v-01-m', size: 'M', color: 'Trắng', sku: 'SM-TRANG-M', stock: 45),
         ProductVariantModel(id: 'v-01-l', size: 'L', color: 'Trắng', sku: 'SM-TRANG-L', stock: 50),
         ProductVariantModel(id: 'v-01-xl', size: 'XL', color: 'Trắng', sku: 'SM-TRANG-XL', stock: 25),
+        ProductVariantModel(id: 'v-01-2xl', size: '2XL', color: 'Trắng', sku: 'SM-TRANG-2XL', stock: 20),
+        ProductVariantModel(id: 'v-01-den-m', size: 'M', color: 'Đen', sku: 'SM-DEN-M', stock: 40),
+        ProductVariantModel(id: 'v-01-den-l', size: 'L', color: 'Đen', sku: 'SM-DEN-L', stock: 40),
+        ProductVariantModel(id: 'v-01-navy-m', size: 'M', color: 'Xanh Navy', sku: 'SM-NAVY-M', stock: 30),
       ],
     ),
     const ProductModel(
@@ -62,8 +67,13 @@ class MockData {
       isNew: true,
       isBestSeller: false,
       variants: [
+        ProductVariantModel(id: 'v-02-s', size: 'S', color: 'Xanh Navy', sku: 'SM-CARO-S', stock: 25),
         ProductVariantModel(id: 'v-02-m', size: 'M', color: 'Xanh Navy', sku: 'SM-CARO-M', stock: 30),
         ProductVariantModel(id: 'v-02-l', size: 'L', color: 'Xanh Navy', sku: 'SM-CARO-L', stock: 40),
+        ProductVariantModel(id: 'v-02-xl', size: 'XL', color: 'Xanh Navy', sku: 'SM-CARO-XL', stock: 20),
+        ProductVariantModel(id: 'v-02-2xl', size: '2XL', color: 'Xanh Navy', sku: 'SM-CARO-2XL', stock: 15),
+        ProductVariantModel(id: 'v-02-xam-m', size: 'M', color: 'Xám', sku: 'SM-CARO-XAM-M', stock: 25),
+        ProductVariantModel(id: 'v-02-xam-l', size: 'L', color: 'Xám', sku: 'SM-CARO-XAM-L', stock: 30),
       ],
     ),
     const ProductModel(
@@ -79,9 +89,16 @@ class MockData {
       isNew: false,
       isBestSeller: true,
       variants: [
-        ProductVariantModel(id: 'v-03-m', size: 'M', color: 'Đen', sku: 'THUN-DEN-M', stock: 100),
-        ProductVariantModel(id: 'v-03-l', size: 'L', color: 'Đen', sku: 'THUN-DEN-L', stock: 85),
-        ProductVariantModel(id: 'v-03-trang-m', size: 'M', color: 'Trắng', sku: 'THUN-TRANG-M', stock: 90),
+        ProductVariantModel(id: 'v-03-s-den', size: 'S', color: 'Đen', sku: 'THUN-DEN-S', stock: 60),
+        ProductVariantModel(id: 'v-03-m-den', size: 'M', color: 'Đen', sku: 'THUN-DEN-M', stock: 100),
+        ProductVariantModel(id: 'v-03-l-den', size: 'L', color: 'Đen', sku: 'THUN-DEN-L', stock: 85),
+        ProductVariantModel(id: 'v-03-xl-den', size: 'XL', color: 'Đen', sku: 'THUN-DEN-XL', stock: 50),
+        ProductVariantModel(id: 'v-03-2xl-den', size: '2XL', color: 'Đen', sku: 'THUN-DEN-2XL', stock: 40),
+        ProductVariantModel(id: 'v-03-m-trang', size: 'M', color: 'Trắng', sku: 'THUN-TRANG-M', stock: 90),
+        ProductVariantModel(id: 'v-03-l-trang', size: 'L', color: 'Trắng', sku: 'THUN-TRANG-L', stock: 80),
+        ProductVariantModel(id: 'v-03-m-xam', size: 'M', color: 'Xám', sku: 'THUN-XAM-M', stock: 60),
+        ProductVariantModel(id: 'v-03-l-xam', size: 'L', color: 'Xám', sku: 'THUN-XAM-L', stock: 55),
+        ProductVariantModel(id: 'v-03-m-be', size: 'M', color: 'Be', sku: 'THUN-BE-M', stock: 45),
       ],
     ),
     const ProductModel(
@@ -97,8 +114,15 @@ class MockData {
       isNew: true,
       isBestSeller: true,
       variants: [
-        ProductVariantModel(id: 'v-04-m', size: 'M', color: 'Xanh Rêu', sku: 'POLO-REU-M', stock: 35),
-        ProductVariantModel(id: 'v-04-l', size: 'L', color: 'Xanh Rêu', sku: 'POLO-REU-L', stock: 45),
+        ProductVariantModel(id: 'v-04-s-reu', size: 'S', color: 'Xanh Rêu', sku: 'POLO-REU-S', stock: 25),
+        ProductVariantModel(id: 'v-04-m-reu', size: 'M', color: 'Xanh Rêu', sku: 'POLO-REU-M', stock: 35),
+        ProductVariantModel(id: 'v-04-l-reu', size: 'L', color: 'Xanh Rêu', sku: 'POLO-REU-L', stock: 45),
+        ProductVariantModel(id: 'v-04-xl-reu', size: 'XL', color: 'Xanh Rêu', sku: 'POLO-REU-XL', stock: 30),
+        ProductVariantModel(id: 'v-04-2xl-reu', size: '2XL', color: 'Xanh Rêu', sku: 'POLO-REU-2XL', stock: 20),
+        ProductVariantModel(id: 'v-04-m-den', size: 'M', color: 'Đen', sku: 'POLO-DEN-M', stock: 50),
+        ProductVariantModel(id: 'v-04-l-den', size: 'L', color: 'Đen', sku: 'POLO-DEN-L', stock: 50),
+        ProductVariantModel(id: 'v-04-m-trang', size: 'M', color: 'Trắng', sku: 'POLO-TRANG-M', stock: 40),
+        ProductVariantModel(id: 'v-04-m-navy', size: 'M', color: 'Xanh Navy', sku: 'POLO-NAVY-M', stock: 35),
       ],
     ),
     const ProductModel(
@@ -114,9 +138,15 @@ class MockData {
       isNew: false,
       isBestSeller: true,
       variants: [
-        ProductVariantModel(id: 'v-05-30', size: '30', color: 'Xanh Đậm', sku: 'JEAN-30', stock: 30),
-        ProductVariantModel(id: 'v-05-31', size: '31', color: 'Xanh Đậm', sku: 'JEAN-31', stock: 25),
-        ProductVariantModel(id: 'v-05-32', size: '32', color: 'Xanh Đậm', sku: 'JEAN-32', stock: 40),
+        ProductVariantModel(id: 'v-05-29-xanh', size: '29', color: 'Xanh Đậm', sku: 'JEAN-29', stock: 25),
+        ProductVariantModel(id: 'v-05-30-xanh', size: '30', color: 'Xanh Đậm', sku: 'JEAN-30', stock: 30),
+        ProductVariantModel(id: 'v-05-31-xanh', size: '31', color: 'Xanh Đậm', sku: 'JEAN-31', stock: 25),
+        ProductVariantModel(id: 'v-05-32-xanh', size: '32', color: 'Xanh Đậm', sku: 'JEAN-32', stock: 40),
+        ProductVariantModel(id: 'v-05-33-xanh', size: '33', color: 'Xanh Đậm', sku: 'JEAN-33', stock: 20),
+        ProductVariantModel(id: 'v-05-34-xanh', size: '34', color: 'Xanh Đậm', sku: 'JEAN-34', stock: 20),
+        ProductVariantModel(id: 'v-05-30-den', size: '30', color: 'Đen', sku: 'JEAN-DEN-30', stock: 35),
+        ProductVariantModel(id: 'v-05-31-den', size: '31', color: 'Đen', sku: 'JEAN-DEN-31', stock: 35),
+        ProductVariantModel(id: 'v-05-32-den', size: '32', color: 'Đen', sku: 'JEAN-DEN-32', stock: 30),
       ],
     ),
     const ProductModel(
@@ -132,8 +162,13 @@ class MockData {
       isNew: true,
       isBestSeller: false,
       variants: [
+        ProductVariantModel(id: 'v-06-29', size: '29', color: 'Xanh Nhạt', sku: 'JEAN-LT-29', stock: 20),
         ProductVariantModel(id: 'v-06-30', size: '30', color: 'Xanh Nhạt', sku: 'JEAN-LT-30', stock: 20),
+        ProductVariantModel(id: 'v-06-31', size: '31', color: 'Xanh Nhạt', sku: 'JEAN-LT-31', stock: 25),
         ProductVariantModel(id: 'v-06-32', size: '32', color: 'Xanh Nhạt', sku: 'JEAN-LT-32', stock: 35),
+        ProductVariantModel(id: 'v-06-33', size: '33', color: 'Xanh Nhạt', sku: 'JEAN-LT-33', stock: 15),
+        ProductVariantModel(id: 'v-06-34', size: '34', color: 'Xanh Nhạt', sku: 'JEAN-LT-34', stock: 15),
+        ProductVariantModel(id: 'v-06-den-31', size: '31', color: 'Đen', sku: 'JEAN-LT-DEN-31', stock: 20),
       ],
     ),
     const ProductModel(
@@ -149,9 +184,16 @@ class MockData {
       isNew: false,
       isBestSeller: true,
       variants: [
-        ProductVariantModel(id: 'v-07-30', size: '30', color: 'Đen', sku: 'TAY-DEN-30', stock: 50),
-        ProductVariantModel(id: 'v-07-31', size: '31', color: 'Đen', sku: 'TAY-DEN-31', stock: 40),
-        ProductVariantModel(id: 'v-07-32', size: '32', color: 'Đen', sku: 'TAY-DEN-32', stock: 45),
+        ProductVariantModel(id: 'v-07-29-den', size: '29', color: 'Đen', sku: 'TAY-DEN-29', stock: 30),
+        ProductVariantModel(id: 'v-07-30-den', size: '30', color: 'Đen', sku: 'TAY-DEN-30', stock: 50),
+        ProductVariantModel(id: 'v-07-31-den', size: '31', color: 'Đen', sku: 'TAY-DEN-31', stock: 40),
+        ProductVariantModel(id: 'v-07-32-den', size: '32', color: 'Đen', sku: 'TAY-DEN-32', stock: 45),
+        ProductVariantModel(id: 'v-07-33-den', size: '33', color: 'Đen', sku: 'TAY-DEN-33', stock: 30),
+        ProductVariantModel(id: 'v-07-34-den', size: '34', color: 'Đen', sku: 'TAY-DEN-34', stock: 25),
+        ProductVariantModel(id: 'v-07-30-xam', size: '30', color: 'Xám', sku: 'TAY-XAM-30', stock: 35),
+        ProductVariantModel(id: 'v-07-31-xam', size: '31', color: 'Xám', sku: 'TAY-XAM-31', stock: 35),
+        ProductVariantModel(id: 'v-07-32-xam', size: '32', color: 'Xám', sku: 'TAY-XAM-32', stock: 30),
+        ProductVariantModel(id: 'v-07-31-be', size: '31', color: 'Be', sku: 'TAY-BE-31', stock: 25),
       ],
     ),
     const ProductModel(
@@ -167,8 +209,14 @@ class MockData {
       isNew: true,
       isBestSeller: false,
       variants: [
-        ProductVariantModel(id: 'v-08-30', size: '30', color: 'Màu Be', sku: 'KAKI-BE-30', stock: 25),
-        ProductVariantModel(id: 'v-08-32', size: '32', color: 'Màu Be', sku: 'KAKI-BE-32', stock: 30),
+        ProductVariantModel(id: 'v-08-29-be', size: '29', color: 'Màu Be', sku: 'KAKI-BE-29', stock: 20),
+        ProductVariantModel(id: 'v-08-30-be', size: '30', color: 'Màu Be', sku: 'KAKI-BE-30', stock: 25),
+        ProductVariantModel(id: 'v-08-31-be', size: '31', color: 'Màu Be', sku: 'KAKI-BE-31', stock: 30),
+        ProductVariantModel(id: 'v-08-32-be', size: '32', color: 'Màu Be', sku: 'KAKI-BE-32', stock: 30),
+        ProductVariantModel(id: 'v-08-33-be', size: '33', color: 'Màu Be', sku: 'KAKI-BE-33', stock: 20),
+        ProductVariantModel(id: 'v-08-34-be', size: '34', color: 'Màu Be', sku: 'KAKI-BE-34', stock: 15),
+        ProductVariantModel(id: 'v-08-30-den', size: '30', color: 'Đen', sku: 'KAKI-DEN-30', stock: 25),
+        ProductVariantModel(id: 'v-08-31-den', size: '31', color: 'Đen', sku: 'KAKI-DEN-31', stock: 25),
       ],
     ),
     const ProductModel(
@@ -184,9 +232,13 @@ class MockData {
       isNew: true,
       isBestSeller: true,
       variants: [
+        ProductVariantModel(id: 'v-09-s', size: 'S', color: 'Đen Nhám', sku: 'BOMBER-S', stock: 15),
         ProductVariantModel(id: 'v-09-m', size: 'M', color: 'Đen Nhám', sku: 'BOMBER-M', stock: 20),
         ProductVariantModel(id: 'v-09-l', size: 'L', color: 'Đen Nhám', sku: 'BOMBER-L', stock: 35),
         ProductVariantModel(id: 'v-09-xl', size: 'XL', color: 'Đen Nhám', sku: 'BOMBER-XL', stock: 15),
+        ProductVariantModel(id: 'v-09-2xl', size: '2XL', color: 'Đen Nhám', sku: 'BOMBER-2XL', stock: 10),
+        ProductVariantModel(id: 'v-09-m-reu', size: 'M', color: 'Xanh Rêu', sku: 'BOMBER-REU-M', stock: 20),
+        ProductVariantModel(id: 'v-09-l-reu', size: 'L', color: 'Xanh Rêu', sku: 'BOMBER-REU-L', stock: 25),
       ],
     ),
     const ProductModel(
@@ -202,8 +254,13 @@ class MockData {
       isNew: false,
       isBestSeller: false,
       variants: [
+        ProductVariantModel(id: 'v-10-s', size: 'S', color: 'Xanh Chàm', sku: 'JEAN-JK-S', stock: 15),
         ProductVariantModel(id: 'v-10-m', size: 'M', color: 'Xanh Chàm', sku: 'JEAN-JK-M', stock: 25),
         ProductVariantModel(id: 'v-10-l', size: 'L', color: 'Xanh Chàm', sku: 'JEAN-JK-L', stock: 30),
+        ProductVariantModel(id: 'v-10-xl', size: 'XL', color: 'Xanh Chàm', sku: 'JEAN-JK-XL', stock: 20),
+        ProductVariantModel(id: 'v-10-2xl', size: '2XL', color: 'Xanh Chàm', sku: 'JEAN-JK-2XL', stock: 10),
+        ProductVariantModel(id: 'v-10-den-m', size: 'M', color: 'Đen', sku: 'JEAN-JK-DEN-M', stock: 20),
+        ProductVariantModel(id: 'v-10-den-l', size: 'L', color: 'Đen', sku: 'JEAN-JK-DEN-L', stock: 20),
       ],
     ),
   ];
@@ -362,4 +419,3 @@ class MockData {
     ),
   ];
 }
-
