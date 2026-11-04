@@ -361,16 +361,44 @@ class _HomePageState extends State<HomePage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      currentCategory == 'Tất cả'
-                          ? 'Tất cả sản phẩm'
-                          : currentCategory,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w800,
-                        fontSize: 16,
-                        color: AppTheme.textPrimary,
-                        letterSpacing: -0.2,
-                      ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Text(
+                          currentCategory == 'Tất cả'
+                              ? 'Tất cả sản phẩm'
+                              : currentCategory,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 16,
+                            color: AppTheme.textPrimary,
+                            letterSpacing: -0.2,
+                          ),
+                        ),
+                        InkWell(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (_) => const ProductListPage()),
+                            );
+                          },
+                          borderRadius: BorderRadius.circular(6),
+                          child: const Padding(
+                            padding: EdgeInsets.symmetric(
+                                horizontal: 4, vertical: 4),
+                            child: Text(
+                              'Xem tất cả',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: AppTheme.accentOrange,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 8),
                     // Bo loc tab hang ngang o ben duoi moi phan
@@ -410,64 +438,7 @@ class _HomePageState extends State<HomePage> {
               // 5. LUOI 2 COT TOAN BO SAN PHAM (GIOI HAN & RANDOM)
               _buildProductGrid(displayedProducts, wishlistProv),
 
-              // Nut xem tat ca san pham & nut doi goi y ngau nhien
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
-                child: Row(
-                  children: [
-                    if (_tabFilter == _HomeTabFilter.all &&
-                        baseProducts.length > _homeProductLimit) ...[
-                      Expanded(
-                        child: OutlinedButton(
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            side: BorderSide(color: Colors.grey.shade300),
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10)),
-                          ),
-                          onPressed: () => _shuffleRandomProducts(baseProducts),
-                          child: const Text(
-                            'Đổi gợi ý ngẫu nhiên',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: AppTheme.textPrimary,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                    ],
-                    Expanded(
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppTheme.primary,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10)),
-                          elevation: 0,
-                        ),
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (_) => const ProductListPage()),
-                          );
-                        },
-                        child: Text(
-                          'Xem tất cả (${baseProducts.length})',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+
 
               // 6. SAN PHAM DA XEM GAN DAY (Neu co)
               if (productProv.recentlyViewed.isNotEmpty) ...[
