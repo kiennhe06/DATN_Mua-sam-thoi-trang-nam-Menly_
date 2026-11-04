@@ -355,47 +355,25 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
 
-              // 4. HEADER DIEU HUONG TOAN BO SAN PHAM & BO LOC TAB
+              // 4. HEADER DIEU HUONG TOAN BO SAN PHAM & BO LOC TAB HANG NGANG O BEN DUOI
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 6),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        Text(
-                          currentCategory == 'Tất cả'
-                              ? 'Tất cả sản phẩm'
-                              : currentCategory,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w800,
-                            fontSize: 16,
-                            color: AppTheme.textPrimary,
-                            letterSpacing: -0.2,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 7, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: AppTheme.primary.withValues(alpha: 0.08),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            baseProducts.length > displayedProducts.length
-                                ? '${displayedProducts.length}/${baseProducts.length}'
-                                : '${displayedProducts.length}',
-                            style: const TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                              color: AppTheme.primary,
-                            ),
-                          ),
-                        ),
-                      ],
+                    Text(
+                      currentCategory == 'Tất cả'
+                          ? 'Tất cả sản phẩm'
+                          : currentCategory,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 16,
+                        color: AppTheme.textPrimary,
+                        letterSpacing: -0.2,
+                      ),
                     ),
-                    // Bo loc tab nhanh: Tat ca | Moi | Ban chay
+                    const SizedBox(height: 8),
+                    // Bo loc tab hang ngang o ben duoi moi phan
                     Row(
                       children: [
                         _buildFilterTab(
@@ -409,14 +387,14 @@ class _HomePageState extends State<HomePage> {
                             }
                           },
                         ),
-                        const SizedBox(width: 4),
+                        const SizedBox(width: 16),
                         _buildFilterTab(
                           label: 'Mới',
                           active: _tabFilter == _HomeTabFilter.newest,
                           onTap: () => setState(
                               () => _tabFilter = _HomeTabFilter.newest),
                         ),
-                        const SizedBox(width: 4),
+                        const SizedBox(width: 16),
                         _buildFilterTab(
                           label: 'Bán chạy',
                           active: _tabFilter == _HomeTabFilter.bestSeller,
@@ -598,20 +576,33 @@ class _HomePageState extends State<HomePage> {
   }) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(6),
+      splashColor: Colors.transparent,
+      highlightColor: Colors.transparent,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-        decoration: BoxDecoration(
-          color: active ? AppTheme.primary : Colors.grey.shade100,
-          borderRadius: BorderRadius.circular(6),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w700,
-            color: active ? Colors.white : AppTheme.textSecondary,
-          ),
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: active ? FontWeight.w800 : FontWeight.w600,
+                color: active ? AppTheme.textPrimary : AppTheme.textMuted,
+              ),
+            ),
+            const SizedBox(height: 4),
+            // Thanh gach ngang o ben duoi moi phan
+            Container(
+              height: 2.5,
+              width: 28,
+              decoration: BoxDecoration(
+                color: active ? AppTheme.primary : Colors.transparent,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ],
         ),
       ),
     );
