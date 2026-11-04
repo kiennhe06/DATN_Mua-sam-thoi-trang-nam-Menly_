@@ -23,7 +23,7 @@ import 'package:menly_app/features/support/presentation/pages/policy_page.dart';
 import 'package:menly_app/features/voucher/presentation/pages/voucher_list_page.dart';
 import 'package:menly_app/features/wishlist/presentation/providers/wishlist_provider.dart';
 
-enum _HomeTabFilter { all, newest, bestSeller }
+enum _HomeTabFilter { newest, bestSeller }
 
 /// Trang chu Menly - Hien thi tron ven toan bo san pham, bo cuc gon gang khong chiem het man hinh
 class HomePage extends StatefulWidget {
@@ -38,11 +38,7 @@ class _HomePageState extends State<HomePage> {
   final PageController _bannerController = PageController();
   int _currentBannerIndex = 0;
   Timer? _bannerTimer;
-  _HomeTabFilter _tabFilter = _HomeTabFilter.all;
-
-  List<ProductModel> _randomProducts = [];
-  String _lastRandomCategory = '';
-  int _lastBaseProductsCount = 0;
+  _HomeTabFilter _tabFilter = _HomeTabFilter.newest;
 
   @override
   void initState() {
@@ -72,35 +68,8 @@ class _HomePageState extends State<HomePage> {
     super.dispose();
   }
 
-  void _ensureRandomProducts(List<ProductModel> baseProducts, String category) {
-    if (baseProducts.isEmpty) {
-      _randomProducts = [];
-      return;
-    }
-    if (_lastRandomCategory != category ||
-        _lastBaseProductsCount != baseProducts.length ||
-        _randomProducts.isEmpty) {
-      _lastRandomCategory = category;
-      _lastBaseProductsCount = baseProducts.length;
-      final shuffled = List<ProductModel>.from(baseProducts)..shuffle();
-      _randomProducts = shuffled.take(_homeProductLimit).toList();
-    }
-  }
-
-  void _shuffleRandomProducts(List<ProductModel> baseProducts) {
-    if (baseProducts.isEmpty) return;
-    final shuffled = List<ProductModel>.from(baseProducts)..shuffle();
-    setState(() {
-      _randomProducts = shuffled.take(_homeProductLimit).toList();
-    });
-  }
-
-  List<ProductModel> _filterProducts(
-      List<ProductModel> baseProducts, String category) {
+  List<ProductModel> _filterProducts(List<ProductModel> baseProducts) {
     switch (_tabFilter) {
-      case _HomeTabFilter.all:
-        _ensureRandomProducts(baseProducts, category);
-        return _randomProducts;
       case _HomeTabFilter.newest:
         final list = baseProducts.where((p) => p.isNew).toList();
         if (list.isNotEmpty) {
@@ -123,7 +92,7 @@ class _HomePageState extends State<HomePage> {
 
     final currentCategory = productProv.selectedCategory;
     final baseProducts = productProv.products;
-    final displayedProducts = _filterProducts(baseProducts, currentCategory);
+    final displayedProducts = _filterProducts(baseProducts);
 
     return Scaffold(
       backgroundColor: AppTheme.scaffoldBackground,
@@ -266,12 +235,7 @@ class _HomePageState extends State<HomePage> {
         ],
       ),
       body: RefreshIndicator(
-        onRefresh: () async {
-          await productProv.init();
-          if (mounted) {
-            _shuffleRandomProducts(productProv.products);
-          }
-        },
+        onRefresh: () => productProv.init(),
         child: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -476,28 +440,16 @@ class _HomePageState extends State<HomePage> {
                       ],
                     ),
                     const SizedBox(height: 8),
-                    // Bo loc tab hang ngang o ben duoi moi phan
+                    // Bo loc tab hang ngang o ben duoi: Chi giu san pham moi va ban chay
                     Row(
                       children: [
-                        _buildFilterTab(
-                          label: 'Tất cả',
-                          active: _tabFilter == _HomeTabFilter.all,
-                          onTap: () {
-                            if (_tabFilter == _HomeTabFilter.all) {
-                              _shuffleRandomProducts(baseProducts);
-                            } else {
-                              setState(() => _tabFilter = _HomeTabFilter.all);
-                            }
-                          },
-                        ),
-                        const SizedBox(width: 16),
                         _buildFilterTab(
                           label: 'Mới',
                           active: _tabFilter == _HomeTabFilter.newest,
                           onTap: () => setState(
                               () => _tabFilter = _HomeTabFilter.newest),
                         ),
-                        const SizedBox(width: 16),
+                        const SizedBox(width: 20),
                         _buildFilterTab(
                           label: 'Bán chạy',
                           active: _tabFilter == _HomeTabFilter.bestSeller,
@@ -697,14 +649,7 @@ class _HomePageState extends State<HomePage> {
           final p = items[i];
           final isFav = wishlistProv.isFavorite(p.id);
 
-          String? badgeText;
-          if (_tabFilter == _HomeTabFilter.newest) {
-            badgeText = 'MỚI';
-          } else if (_tabFilter == _HomeTabFilter.bestSeller) {
-            badgeText = 'HOT';
-          } else {
-            badgeText = p.isNew ? 'MỚI' : (p.isBestSeller ? 'HOT' : null);
-          }
+          final badgeText = _tabFilter == _HomeTabFilter.newest ? 'MỚI' : 'HOT';
 
           return ProductCard(
             product: p,
