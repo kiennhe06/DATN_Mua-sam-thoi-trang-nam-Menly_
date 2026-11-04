@@ -2,18 +2,33 @@ import { Router, type Response } from 'express';
 import { requireAdmin } from '../../middlewares/auth.js';
 import { ProductModel } from '../../models/product.model.js';
 import { OrderModel } from '../../models/order.model.js';
+import { VoucherModel } from '../../models/voucher.model.js';
+import { AdminModel } from '../../models/admin.model.js';
 import {
   adminProductListSchema,
   adminProductSchema,
   productIdSchema,
   updateAdminProductSchema,
 } from '../../validators/admin-product.validator.js';
+import {
+  adminVoucherSchema,
+  updateAdminVoucherSchema,
+  voucherIdSchema,
+} from '../../validators/admin-voucher.validator.js';
+import {
+  adminCreateUserSchema,
+  adminUpdateUserSchema,
+  toggleLockSchema,
+  userIdSchema,
+} from '../../validators/admin-user.validator.js';
 
 // Quan tri routes
 const router = Router();
 router.use(requireAdmin);
 const productModel = new ProductModel();
 const orderModel = new OrderModel();
+const voucherModel = new VoucherModel();
+const adminModel = new AdminModel();
 
 // Cac trang thai don hang hop le (khop enum order_status trong DB)
 const ORDER_STATUSES = [
@@ -188,33 +203,86 @@ router.get('/inventory/movements', (_req, res) => {
 });
 
 // GET /api/v1/admin/users - DS nguoi dung
-router.get('/users', (_req, res) => {
-  // TODO: implement
-  res.status(501).json({ message: 'Chua duoc cai dat' });
+router.get('/users', async (_req, res, next) => {
+  try {
+    const data = await adminModel.listUsers();
+    return res.json({ data });
+  } catch (error) {
+    return next(error);
+  }
 });
 
-// POST /api/v1/admin/users - them
-router.post('/users', (_req, res) => {
-  // TODO: implement
-  res.status(501).json({ message: 'Chua duoc cai dat' });
+// POST /api/v1/admin/users - them nguoi dung
+router.post('/users', async (req, res, next) => {
+  const parsed = adminCreateUserSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({
+      error: 'Thông tin người dùng không hợp lệ',
+      details: parsed.error.flatten().fieldErrors,
+    });
+  }
+
+  try {
+    const data = await adminModel.createUser(parsed.data);
+    return res.status(201).json({ data });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Không thể tạo người dùng';
+    return res.status(400).json({ error: message });
+  }
 });
 
-// PUT /api/v1/admin/users/:id - sua
-router.put('/users/:id', (_req, res) => {
-  // TODO: implement
-  res.status(501).json({ message: 'Chua duoc cai dat' });
+// PUT /api/v1/admin/users/:id - sua nguoi dung
+router.put('/users/:id', async (req, res, next) => {
+  const id = userIdSchema.safeParse(req.params.id);
+  if (!id.success) return res.status(400).json({ error: 'Mã người dùng không hợp lệ' });
+
+  const parsed = adminUpdateUserSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({
+      error: 'Thông tin cập nhật không hợp lệ',
+      details: parsed.error.flatten().fieldErrors,
+    });
+  }
+
+  try {
+    const data = await adminModel.updateUser(id.data, parsed.data);
+    if (!data) return res.status(404).json({ error: 'Không tìm thấy người dùng' });
+    return res.json({ data });
+  } catch (error) {
+    return next(error);
+  }
 });
 
-// DELETE /api/v1/admin/users/:id - xoa
-router.delete('/users/:id', (_req, res) => {
-  // TODO: implement
-  res.status(501).json({ message: 'Chua duoc cai dat' });
+// DELETE /api/v1/admin/users/:id - xoa nguoi dung
+router.delete('/users/:id', async (req, res, next) => {
+  const id = userIdSchema.safeParse(req.params.id);
+  if (!id.success) return res.status(400).json({ error: 'Mã người dùng không hợp lệ' });
+
+  try {
+    await adminModel.deleteUser(id.data);
+    return res.json({ message: 'Đã xóa người dùng' });
+  } catch (error) {
+    return next(error);
+  }
 });
 
-// PATCH /api/v1/admin/users/:id/lock - khoa/mo
-router.patch('/users/:id/lock', (_req, res) => {
-  // TODO: implement
-  res.status(501).json({ message: 'Chua duoc cai dat' });
+// PATCH /api/v1/admin/users/:id/lock - khoa/mo nguoi dung
+router.patch('/users/:id/lock', async (req, res, next) => {
+  const id = userIdSchema.safeParse(req.params.id);
+  if (!id.success) return res.status(400).json({ error: 'Mã người dùng không hợp lệ' });
+
+  const parsed = toggleLockSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: 'Giá trị khóa không hợp lệ' });
+  }
+
+  try {
+    const user = await adminModel.setLock(id.data, parsed.data.isLocked);
+    if (!user) return res.status(404).json({ error: 'Không tìm thấy người dùng' });
+    return res.json({ user });
+  } catch (error) {
+    return next(error);
+  }
 });
 
 // GET /api/v1/admin/stats - thong ke tong quan
@@ -281,6 +349,73 @@ router.delete('/reviews/:id', (_req, res) => {
 router.post('/reviews/:id/reply', (_req, res) => {
   // TODO: implement
   res.status(501).json({ message: 'Chua duoc cai dat' });
+});
+
+// =========== QUAN LY MA GIAM GIA (VOUCHER) ===========
+
+// GET /api/v1/admin/vouchers - DS voucher (ca het han / da tat)
+router.get('/vouchers', async (_req, res, next) => {
+  try {
+    const data = await voucherModel.adminList();
+    return res.json({ data });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+// POST /api/v1/admin/vouchers - them voucher
+router.post('/vouchers', async (req, res, next) => {
+  const parsed = adminVoucherSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({
+      error: 'Thông tin mã giảm giá không hợp lệ',
+      details: parsed.error.flatten().fieldErrors,
+    });
+  }
+
+  try {
+    const data = await voucherModel.adminCreate(parsed.data);
+    return res.status(201).json({ data });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Không thể tạo mã giảm giá';
+    return res.status(400).json({ error: message });
+  }
+});
+
+// PUT /api/v1/admin/vouchers/:id - sua voucher
+router.put('/vouchers/:id', async (req, res, next) => {
+  const id = voucherIdSchema.safeParse(req.params.id);
+  if (!id.success) return res.status(400).json({ error: 'Mã voucher không hợp lệ' });
+
+  const parsed = updateAdminVoucherSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({
+      error: 'Thông tin cập nhật không hợp lệ',
+      details: parsed.error.flatten().fieldErrors,
+    });
+  }
+
+  try {
+    const data = await voucherModel.adminUpdate(id.data, parsed.data);
+    if (!data) return res.status(404).json({ error: 'Không tìm thấy mã giảm giá' });
+    return res.json({ data });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Không thể cập nhật mã giảm giá';
+    return res.status(400).json({ error: message });
+  }
+});
+
+// DELETE /api/v1/admin/vouchers/:id - xoa voucher
+router.delete('/vouchers/:id', async (req, res, next) => {
+  const id = voucherIdSchema.safeParse(req.params.id);
+  if (!id.success) return res.status(400).json({ error: 'Mã voucher không hợp lệ' });
+
+  try {
+    await voucherModel.adminRemove(id.data);
+    return res.json({ success: true, message: 'Đã xóa mã giảm giá' });
+  } catch (error) {
+    return next(error);
+  }
 });
 
 export default router;

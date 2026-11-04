@@ -1,4 +1,8 @@
 import { supabase } from '../config/supabase.js';
+import type {
+  AdminVoucherInput,
+  AdminVoucherUpdate,
+} from '../validators/admin-voucher.validator.js';
 
 export interface VoucherRow {
   id: string;
@@ -7,9 +11,30 @@ export interface VoucherRow {
   discount_type: 'percentage' | 'fixed_amount';
   discount_value: number;
   min_order_value: number;
-  max_discount?: number;
+  max_discount?: number | null;
+  usage_limit?: number;
+  used_count?: number;
+  start_date?: string;
   end_date: string;
   is_active: boolean;
+  created_at?: string;
+}
+
+// Dang camelCase tra ve cho admin frontend
+export interface AdminVoucher {
+  id: string;
+  code: string;
+  title: string;
+  discountType: 'percentage' | 'fixed_amount';
+  discountValue: number;
+  minOrderValue: number;
+  maxDiscount: number | null;
+  usageLimit: number;
+  usedCount: number;
+  startDate: string | null;
+  endDate: string;
+  isActive: boolean;
+  createdAt: string | null;
 }
 
 export interface ApplyVoucherResult {
@@ -19,92 +44,58 @@ export interface ApplyVoucherResult {
   message: string;
 }
 
-// Danh sach voucher mac dinh cua he thong Menly
-const SYSTEM_VOUCHERS: VoucherRow[] = [
-  {
-    id: 'vouch-1',
-    code: 'MENLY10',
-    title: 'Giảm 10% tối đa 50.000 đ',
-    discount_type: 'percentage',
-    discount_value: 10,
-    min_order_value: 200000,
-    max_discount: 50000,
-    end_date: new Date(Date.now() + 30 * 86400000).toISOString(),
-    is_active: true,
-  },
-  {
-    id: 'vouch-2',
-    code: 'MENLY50',
-    title: 'Giảm 50.000 đ cho đơn từ 400.000 đ',
-    discount_type: 'fixed_amount',
-    discount_value: 50000,
-    min_order_value: 400000,
-    end_date: new Date(Date.now() + 30 * 86400000).toISOString(),
-    is_active: true,
-  },
-  {
-    id: 'vouch-3',
-    code: 'FREESHIP',
-    title: 'Miễn phí vận chuyển toàn quốc',
-    discount_type: 'fixed_amount',
-    discount_value: 25000,
-    min_order_value: 300000,
-    end_date: new Date(Date.now() + 30 * 86400000).toISOString(),
-    is_active: true,
-  },
-  {
-    id: 'vouch-4',
-    code: 'WELCOME20',
-    title: 'Giảm 20.000 đ cho khách hàng mới',
-    discount_type: 'fixed_amount',
-    discount_value: 20000,
-    min_order_value: 150000,
-    end_date: new Date(Date.now() + 60 * 86400000).toISOString(),
-    is_active: true,
-  },
-];
+/** Chuyen 1 dong voucher tu DB (snake_case) sang dang camelCase cho admin */
+function toAdminVoucher(row: VoucherRow): AdminVoucher {
+  return {
+    id: row.id,
+    code: row.code,
+    title: row.title,
+    discountType: row.discount_type,
+    discountValue: row.discount_value,
+    minOrderValue: row.min_order_value ?? 0,
+    maxDiscount: row.max_discount ?? null,
+    usageLimit: row.usage_limit ?? 0,
+    usedCount: row.used_count ?? 0,
+    startDate: row.start_date ?? null,
+    endDate: row.end_date,
+    isActive: row.is_active,
+    createdAt: row.created_at ?? null,
+  };
+}
 
 // Lop truy cap du lieu cho: Ma giam gia
 export class VoucherModel {
   protected db = supabase;
 
-  /** Lay danh sach tat ca voucher dang hoat dong */
+  /** Lay danh sach voucher dang hoat dong (dung cho app khach) */
   async listActive(): Promise<VoucherRow[]> {
-    // Thu lay tu DB truoc, neu loi thi dung system vouchers
-    try {
-      const { data, error } = await this.db
-        .from('vouchers')
-        .select('*')
-        .eq('is_active', true)
-        .gt('end_date', new Date().toISOString())
-        .order('created_at', { ascending: false });
-      if (!error && data && data.length > 0) {
-        return data as VoucherRow[];
-      }
-    } catch (_) {}
-    return SYSTEM_VOUCHERS;
+    const { data, error } = await this.db
+      .from('vouchers')
+      .select('*')
+      .eq('is_active', true)
+      .gt('end_date', new Date().toISOString())
+      .order('created_at', { ascending: false });
+
+    if (error) throw new Error(error.message);
+    return (data ?? []) as VoucherRow[];
+  }
+
+  /** Tim 1 voucher con hieu luc theo ma (dung khi tao don) */
+  async findActiveByCode(code: string): Promise<VoucherRow | null> {
+    const { data, error } = await this.db
+      .from('vouchers')
+      .select('*')
+      .ilike('code', code.trim())
+      .eq('is_active', true)
+      .maybeSingle();
+
+    if (error || !data) return null;
+    return data as VoucherRow;
   }
 
   /** Kiem tra va tinh toan gia tri giam gia cua 1 ma */
   async applyVoucher(code: string, subtotal: number): Promise<ApplyVoucherResult> {
-    const cleanCode = code.trim().toUpperCase();
-
-    // Thu tim trong DB truoc
-    let voucher: VoucherRow | undefined;
-    try {
-      const { data } = await this.db
-        .from('vouchers')
-        .select('*')
-        .ilike('code', cleanCode)
-        .eq('is_active', true)
-        .single();
-      if (data) voucher = data as VoucherRow;
-    } catch (_) {}
-
-    // Fallback system vouchers
-    if (!voucher) {
-      voucher = SYSTEM_VOUCHERS.find((v) => v.code.toUpperCase() === cleanCode);
-    }
+    const voucher = await this.findActiveByCode(code.toUpperCase());
 
     if (!voucher) {
       return { valid: false, discountAmount: 0, message: 'Mã giảm giá không tồn tại hoặc đã hết hạn' };
@@ -138,5 +129,99 @@ export class VoucherModel {
       discountAmount,
       message: `Áp dụng thành công! Giảm ${discountAmount.toLocaleString('vi-VN')} đ`,
     };
+  }
+
+  /** Tang so lan da dung cua voucher len 1 (goi sau khi dat don thanh cong) */
+  async incrementUsage(voucherId: string, current: number): Promise<void> {
+    const { error } = await this.db
+      .from('vouchers')
+      .update({ used_count: current + 1 })
+      .eq('id', voucherId);
+    if (error) console.error('Khong cap nhat duoc used_count voucher:', error.message);
+  }
+
+  // =========== ADMIN: QUAN LY VOUCHER ===========
+
+  /** [Admin] Danh sach tat ca voucher (ca het han / da tat) */
+  async adminList(): Promise<AdminVoucher[]> {
+    const { data, error } = await this.db
+      .from('vouchers')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) throw new Error(error.message);
+    return (data ?? []).map((row) => toAdminVoucher(row as VoucherRow));
+  }
+
+  /** [Admin] Tao voucher moi */
+  async adminCreate(input: AdminVoucherInput): Promise<AdminVoucher> {
+    const { data, error } = await this.db
+      .from('vouchers')
+      .insert({
+        code: input.code,
+        title: input.title,
+        discount_type: input.discountType,
+        discount_value: input.discountValue,
+        min_order_value: input.minOrderValue,
+        max_discount: input.maxDiscount ?? null,
+        usage_limit: input.usageLimit,
+        start_date: input.startDate ?? new Date().toISOString(),
+        end_date: input.endDate,
+        is_active: input.isActive,
+      })
+      .select('*')
+      .single();
+
+    if (error || !data) {
+      if (error?.code === '23505') throw new Error('Mã giảm giá đã tồn tại');
+      throw new Error(error?.message ?? 'Không thể tạo mã giảm giá');
+    }
+    return toAdminVoucher(data as VoucherRow);
+  }
+
+  /** [Admin] Cap nhat voucher */
+  async adminUpdate(id: string, input: AdminVoucherUpdate): Promise<AdminVoucher | null> {
+    const patch: Record<string, unknown> = {};
+    if (input.code !== undefined) patch.code = input.code;
+    if (input.title !== undefined) patch.title = input.title;
+    if (input.discountType !== undefined) patch.discount_type = input.discountType;
+    if (input.discountValue !== undefined) patch.discount_value = input.discountValue;
+    if (input.minOrderValue !== undefined) patch.min_order_value = input.minOrderValue;
+    if (input.maxDiscount !== undefined) patch.max_discount = input.maxDiscount;
+    if (input.usageLimit !== undefined) patch.usage_limit = input.usageLimit;
+    if (input.startDate !== undefined) patch.start_date = input.startDate;
+    if (input.endDate !== undefined) patch.end_date = input.endDate;
+    if (input.isActive !== undefined) patch.is_active = input.isActive;
+
+    const { data, error } = await this.db
+      .from('vouchers')
+      .update(patch)
+      .eq('id', id)
+      .select('*')
+      .maybeSingle();
+
+    if (error) {
+      if (error.code === '23505') throw new Error('Mã giảm giá đã tồn tại');
+      throw new Error(error.message);
+    }
+    if (!data) return null;
+    return toAdminVoucher(data as VoucherRow);
+  }
+
+  /** [Admin] Xoa voucher; neu da gan vao don hang (FK) thi chuyen sang tat (is_active=false) */
+  async adminRemove(id: string): Promise<boolean> {
+    const { error } = await this.db.from('vouchers').delete().eq('id', id);
+    if (!error) return true;
+
+    // Bi rang buoc khoa ngoai -> khong xoa cung duoc, chuyen sang vo hieu hoa
+    if (error.code === '23503') {
+      const { error: softErr } = await this.db
+        .from('vouchers')
+        .update({ is_active: false })
+        .eq('id', id);
+      if (softErr) throw new Error(softErr.message);
+      return true;
+    }
+    throw new Error(error.message);
   }
 }

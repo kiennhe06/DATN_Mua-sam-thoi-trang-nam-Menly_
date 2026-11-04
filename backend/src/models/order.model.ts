@@ -1,5 +1,6 @@
 import { supabase } from '../config/supabase.js';
 import type { CalculateShippingFeeInput } from '../validators/shipping.validator.js';
+import { VoucherModel } from './voucher.model.js';
 
 // =========== INTERFACES CHO ĐƠN HÀNG ===========
 
@@ -112,6 +113,7 @@ export const DEFAULT_SHIPPING_POLICY: ShippingPolicy = {
 
 export class OrderModel {
   protected db = supabase;
+  private voucherModel = new VoucherModel();
 
   /**
    * Lấy thông tin chính sách vận chuyển của shop
@@ -241,6 +243,23 @@ export class OrderModel {
       const { error: itemError } = await this.db.from('order_items').insert(itemRows);
       if (itemError) {
         console.error('Loi khi luu order items:', itemError.message);
+      }
+    }
+
+    // Luu voucher da ap dung vao bang order_vouchers (neu co) + tang so lan da dung
+    if (input.voucher_code?.trim() && (input.discount_amount ?? 0) > 0) {
+      const voucher = await this.voucherModel.findActiveByCode(input.voucher_code);
+      if (voucher) {
+        const { error: voucherErr } = await this.db.from('order_vouchers').insert({
+          order_id: order.id,
+          voucher_id: voucher.id,
+          discount_amount: input.discount_amount,
+        });
+        if (voucherErr) {
+          console.error('Khong luu duoc order_vouchers:', voucherErr.message);
+        } else {
+          await this.voucherModel.incrementUsage(voucher.id, voucher.used_count ?? 0);
+        }
       }
     }
 
