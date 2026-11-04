@@ -110,12 +110,13 @@ create table if not exists public.orders (
 create table if not exists public.order_items (
   id uuid primary key default gen_random_uuid(),
   order_id uuid not null references public.orders on delete cascade,
-  variant_id uuid not null references public.product_variants,
+  variant_id uuid references public.product_variants on delete set null,
   product_name text not null,
   size text not null,
   color text not null,
   unit_price int not null,
-  quantity int not null check (quantity > 0)
+  quantity int not null check (quantity > 0),
+  thumbnail_url text
 );
 
 -- Giao dịch thanh toán (VNPay)

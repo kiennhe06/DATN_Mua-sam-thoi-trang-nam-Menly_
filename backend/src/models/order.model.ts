@@ -201,6 +201,36 @@ export class OrderModel {
     };
   }
 
+  /** Lam giau thong tin don hang: gan anh san pham va dong bo format */
+  private enrichOrders(rows: any[]): OrderRow[] {
+    return (rows || []).map((order) => {
+      const items = (order.order_items || []).map((it: any) => {
+        const prod = it.product_variants?.products;
+        const thumbnail =
+          prod?.thumbnail_url ||
+          it.thumbnail_url ||
+          'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=500&auto=format&fit=crop';
+        return {
+          id: it.id,
+          order_id: it.order_id,
+          variant_id: it.variant_id,
+          product_name: it.product_name || prod?.name || 'Sản phẩm Menly',
+          size: it.size || 'M',
+          color: it.color || 'Đen',
+          unit_price: it.unit_price,
+          quantity: it.quantity,
+          thumbnail_url: thumbnail,
+        };
+      });
+
+      return {
+        ...order,
+        order_items: items,
+        items,
+      };
+    });
+  }
+
   // =========== CRUD ĐƠN HÀNG ===========
 
   /** Tạo đơn hàng mới, lưu vào bảng orders + order_items trên Supabase */
@@ -263,7 +293,8 @@ export class OrderModel {
       }
     }
 
-    return order as OrderRow;
+    const fullOrder = await this.getOrderById(order.id, input.userId);
+    return fullOrder ?? (order as OrderRow);
   }
 
   /** Lấy danh sách đơn hàng của 1 user (kèm items) */

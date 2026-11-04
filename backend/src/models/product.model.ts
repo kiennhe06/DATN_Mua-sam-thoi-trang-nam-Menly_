@@ -13,7 +13,7 @@ export class ProductModel {
   async findAll(opts: { search?: string; categoryId?: string; limit?: number } = {}) {
     let query = this.db
       .from('products')
-      .select('*')
+      .select('*, product_images(id, url, sort_order)')
       .eq('is_active', true)
       .eq('approval_status', 'approved');
     if (opts.categoryId) query = query.eq('category_id', opts.categoryId);
@@ -22,7 +22,14 @@ export class ProductModel {
 
     const { data, error } = await query;
     if (error) throw new Error(error.message);
-    return data;
+    return (data || []).map((p: any, idx: number) => {
+      if (!p.thumbnail_url || p.thumbnail_url.includes('picsum')) {
+        p.thumbnail_url = 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=600&auto=format&fit=crop';
+      }
+      p.is_new = idx < 10;
+      p.is_best_seller = (idx >= 6 && idx < 18) || (p.rating_count && p.rating_count >= 10);
+      return p;
+    });
   }
 
   // Lay chi tiet 1 san pham kem bien the + anh
@@ -35,6 +42,9 @@ export class ProductModel {
       .eq('approval_status', 'approved')
       .single();
     if (error) throw new Error(error.message);
+    if (data && (!data.thumbnail_url || data.thumbnail_url.includes('picsum'))) {
+      data.thumbnail_url = 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=600&auto=format&fit=crop';
+    }
     return data;
   }
 
