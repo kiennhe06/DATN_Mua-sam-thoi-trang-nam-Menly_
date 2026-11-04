@@ -36,22 +36,6 @@ export async function fetchAdminUsers(): Promise<UserAccount[]> {
   return Array.isArray(data) ? data : data.data || [];
 }
 
-export async function createAdminUser(payload: {
-  name: string;
-  email: string;
-  password?: string;
-  role?: string;
-}): Promise<UserAccount> {
-  const data = await adminFetch<{ data?: UserAccount } | UserAccount>('/api/v1/admin/users', {
-    method: 'POST',
-    body: JSON.stringify(payload),
-  });
-  if ('data' in (data as object) && (data as { data?: UserAccount }).data) {
-    return (data as { data: UserAccount }).data;
-  }
-  return data as UserAccount;
-}
-
 export async function updateAdminUser(
   id: string,
   payload: Partial<{ name: string; email: string; role: string }>
