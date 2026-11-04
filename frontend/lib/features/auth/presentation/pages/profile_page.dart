@@ -7,6 +7,7 @@ import 'package:menly_app/features/auth/presentation/pages/change_password_page.
 import 'package:menly_app/features/auth/presentation/pages/login_page.dart';
 import 'package:menly_app/features/auth/presentation/providers/auth_provider.dart';
 import 'package:menly_app/features/order/presentation/pages/my_orders_page.dart';
+import 'package:menly_app/features/order/presentation/pages/order_track_page.dart';
 import 'package:menly_app/features/order/presentation/pages/staff_order_management_page.dart';
 import 'package:menly_app/features/order/presentation/providers/order_provider.dart';
 import 'package:menly_app/features/support/presentation/pages/faq_page.dart';
@@ -359,6 +360,13 @@ class ProfilePage extends StatelessWidget {
                     subtitle: 'Theo dõi tiến trình giao hàng và lịch sử mua sắm',
                     badge: '${orderProv.allOrders.length}',
                     onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MyOrdersPage())),
+                  ),
+                  const Divider(height: 1),
+                  _buildMenuItem(
+                    title: 'Tra cứu đơn hàng',
+                    subtitle: 'Nhập mã đơn hoặc số điện thoại để xem tình trạng đơn hàng',
+                    badge: 'Mới',
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const OrderTrackPage())),
                   ),
                   const Divider(height: 1),
                   _buildMenuItem(

@@ -203,6 +203,55 @@ export class OrderModel {
 
   // =========== CRUD ĐƠN HÀNG ===========
 
+  private normalizePhoneNumber(value: string): string {
+    const digits = value.replace(/\D/g, '');
+    if (!digits) return '';
+    return digits.startsWith('84') ? `0${digits.slice(2)}` : digits;
+  }
+
+  private normalizeOrderCode(value: string): string {
+    return value
+      .trim()
+      .toUpperCase()
+      .replace(/^MNL-?/i, '')
+      .replace(/[^A-Z0-9]/g, '');
+  }
+
+  async findPublicOrderByCodeOrPhone(code?: string, phone?: string): Promise<OrderRow | null> {
+    const normalizedCode = (code ?? '').trim();
+    const normalizedPhone = this.normalizePhoneNumber(phone ?? '');
+
+    if (!normalizedCode && !normalizedPhone) return null;
+
+    try {
+      const { data, error } = await this.db
+        .from('orders')
+        .select('*, order_items(*)')
+        .order('created_at', { ascending: false });
+
+      if (error) return null;
+
+      const orders = (data ?? []) as OrderRow[];
+
+      return (
+        orders.find((order) => {
+          const orderCode = this.normalizeOrderCode(order.code ?? '');
+          const orderPhone = this.normalizePhoneNumber(String(order.ship_phone ?? ''));
+          const matchCode = normalizedCode ? orderCode === this.normalizeOrderCode(normalizedCode) : false;
+          const matchPhone = normalizedPhone ? orderPhone === normalizedPhone : false;
+
+          if (normalizedCode && normalizedPhone) {
+            return matchCode && matchPhone;
+          }
+
+          return matchCode || matchPhone;
+        }) ?? null
+      );
+    } catch {
+      return null;
+    }
+  }
+
   /** Tạo đơn hàng mới, lưu vào bảng orders + order_items trên Supabase */
   async createOrder(input: CreateOrderInput): Promise<OrderRow> {
     const code = `MNL-${Date.now() % 100000}`;
