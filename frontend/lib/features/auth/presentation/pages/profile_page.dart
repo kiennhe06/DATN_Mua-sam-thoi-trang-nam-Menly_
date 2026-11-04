@@ -292,20 +292,36 @@ class ProfilePage extends StatelessWidget {
                     ],
                   ),
                   const Divider(height: 24),
-                  // Nut doi thong tin & avatar
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton(
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppTheme.primary,
-                        side: const BorderSide(color: AppTheme.primary),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        padding: const EdgeInsets.symmetric(vertical: 10),
+                  // Nut doi thong tin & avatar hoac Dang nhap / Dang ky ngay
+                  if (!auth.isLoggedIn)
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.primary,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          elevation: 0,
+                        ),
+                        onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LoginPage())),
+                        child: const Text('Đăng nhập / Đăng ký ngay', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                       ),
-                      onPressed: () => _showEditProfileModal(context, auth),
-                      child: const Text('Chỉnh sửa thông tin & Avatar', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                    )
+                  else
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton(
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppTheme.primary,
+                          side: const BorderSide(color: AppTheme.primary),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                        ),
+                        onPressed: () => _showEditProfileModal(context, auth),
+                        child: const Text('Chỉnh sửa thông tin & Avatar', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                      ),
                     ),
-                  ),
                 ],
               ),
             ),
@@ -484,7 +500,7 @@ class ProfilePage extends StatelessWidget {
                       child: const Text('Đăng nhập / Đăng ký', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                     ),
             ),
-            const SizedBox(height: 30),
+            const SizedBox(height: 120), // Khoang cach duoi tranh bi che boi AppPillNav noi
           ],
         ),
       ),
