@@ -55,40 +55,38 @@ export class AuthModel {
    * Đăng ký tài khoản mới qua Supabase Auth
    */
   async register(input: RegisterInput) {
-    const authClient = getAuthClient();
     const { email, password, fullName, phone, role } = input;
     const userRole = role ?? 'customer';
     const normalizedEmail = email.toLowerCase();
 
-    const { data: authData, error: authError } = await authClient.auth.signUp({
+    // Dung Admin API (service_role) thay cho signUp de dang ky luon hoat dong:
+    // - Khong bi chan boi cau hinh "Allow new users to sign up" cua Supabase
+    // - email_confirm: true -> kich hoat ngay, khong gui email xac nhan
+    //   nen khong vuong gioi han gui email (rate limit) cua Supabase
+    const { data: created, error: authError } = await supabase.auth.admin.createUser({
       email: normalizedEmail,
       password,
-      options: {
-        data: {
-          full_name: fullName,
-          phone: phone || '',
-          role: userRole,
-        },
+      email_confirm: true,
+      user_metadata: {
+        full_name: fullName,
+        phone: phone || '',
+        role: userRole,
       },
     });
 
-    if (authError) {
-      if (authError.message.includes('already registered')) {
+    if (authError || !created?.user) {
+      const message = authError?.message?.toLowerCase() ?? '';
+      if (message.includes('already') || message.includes('registered') || message.includes('exists')) {
         throw new AuthError('Email này đã được đăng ký trong hệ thống', 409);
       }
-
-      throw new AuthError(authError.message, 400);
+      throw new AuthError(authError?.message ?? 'Không thể tạo tài khoản, vui lòng thử lại sau', 400);
     }
 
-    if (!authData.user) {
-      throw new AuthError('Không thể tạo tài khoản, vui lòng thử lại sau', 500);
-    }
-
-    // Đảm bảo thông tin hồ sơ được cập nhật trong bảng profiles
+    // Đảm bảo thông tin hồ sơ được cập nhật đầy đủ trong bảng profiles
     const { error: profileError } = await supabase.from('profiles').upsert(
       {
-        id: authData.user.id,
-        email: authData.user.email ?? email,
+        id: created.user.id,
+        email: created.user.email ?? normalizedEmail,
         full_name: fullName,
         phone: phone || null,
         role: userRole,
@@ -102,18 +100,14 @@ export class AuthModel {
       console.error('Lỗi cập nhật hồ sơ người dùng mới:', profileError.message);
     }
 
-    const hasSession = Boolean(authData.session);
-
     return {
-      message: hasSession
-        ? 'Đăng ký tài khoản thành công'
-        : 'Đăng ký thành công. Vui lòng kiểm tra email để xác nhận tài khoản.',
-      accessToken: authData.session?.access_token ?? null,
-      refreshToken: authData.session?.refresh_token ?? null,
-      expiresAt: authData.session?.expires_at ?? null,
+      message: 'Đăng ký tài khoản thành công',
+      accessToken: null,
+      refreshToken: null,
+      expiresAt: null,
       user: {
-        id: authData.user.id,
-        email: authData.user.email ?? email,
+        id: created.user.id,
+        email: created.user.email ?? normalizedEmail,
         fullName,
         phone: phone || null,
         role: userRole,
