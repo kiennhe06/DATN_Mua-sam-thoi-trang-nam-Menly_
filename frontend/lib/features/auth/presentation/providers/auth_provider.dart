@@ -144,10 +144,12 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void setUserFromLogin(UserModel user) async {
+  /// Cap nhat thong tin nguoi dung ngay sau khi dang nhap thanh cong,
+  /// luu ca vao bo nho va SharedPreferences de khong bi mat phien khi chuyen tab.
+  Future<void> setUserFromLogin(UserModel user) async {
     _user = user;
+    notifyListeners();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('user_profile', jsonEncode(user.toJson()));
-    notifyListeners();
   }
 }

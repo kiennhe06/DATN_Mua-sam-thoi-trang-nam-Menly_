@@ -1,8 +1,10 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:menly_app/core/network/api_client.dart';
 import 'package:menly_app/features/auth/presentation/pages/forgot_password_page.dart';
 import 'package:menly_app/features/auth/presentation/pages/register_page.dart';
+import 'package:menly_app/features/auth/presentation/providers/auth_provider.dart';
 import 'package:menly_app/main.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -49,6 +51,16 @@ class _LoginPageState extends State<LoginPage> {
       }
 
       if (!mounted) return;
+
+      // Cap nhat ngay thong tin nguoi dung vao AuthProvider de khi chuyen sang
+      // tab Ca nhan khong bi coi la chua dang nhap (khong phai dang nhap lai).
+      final userJson = payload['user'];
+      if (userJson is Map) {
+        await context.read<AuthProvider>().setUserFromLogin(
+              UserModel.fromJson(Map<String, dynamic>.from(userJson)),
+            );
+        if (!mounted) return;
+      }
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Đăng nhập thành công.'),
