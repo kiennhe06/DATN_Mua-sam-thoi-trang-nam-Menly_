@@ -18,6 +18,14 @@ export class OrderViewModel {
     return this.model.createOrder(input);
   }
 
+  /** Tra cuu don hang cho khach hang thuong theo ma don hoac SDT */
+  async trackPublicOrder(input: { code?: string; phone?: string }): Promise<OrderRow | null> {
+    const code = input.code?.trim();
+    const phone = input.phone?.trim();
+    if (!code && !phone) return null;
+    return this.model.findPublicOrderByCodeOrPhone(code, phone);
+  }
+
   /** Lay chi tiet 1 don hang */
   async getOrderById(orderId: string, userId: string): Promise<OrderRow | null> {
     return this.model.getOrderById(orderId, userId);

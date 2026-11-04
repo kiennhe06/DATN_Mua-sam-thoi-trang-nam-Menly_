@@ -60,9 +60,46 @@ router.get('/', requireAuth, async (req, res) => {
   }
 });
 
-// GET /api/v1/orders/track - tra cuu don cho khach vang lai
-router.get('/track', (_req, res) => {
-  res.status(501).json({ message: 'Tinh nang tra cuu don se duoc cap nhat sau' });
+// GET /api/v1/orders/track - tra cuu don cho khach vang lai theo ma don / SĐT
+router.get('/track', async (req, res) => {
+  const code = typeof req.query.code === 'string' ? req.query.code : '';
+  const phone = typeof req.query.phone === 'string' ? req.query.phone : '';
+
+  if (!code.trim() && !phone.trim()) {
+    return res.status(400).json({ error: 'Vui lòng nhập mã đơn hàng hoặc số điện thoại để tra cứu.' });
+  }
+
+  try {
+    const order = await vm.trackPublicOrder({ code, phone });
+    if (!order) {
+      return res.status(404).json({ error: 'Không tìm thấy đơn hàng phù hợp với mã đơn / số điện thoại bạn nhập.' });
+    }
+
+    return res.json({ data: order });
+  } catch (e) {
+    return res.status(500).json({ error: e instanceof Error ? e.message : 'Lỗi khi tra cứu đơn hàng' });
+  }
+});
+
+// POST /api/v1/orders/track - tra cuu don cho khach vang lai theo ma don / SĐT (body)
+router.post('/track', async (req, res) => {
+  const code = typeof req.body?.code === 'string' ? req.body.code : '';
+  const phone = typeof req.body?.phone === 'string' ? req.body.phone : '';
+
+  if (!code.trim() && !phone.trim()) {
+    return res.status(400).json({ error: 'Vui lòng nhập mã đơn hàng hoặc số điện thoại để tra cứu.' });
+  }
+
+  try {
+    const order = await vm.trackPublicOrder({ code, phone });
+    if (!order) {
+      return res.status(404).json({ error: 'Không tìm thấy đơn hàng phù hợp với mã đơn / số điện thoại bạn nhập.' });
+    }
+
+    return res.json({ data: order });
+  } catch (e) {
+    return res.status(500).json({ error: e instanceof Error ? e.message : 'Lỗi khi tra cứu đơn hàng' });
+  }
 });
 
 // GET /api/v1/orders/:id - Chi tiet don hang (yeu cau dang nhap)
