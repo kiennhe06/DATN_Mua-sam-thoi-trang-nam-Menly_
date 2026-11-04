@@ -123,8 +123,8 @@ class ProductModel {
       categoryName: json['category_name']?.toString() ?? '',
       ratingAvg: (json['rating_avg'] is num) ? (json['rating_avg'] as num).toDouble() : 4.8,
       ratingCount: (json['rating_count'] is num) ? (json['rating_count'] as num).toInt() : 12,
-      isNew: json['is_new'] == true,
-      isBestSeller: json['is_best_seller'] == true,
+      isNew: json['is_new'] == true || json['is_new'] == 1,
+      isBestSeller: json['is_best_seller'] == true || json['is_best_seller'] == 1,
       variants: parsedVariants,
     );
   }
