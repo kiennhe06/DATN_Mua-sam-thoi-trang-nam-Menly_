@@ -33,6 +33,24 @@ export async function fetchCategories(): Promise<Category[]> {
 }
 
 // ========== PRODUCTS ==========
+// Backend tra ve snake_case (category_id, thumbnail_url...); admin dung camelCase.
+// Chuan hoa de cac man hinh (dem/gom danh muc, hien thi) doc dung field. Dung any vi
+// du lieu goc co the o ca hai dang snake/camel.
+function normalizeProduct(p: any): Product {
+  return {
+    ...p,
+    id: p.id,
+    categoryId: p.categoryId ?? p.category_id ?? '',
+    name: p.name,
+    slug: p.slug,
+    description: p.description ?? null,
+    price: Number(p.price ?? 0),
+    thumbnailUrl: p.thumbnailUrl ?? p.thumbnail_url ?? null,
+    isActive: p.isActive ?? p.is_active,
+    createdAt: p.createdAt ?? p.created_at,
+  };
+}
+
 export async function fetchAdminProducts(params?: {
   limit?: number;
   page?: number;
@@ -50,28 +68,31 @@ export async function fetchAdminProducts(params?: {
   const qs = query.toString() ? `?${query.toString()}` : '';
 
   const data = await apiFetch<
-    { items?: Product[]; data?: Product[]; total?: number; pageInfo?: { total?: number } } | Product[]
+    { items?: unknown[]; data?: unknown[]; total?: number; pageInfo?: { total?: number } } | unknown[]
   >(`/api/v1/admin/products${qs}`);
-  if (Array.isArray(data)) return { items: data, total: data.length };
-
-  const items = data.items || data.data || [];
-  return { items, total: data.total ?? data.pageInfo?.total ?? items.length };
+  const raw: unknown[] = Array.isArray(data) ? data : data.items || data.data || [];
+  const items = raw.map((p) => normalizeProduct(p));
+  const total = Array.isArray(data)
+    ? items.length
+    : data.total ?? data.pageInfo?.total ?? items.length;
+  return { items, total };
 }
 
 export async function fetchProductDetail(id: string): Promise<Product | null> {
-  const data = await apiFetch<{ data?: Product } | Product>(`/api/v1/admin/products/${id}`);
-  if (data && 'data' in data && data.data) return data.data;
-  return data && 'id' in data ? data : null;
+  const data = await apiFetch<any>(`/api/v1/admin/products/${id}`);
+  const raw = data && data.data ? data.data : data;
+  return raw && raw.id ? normalizeProduct(raw) : null;
 }
 
 export async function updateProduct(
   id: string,
   payload: Partial<Product>
 ): Promise<Product> {
-  return apiFetch<Product>(`/api/v1/admin/products/${id}`, {
+  const res = await apiFetch<any>(`/api/v1/admin/products/${id}`, {
     method: 'PUT',
     body: JSON.stringify(payload),
   });
+  return normalizeProduct(res && res.data ? res.data : res);
 }
 
 export async function deleteProduct(id: string): Promise<void> {
@@ -97,10 +118,11 @@ export interface CreateProductInput {
 }
 
 export async function createAdminProduct(payload: CreateProductInput): Promise<Product> {
-  return apiFetch<Product>('/api/v1/admin/products', {
+  const res = await apiFetch<any>('/api/v1/admin/products', {
     method: 'POST',
     body: JSON.stringify(payload),
   });
+  return normalizeProduct(res && res.data ? res.data : res);
 }
 
 // ========== ORDERS ==========
