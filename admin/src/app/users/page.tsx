@@ -3,16 +3,15 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Header } from '../../components/Header';
 import { UsersTable } from '../../components/UsersTable';
-import { AddUserModal, EditUserModal } from '../../components/UserModal';
+import { EditUserModal } from '../../components/UserModal';
 import {
   fetchAdminUsers,
-  createAdminUser,
   updateAdminUser,
   deleteAdminUser,
   toggleLockAdminUser,
 } from '../../lib/user-api';
 import { UserAccount } from '../../lib/types';
-import { UserPlus, Search, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Search, CheckCircle2, AlertCircle } from 'lucide-react';
 
 export default function UsersPage() {
   const [users, setUsers] = useState<UserAccount[]>([]);
@@ -21,7 +20,6 @@ export default function UsersPage() {
   const [roleFilter, setRoleFilter] = useState<'all' | 'admin' | 'staff' | 'user' | 'seller'>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'locked'>('all');
 
-  const [isAddOpen, setIsAddOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<UserAccount | null>(null);
   const [msg, setMsg] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
 
@@ -114,7 +112,7 @@ export default function UsersPage() {
           </div>
         )}
 
-        {/* Filters and Add button */}
+        {/* Filters */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-slate-900/60 p-4 rounded-2xl border border-slate-800">
           <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
             <div className="relative flex-1 sm:w-64">
@@ -148,14 +146,6 @@ export default function UsersPage() {
               <option value="locked">Đã bị khóa</option>
             </select>
           </div>
-
-          <button
-            onClick={() => setIsAddOpen(true)}
-            className="w-full sm:w-auto px-4 py-2 bg-amber-500 text-slate-950 rounded-xl font-bold text-xs hover:bg-amber-400 transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-md"
-          >
-            <UserPlus className="w-4 h-4" />
-            Thêm người dùng mới
-          </button>
         </div>
 
         {/* Users Table Component */}
@@ -167,16 +157,6 @@ export default function UsersPage() {
           onDelete={handleDelete}
         />
       </div>
-
-      <AddUserModal
-        isOpen={isAddOpen}
-        onClose={() => setIsAddOpen(false)}
-        onSubmit={async (data) => {
-          const newUser = await createAdminUser(data);
-          setUsers((prev) => [newUser, ...prev]);
-          setMsg({ text: `Đã tạo tài khoản ${newUser.email} thành công!`, type: 'success' });
-        }}
-      />
 
       <EditUserModal
         user={editingUser}
