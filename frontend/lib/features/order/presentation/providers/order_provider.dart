@@ -60,12 +60,18 @@ class OrderProvider extends ChangeNotifier {
     if (_selectedStatusFilter == 'all') {
       return _orders;
     }
+    if (_selectedStatusFilter == 'canceled' || _selectedStatusFilter == 'cancelled') {
+      return _orders.where((o) => o.status == OrderStatus.canceled).toList();
+    }
     return _orders.where((o) => o.status.value == _selectedStatusFilter).toList();
   }
 
   /// Dem so luong don hang theo tung trang thai de hien badge tren tab bar (TM07)
   int countByStatus(String statusValue) {
     if (statusValue == 'all') return _orders.length;
+    if (statusValue == 'canceled' || statusValue == 'cancelled') {
+      return _orders.where((o) => o.status == OrderStatus.canceled).length;
+    }
     return _orders.where((o) => o.status.value == statusValue).length;
   }
 

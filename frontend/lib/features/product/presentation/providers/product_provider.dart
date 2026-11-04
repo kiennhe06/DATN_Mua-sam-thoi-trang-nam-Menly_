@@ -51,12 +51,16 @@ class ProductProvider extends ChangeNotifier {
   double get maxPrice => _maxPrice;
 
   /// Lay danh sach san pham moi nhat (TM11)
-  List<ProductModel> get newProducts =>
-      _allProducts.where((p) => p.isNew).toList();
+  List<ProductModel> get newProducts {
+    final list = _allProducts.where((p) => p.isNew).toList();
+    return list.isNotEmpty ? list : _allProducts.take(8).toList();
+  }
 
   /// Lay danh sach san pham ban chay (TM11)
-  List<ProductModel> get bestSellers =>
-      _allProducts.where((p) => p.isBestSeller).toList();
+  List<ProductModel> get bestSellers {
+    final list = _allProducts.where((p) => p.isBestSeller).toList();
+    return list.isNotEmpty ? list : _allProducts.skip(4).take(8).toList();
+  }
 
   /// Danh muc san pham (ket noi API /categories)
   List<String> get categories {
@@ -133,9 +137,19 @@ class ProductProvider extends ChangeNotifier {
 
       final res = await _api.dio.get('/products', queryParameters: queryParams);
       if (res.statusCode == 200 && res.data['data'] != null) {
-        _allProducts = (res.data['data'] as List)
-            .map((p) => ProductModel.fromJson(Map<String, dynamic>.from(p)))
-            .toList();
+        final list = res.data['data'] as List;
+        _allProducts = list.asMap().entries.map((entry) {
+          final idx = entry.key;
+          final json = Map<String, dynamic>.from(entry.value);
+          if (json['is_new'] == null) {
+            json['is_new'] = idx < 10;
+          }
+          if (json['is_best_seller'] == null) {
+            json['is_best_seller'] = (idx >= 6 && idx < 18) ||
+                (json['rating_count'] != null && (json['rating_count'] as num) >= 10);
+          }
+          return ProductModel.fromJson(json);
+        }).toList();
       } else {
         _allProducts = [];
         _error = 'Không tải được danh sách sản phẩm';

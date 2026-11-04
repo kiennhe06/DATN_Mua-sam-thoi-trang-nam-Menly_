@@ -9,6 +9,7 @@ import 'package:menly_app/models/product_model.dart';
 import 'package:menly_app/features/auth/presentation/pages/login_page.dart';
 import 'package:menly_app/features/cart/presentation/providers/cart_provider.dart';
 import 'package:menly_app/features/product/presentation/pages/product_detail_page.dart';
+import 'package:menly_app/features/product/presentation/pages/product_list_page.dart';
 import 'package:menly_app/features/product/presentation/pages/search_page.dart';
 import 'package:menly_app/features/product/presentation/providers/product_provider.dart';
 import 'package:menly_app/features/support/presentation/pages/about_page.dart';
@@ -29,10 +30,15 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  static const int _homeProductLimit = 8;
   final PageController _bannerController = PageController();
   int _currentBannerIndex = 0;
   Timer? _bannerTimer;
   _HomeTabFilter _tabFilter = _HomeTabFilter.all;
+
+  List<ProductModel> _randomProducts = [];
+  String _lastRandomCategory = '';
+  int _lastBaseProductsCount = 0;
 
   @override
   void initState() {
@@ -62,16 +68,47 @@ class _HomePageState extends State<HomePage> {
     super.dispose();
   }
 
-  List<ProductModel> _filterProducts(List<ProductModel> baseProducts) {
+  void _ensureRandomProducts(List<ProductModel> baseProducts, String category) {
+    if (baseProducts.isEmpty) {
+      _randomProducts = [];
+      return;
+    }
+    if (_lastRandomCategory != category ||
+        _lastBaseProductsCount != baseProducts.length ||
+        _randomProducts.isEmpty) {
+      _lastRandomCategory = category;
+      _lastBaseProductsCount = baseProducts.length;
+      final shuffled = List<ProductModel>.from(baseProducts)..shuffle();
+      _randomProducts = shuffled.take(_homeProductLimit).toList();
+    }
+  }
+
+  void _shuffleRandomProducts(List<ProductModel> baseProducts) {
+    if (baseProducts.isEmpty) return;
+    final shuffled = List<ProductModel>.from(baseProducts)..shuffle();
+    setState(() {
+      _randomProducts = shuffled.take(_homeProductLimit).toList();
+    });
+  }
+
+  List<ProductModel> _filterProducts(
+      List<ProductModel> baseProducts, String category) {
     switch (_tabFilter) {
       case _HomeTabFilter.all:
-        return baseProducts;
+        _ensureRandomProducts(baseProducts, category);
+        return _randomProducts;
       case _HomeTabFilter.newest:
         final list = baseProducts.where((p) => p.isNew).toList();
-        return list.isNotEmpty ? list : baseProducts;
+        if (list.isNotEmpty) {
+          return list.take(_homeProductLimit).toList();
+        }
+        return baseProducts.take(_homeProductLimit).toList();
       case _HomeTabFilter.bestSeller:
         final list = baseProducts.where((p) => p.isBestSeller).toList();
-        return list.isNotEmpty ? list : baseProducts;
+        if (list.isNotEmpty) {
+          return list.take(_homeProductLimit).toList();
+        }
+        return baseProducts.reversed.take(_homeProductLimit).toList();
     }
   }
 
@@ -82,7 +119,7 @@ class _HomePageState extends State<HomePage> {
 
     final currentCategory = productProv.selectedCategory;
     final baseProducts = productProv.products;
-    final displayedProducts = _filterProducts(baseProducts);
+    final displayedProducts = _filterProducts(baseProducts, currentCategory);
 
     return Scaffold(
       backgroundColor: AppTheme.scaffoldBackground,
@@ -154,7 +191,12 @@ class _HomePageState extends State<HomePage> {
         ],
       ),
       body: RefreshIndicator(
-        onRefresh: () => productProv.init(),
+        onRefresh: () async {
+          await productProv.init();
+          if (mounted) {
+            _shuffleRandomProducts(productProv.products);
+          }
+        },
         child: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -341,7 +383,9 @@ class _HomePageState extends State<HomePage> {
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
-                            '${displayedProducts.length}',
+                            baseProducts.length > displayedProducts.length
+                                ? '${displayedProducts.length}/${baseProducts.length}'
+                                : '${displayedProducts.length}',
                             style: const TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.bold,
@@ -357,8 +401,13 @@ class _HomePageState extends State<HomePage> {
                         _buildFilterTab(
                           label: 'Tất cả',
                           active: _tabFilter == _HomeTabFilter.all,
-                          onTap: () =>
-                              setState(() => _tabFilter = _HomeTabFilter.all),
+                          onTap: () {
+                            if (_tabFilter == _HomeTabFilter.all) {
+                              _shuffleRandomProducts(baseProducts);
+                            } else {
+                              setState(() => _tabFilter = _HomeTabFilter.all);
+                            }
+                          },
                         ),
                         const SizedBox(width: 4),
                         _buildFilterTab(
@@ -380,8 +429,67 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
 
-              // 5. LUOI 2 COT TOAN BO SAN PHAM
+              // 5. LUOI 2 COT TOAN BO SAN PHAM (GIOI HAN & RANDOM)
               _buildProductGrid(displayedProducts, wishlistProv),
+
+              // Nut xem tat ca san pham & nut doi goi y ngau nhien
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+                child: Row(
+                  children: [
+                    if (_tabFilter == _HomeTabFilter.all &&
+                        baseProducts.length > _homeProductLimit) ...[
+                      Expanded(
+                        child: OutlinedButton(
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            side: BorderSide(color: Colors.grey.shade300),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10)),
+                          ),
+                          onPressed: () => _shuffleRandomProducts(baseProducts),
+                          child: const Text(
+                            'Đổi gợi ý ngẫu nhiên',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: AppTheme.textPrimary,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                    ],
+                    Expanded(
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.primary,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10)),
+                          elevation: 0,
+                        ),
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (_) => const ProductListPage()),
+                          );
+                        },
+                        child: Text(
+                          'Xem tất cả (${baseProducts.length})',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
 
               // 6. SAN PHAM DA XEM GAN DAY (Neu co)
               if (productProv.recentlyViewed.isNotEmpty) ...[
@@ -552,10 +660,19 @@ class _HomePageState extends State<HomePage> {
           final p = items[i];
           final isFav = wishlistProv.isFavorite(p.id);
 
+          String? badgeText;
+          if (_tabFilter == _HomeTabFilter.newest) {
+            badgeText = 'MỚI';
+          } else if (_tabFilter == _HomeTabFilter.bestSeller) {
+            badgeText = 'HOT';
+          } else {
+            badgeText = p.isNew ? 'MỚI' : (p.isBestSeller ? 'HOT' : null);
+          }
+
           return ProductCard(
             product: p,
             isFavorite: isFav,
-            badge: p.isNew ? 'MỚI' : (p.isBestSeller ? 'HOT' : null),
+            badge: badgeText,
             onTap: () {
               Navigator.push(
                 context,

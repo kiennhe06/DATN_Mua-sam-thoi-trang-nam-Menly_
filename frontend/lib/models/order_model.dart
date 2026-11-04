@@ -28,7 +28,11 @@ class OrderItemModel {
       color: json['color']?.toString() ?? 'Đen',
       unitPrice: (json['unit_price'] is num) ? (json['unit_price'] as num).toInt() : 0,
       quantity: (json['quantity'] is num) ? (json['quantity'] as num).toInt() : 1,
-      thumbnailUrl: json['thumbnail_url']?.toString() ?? '',
+      thumbnailUrl: (json['thumbnail_url'] != null && json['thumbnail_url'].toString().isNotEmpty && !json['thumbnail_url'].toString().contains('picsum'))
+          ? json['thumbnail_url'].toString()
+          : (json['thumbnailUrl'] != null && json['thumbnailUrl'].toString().isNotEmpty && !json['thumbnailUrl'].toString().contains('picsum'))
+              ? json['thumbnailUrl'].toString()
+              : 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=500&auto=format&fit=crop',
     );
   }
 
@@ -103,8 +107,13 @@ extension OrderStatusExtension on OrderStatus {
       case 'da_giao':
         return OrderStatus.delivered;
       case 'canceled':
+      case 'cancelled':
       case 'da_huy':
         return OrderStatus.canceled;
+      case 'paid':
+        return OrderStatus.processing;
+      case 'completed':
+        return OrderStatus.delivered;
       case 'returned':
       case 'tra_hang':
         return OrderStatus.returned;
