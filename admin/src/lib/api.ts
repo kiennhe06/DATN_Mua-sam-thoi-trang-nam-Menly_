@@ -50,6 +50,17 @@ function normalizeProduct(p: any): Product {
         stock: Number(v.stock ?? 0),
       }))
     : [];
+  const rawImages = p.images ?? p.product_images ?? [];
+  const images = Array.isArray(rawImages)
+    ? rawImages
+        .map((image: any, index: number) => ({
+          id: image.id ?? '',
+          productId: image.productId ?? image.product_id ?? p.id,
+          url: typeof image === 'string' ? image : image.url,
+          sortOrder: image.sortOrder ?? image.sort_order ?? index,
+        }))
+        .filter((image: { url?: string }) => Boolean(image.url))
+    : [];
 
   return {
     ...p,
@@ -61,10 +72,7 @@ function normalizeProduct(p: any): Product {
     price: Number(p.price ?? 0),
     thumbnailUrl: p.thumbnailUrl ?? p.thumbnail_url ?? null,
     categoryName: p.categoryName ?? p.category_name ?? p.categories?.name ?? '',
-    variants: Array.isArray(rawVariants) ? rawVariants : [],
-    images: Array.isArray(rawImages)
-      ? rawImages.map((image: any) => typeof image === 'string' ? image : image.url).filter(Boolean)
-      : [],
+    images,
     isActive: p.isActive ?? p.is_active,
     createdAt: p.createdAt ?? p.created_at,
     variants,
@@ -271,7 +279,7 @@ export async function fetchAdminUsers(): Promise<UserAccount[]> {
 }
 
 export async function updateUserRole(userId: string, role: 'admin' | 'customer'): Promise<void> {
-  await apiFetch(`/api/v1/admin/users/${userId}/role`, {
+  await apiFetch(`/api/v1/admin/users/${userId}`, {
     method: 'PUT',
     body: JSON.stringify({ role }),
   });

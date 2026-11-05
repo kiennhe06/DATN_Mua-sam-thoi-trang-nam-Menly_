@@ -17,6 +17,11 @@ import {
   voucherIdSchema,
 } from '../../validators/admin-voucher.validator.js';
 import {
+  adminBannerSchema,
+  adminNotificationSchema,
+  inventoryAdjustmentSchema,
+} from '../../validators/admin.validator.js';
+import {
   adminCreateUserSchema,
   adminUpdateUserSchema,
   toggleLockSchema,
@@ -234,6 +239,19 @@ router.get('/inventory/movements', async (req, res, next) => {
   }
 });
 
+router.get('/audit-log', async (req, res, next) => {
+  const limitRaw = typeof req.query.limit === 'string' ? Number.parseInt(req.query.limit, 10) : 200;
+  if (!Number.isInteger(limitRaw) || limitRaw < 1 || limitRaw > 500) {
+    return res.status(400).json({ error: 'Giới hạn nhật ký không hợp lệ' });
+  }
+
+  try {
+    return res.json({ data: await adminModel.listAuditLogs(limitRaw) });
+  } catch (error) {
+    return next(error);
+  }
+});
+
 // GET /api/v1/admin/users - DS nguoi dung
 router.get('/users', async (_req, res, next) => {
   try {
@@ -307,22 +325,12 @@ router.patch('/users/:id/lock', async (req, res, next) => {
   if (!parsed.success) {
     return res.status(400).json({ error: 'Giá trị khóa không hợp lệ' });
   }
+  if (id.data === req.user?.id && parsed.data.isLocked) {
+    return res.status(400).json({ error: 'Không thể tự khóa tài khoản đang đăng nhập' });
+  }
 
   try {
     const user = await adminModel.setLock(id.data, parsed.data.isLocked);
-    if (!user) return res.status(404).json({ error: 'Không tìm thấy người dùng' });
-    return res.json({ user });
-  } catch (error) {
-    return next(error);
-  }
-});
-
-// PATCH /api/v1/admin/users/:id/lock - khóa/mở tài khoản
-router.patch('/users/:id/lock', async (req, res, next) => {
-  if (typeof req.body?.isLocked !== 'boolean') return res.status(400).json({ error: 'isLocked phải là boolean' });
-  if (req.params.id === req.user?.id && req.body.isLocked) return res.status(400).json({ error: 'Không thể tự khóa tài khoản đang đăng nhập' });
-  try {
-    const user = await adminModel.setUserLocked(req.params.id, req.body.isLocked, req.user!.id);
     if (!user) return res.status(404).json({ error: 'Không tìm thấy người dùng' });
     return res.json({ user });
   } catch (error) {
@@ -347,34 +355,6 @@ router.get('/stats', async (_req, res, next) => {
     } });
   } catch (error) {
     return next(error);
-  }
-});
-
-// POST /api/v1/admin/notifications - gui thong bao
-router.post('/notifications', async (req, res) => {
-  try {
-    const title = String(req.body?.title ?? '').trim();
-    const body = String(req.body?.body ?? '').trim();
-    const type = String(req.body?.type ?? 'promo');
-    const userId = req.body?.userId ? String(req.body.userId) : undefined;
-
-    if (!title || !body) {
-      return res.status(400).json({ error: 'Tiêu đề và nội dung thông báo không được để trống' });
-    }
-
-    const { NotificationViewModel } = await import('../../viewmodels/notification.viewmodel.js');
-    const vm = new NotificationViewModel();
-    const data = await vm.create({
-      userId,
-      title,
-      body,
-      type: ['order', 'promo', 'system'].includes(type) ? (type as 'order' | 'promo' | 'system') : 'promo',
-      data: req.body?.data ?? {},
-    });
-
-    return res.status(201).json({ data });
-  } catch (e) {
-    return res.status(400).json({ error: e instanceof Error ? e.message : 'Không thể tạo thông báo' });
   }
 });
 
@@ -403,7 +383,7 @@ router.post('/banners', async (req, res, next) => {
   const parsed = adminBannerSchema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: 'Thông tin banner không hợp lệ', details: parsed.error.flatten().fieldErrors });
   try {
-    return res.status(201).json({ data: await adminModel.createBanner(parsed.data, req.user!.id) });
+    return res.status(201).json({ data: await adminModel.createBanner(parsed.data) });
   } catch (error) {
     return next(error);
   }

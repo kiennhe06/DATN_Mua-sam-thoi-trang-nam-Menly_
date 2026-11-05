@@ -200,59 +200,28 @@ class OrderProvider extends ChangeNotifier {
     return createdOrder;
   }
 
-  /// AP-TT1: Xac nhan thanh toan VNPay thanh cong
-  void markAsPaidVNPay(String orderIdOrCode) {
-    final index = _orders.indexWhere((o) => o.id == orderIdOrCode || o.code == orderIdOrCode);
-    if (index >= 0) {
-      final order = _orders[index];
-      _orders[index] = OrderModel(
-        id: order.id,
-        code: order.code,
-        status: OrderStatus.processing,
-        paymentMethod: 'vnpay',
-        isPaid: true,
-        subtotal: order.subtotal,
-        discountAmount: order.discountAmount,
-        shippingFee: order.shippingFee,
-        total: order.total,
-        shipName: order.shipName,
-        shipPhone: order.shipPhone,
-        shipAddress: order.shipAddress,
-        createdAt: order.createdAt,
-        items: order.items,
-        cancelReason: order.cancelReason,
-      );
-      final paymentData = result.data?['data'];
-      if (paymentData is! Map || paymentData['isSuccess'] != true) {
-        _errorMessage = 'Backend không xác nhận giao dịch VNPay thành công';
-        notifyListeners();
-        return false;
+  /// Làm mới trạng thái đơn từ backend sau khi backend xác thực kết quả VNPay.
+  Future<void> refreshOrderAfterPayment(String orderId) async {
+    try {
+      final response = await _api.dio.get('/orders/$orderId');
+      final rawOrder = response.data?['data'];
+      if (rawOrder is! Map) {
+        throw StateError('Backend không trả về đơn hàng đã thanh toán');
       }
 
-      final confirmedOrderId = paymentData['orderId']?.toString() ?? orderId;
-      final orderResponse = await _api.dio.get('/orders/$confirmedOrderId');
-      final rawOrder = orderResponse.data?['data'];
-      if (rawOrder is! Map)
-        throw StateError('Backend không trả về đơn hàng đã thanh toán');
-      final confirmedOrder =
+      final updatedOrder =
           OrderModel.fromJson(Map<String, dynamic>.from(rawOrder));
-      if (!confirmedOrder.isPaid)
-        throw StateError('Đơn hàng chưa được ghi nhận thanh toán');
-
-      final index =
-          _orders.indexWhere((order) => order.id == confirmedOrder.id);
+      final index = _orders.indexWhere((order) => order.id == updatedOrder.id);
       if (index < 0) {
-        _orders.insert(0, confirmedOrder);
+        _orders.insert(0, updatedOrder);
       } else {
-        _orders[index] = confirmedOrder;
+        _orders[index] = updatedOrder;
       }
       _errorMessage = null;
-      notifyListeners();
-      return true;
     } catch (error) {
-      _errorMessage = 'Không xác minh được giao dịch VNPay: $error';
+      _errorMessage = 'Không thể làm mới trạng thái đơn hàng: $error';
+    } finally {
       notifyListeners();
-      return false;
     }
   }
 

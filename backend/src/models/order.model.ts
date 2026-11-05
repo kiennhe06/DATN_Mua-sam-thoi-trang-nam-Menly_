@@ -302,25 +302,20 @@ export class OrderModel {
     });
     if (error) throw new Error(error.message);
 
-    // Luu voucher da ap dung vao bang order_vouchers (neu co) + tang so lan da dung
-    if (input.voucher_code?.trim() && (input.discount_amount ?? 0) > 0) {
-      const voucher = await this.voucherModel.findActiveByCode(input.voucher_code);
-      if (voucher) {
-        const { error: voucherErr } = await this.db.from('order_vouchers').insert({
-          order_id: order.id,
-          voucher_id: voucher.id,
-          discount_amount: input.discount_amount,
-        });
-        if (voucherErr) {
-          console.error('Khong luu duoc order_vouchers:', voucherErr.message);
-        } else {
-          await this.voucherModel.incrementUsage(voucher.id, voucher.used_count ?? 0);
-        }
-      }
-    }
+    const rpcOrder = Array.isArray(created) ? created[0] : created;
+    if (!rpcOrder?.id) throw new Error('Backend không trả về mã đơn hàng vừa tạo');
 
-    const fullOrder = await this.getOrderById(order.id, input.userId);
-    return fullOrder ?? (order as OrderRow);
+    const { data: order, error: orderError } = await this.db
+      .from('orders')
+      .select('*, order_items(*)')
+      .eq('id', rpcOrder.id)
+      .single();
+    if (orderError) throw new Error(orderError.message);
+
+    return {
+      ...order,
+      discount_amount: Math.max(0, order.subtotal + order.shipping_fee - order.total),
+    } as OrderRow;
   }
 
   /** Lấy danh sách đơn hàng của 1 user (kèm items) */

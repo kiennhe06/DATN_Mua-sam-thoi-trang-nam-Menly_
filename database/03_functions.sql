@@ -16,6 +16,8 @@ $$;
 
 -- Tao don hang nguyen tu: tao don + chi tiet + tru kho + ap ma giam gia, trong 1 giao dich
 -- p_items dang: [{"variant_id":"...","quantity":2}, ...]
+drop function if exists public.create_order(uuid, text, text, text, text, jsonb, text, text);
+
 create or replace function public.create_order(
   p_user_id uuid,
   p_payment_method text,

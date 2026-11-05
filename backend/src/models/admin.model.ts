@@ -3,6 +3,16 @@ import type {
   AdminCreateUserInput,
   AdminUpdateUserInput,
 } from '../validators/admin-user.validator.js';
+import {
+  adminBannerSchema,
+  adminNotificationSchema,
+  inventoryAdjustmentSchema,
+} from '../validators/admin.validator.js';
+import type { z } from 'zod';
+
+type InventoryAdjustmentInput = z.infer<typeof inventoryAdjustmentSchema>;
+type BannerInput = z.infer<typeof adminBannerSchema>;
+type NotificationInput = z.infer<typeof adminNotificationSchema>;
 
 // Dong profiles trong DB (snake_case)
 interface ProfileRow {
@@ -186,5 +196,159 @@ export class AdminModel {
     const { error } = await this.db.auth.admin.deleteUser(id);
     if (error) throw new Error(error.message);
     return true;
+  }
+
+  async listInventoryMovements(limit = 200) {
+    const { data, error } = await this.db
+      .from('inventory_movements')
+      .select('id, variant_id, change, reason, order_id, created_by, note, created_at, product_variants(sku, products(name))')
+      .order('created_at', { ascending: false })
+      .limit(limit);
+    if (error) throw new Error(error.message);
+
+    return (data ?? []).map((row) => {
+      const variant = row.product_variants as unknown as {
+        sku?: string;
+        products?: { name?: string };
+      } | null;
+      return {
+        id: row.id,
+        variantId: row.variant_id,
+        delta: row.change,
+        change: row.change,
+        reason: row.reason === 'restock' ? 'admin_restock' : row.reason === 'adjust' ? 'admin_correction' : row.reason,
+        orderId: row.order_id,
+        actorId: row.created_by,
+        createdBy: row.created_by,
+        note: row.note,
+        createdAt: row.created_at,
+        sku: variant?.sku,
+        productName: variant?.products?.name,
+      };
+    });
+  }
+
+  async listAuditLogs(limit = 200) {
+    const { data, error } = await this.db
+      .from('admin_audit_log')
+      .select('id, admin_id, action, entity_type, entity_id, before, after, created_at')
+      .order('created_at', { ascending: false })
+      .limit(limit);
+    if (error) throw new Error(error.message);
+
+    return (data ?? []).map((row) => ({
+      id: row.id,
+      actorId: row.admin_id,
+      adminId: row.admin_id,
+      action: row.action,
+      entity: row.entity_type,
+      entityType: row.entity_type,
+      entityId: row.entity_id,
+      before: row.before,
+      after: row.after,
+      metadata: { before: row.before, after: row.after },
+      createdAt: row.created_at,
+    }));
+  }
+
+  async adjustInventory(input: InventoryAdjustmentInput, actorId: string) {
+    const { data: variant, error: fetchError } = await this.db
+      .from('product_variants')
+      .select('id, stock')
+      .eq('id', input.variantId)
+      .maybeSingle();
+    if (fetchError) throw new Error(fetchError.message);
+    if (!variant) return null;
+
+    const nextStock = variant.stock + input.delta;
+    if (nextStock < 0) throw new Error('Tồn kho không thể nhỏ hơn 0');
+
+    const { data: updated, error: updateError } = await this.db
+      .from('product_variants')
+      .update({ stock: nextStock })
+      .eq('id', input.variantId)
+      .eq('stock', variant.stock)
+      .select('id, stock')
+      .maybeSingle();
+    if (updateError) throw new Error(updateError.message);
+    if (!updated) throw new Error('Tồn kho vừa được cập nhật bởi thao tác khác, vui lòng tải lại');
+
+    const { error: movementError } = await this.db.from('inventory_movements').insert({
+      variant_id: input.variantId,
+      change: input.delta,
+      reason: input.reason === 'admin_restock' ? 'restock' : 'adjust',
+      created_by: actorId,
+      note: input.note || null,
+    });
+    if (movementError) {
+      const { error: rollbackError } = await this.db
+        .from('product_variants')
+        .update({ stock: variant.stock })
+        .eq('id', input.variantId)
+        .eq('stock', nextStock);
+      if (rollbackError) {
+        throw new Error(`Không ghi được lịch sử kho và không thể hoàn tác tồn kho: ${movementError.message}; ${rollbackError.message}`);
+      }
+      throw new Error(`Không ghi được lịch sử kho; tồn kho đã được hoàn tác: ${movementError.message}`);
+    }
+
+    return updated;
+  }
+
+  async createNotification(input: NotificationInput, actorId: string) {
+    let userIds: string[];
+    if (input.userId) {
+      userIds = [input.userId];
+    } else {
+      const { data, error } = await this.db
+        .from('profiles')
+        .select('id')
+        .eq('is_active', true)
+        .eq('is_locked', false);
+      if (error) throw new Error(error.message);
+      userIds = (data ?? []).map((profile) => profile.id);
+    }
+    if (userIds.length === 0) return { count: 0 };
+
+    const rows = userIds.map((userId) => ({
+      user_id: userId,
+      title: input.title,
+      body: input.body,
+      type: input.type,
+      data: { sent_by: actorId },
+    }));
+
+    for (let offset = 0; offset < rows.length; offset += 500) {
+      const { error } = await this.db.from('notifications').insert(rows.slice(offset, offset + 500));
+      if (error) throw new Error(error.message);
+    }
+    return { count: rows.length };
+  }
+
+  async listBanners() {
+    const { data, error } = await this.db
+      .from('banners')
+      .select('*')
+      .order('sort_order', { ascending: true });
+    if (error) throw new Error(error.message);
+    return data ?? [];
+  }
+
+  async createBanner(input: BannerInput) {
+    const { data, error } = await this.db
+      .from('banners')
+      .insert({
+        title: input.title,
+        image_url: input.imageUrl,
+        link_url: input.linkUrl || null,
+        sort_order: input.sortOrder,
+        is_active: input.isActive,
+        start_date: input.startDate ?? new Date().toISOString(),
+        end_date: input.endDate,
+      })
+      .select('*')
+      .single();
+    if (error) throw new Error(error.message);
+    return data;
   }
 }

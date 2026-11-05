@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { requireAuth } from '../../middlewares/auth.js';
+import type { CreateNotificationInput } from '../../models/notification.model.js';
 import { NotificationViewModel } from '../../viewmodels/notification.viewmodel.js';
 
 // Thong bao routes (yeu cau dang nhap)
@@ -10,13 +11,16 @@ router.use(requireAuth);
 // POST /api/v1/notifications - tao thong bao cho tai khoan hien tai
 router.post('/', async (req, res) => {
   try {
+    const requestedType = req.body?.type;
+    const type: CreateNotificationInput['type'] =
+      requestedType === 'order' || requestedType === 'promo' || requestedType === 'system'
+        ? requestedType
+        : 'promo';
     const payload = {
       userId: req.user!.id,
       title: String(req.body?.title ?? '').trim(),
       body: String(req.body?.body ?? '').trim(),
-      type: ['order', 'promo', 'system'].includes(String(req.body?.type ?? 'promo'))
-        ? String(req.body.type)
-        : 'promo',
+      type,
       data: req.body?.data ?? {},
     };
 
@@ -72,4 +76,3 @@ router.delete('/:id', async (req, res) => {
 });
 
 export default router;
-

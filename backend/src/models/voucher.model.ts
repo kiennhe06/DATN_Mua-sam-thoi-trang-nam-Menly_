@@ -102,7 +102,9 @@ export class VoucherModel {
     }
 
     const now = Date.now();
-    if (new Date(voucher.start_date).getTime() > now || new Date(voucher.end_date).getTime() < now) {
+    const startDate = voucher.start_date ? Date.parse(voucher.start_date) : Number.NaN;
+    const endDate = Date.parse(voucher.end_date);
+    if (!Number.isFinite(startDate) || !Number.isFinite(endDate) || startDate > now || endDate < now) {
       return { valid: false, discountAmount: 0, message: 'Mã giảm giá đã hết hạn' };
     }
 
