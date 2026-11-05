@@ -73,9 +73,6 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
 
   @override
   Widget build(BuildContext context) {
-    final cart = context.watch<CartProvider>();
-    final wishlist = context.watch<WishlistProvider>();
-
     return Scaffold(
       extendBody: true,
       body: IndexedStack(
@@ -85,8 +82,8 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
       bottomNavigationBar: AppPillNav(
         currentIndex: _currentIndex,
         onTap: (idx) => setState(() => _currentIndex = idx),
-        items: [
-          const PillNavItem(
+        items: const [
+          PillNavItem(
             Icons.home_outlined,
             selectedIcon: Icons.home,
             label: 'Trang chủ',
@@ -94,16 +91,14 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
           PillNavItem(
             Icons.favorite_border,
             selectedIcon: Icons.favorite,
-            badge: wishlist.count,
             label: 'Yêu thích',
           ),
           PillNavItem(
             Icons.shopping_bag_outlined,
             selectedIcon: Icons.shopping_bag,
-            badge: cart.totalItemCount,
             label: 'Giỏ hàng',
           ),
-          const PillNavItem(
+          PillNavItem(
             Icons.person_outline,
             selectedIcon: Icons.person,
             label: 'Cá nhân',

@@ -100,14 +100,7 @@ class _NavButton extends StatelessWidget {
           shape: BoxShape.circle,
         ),
         child: Center(
-          child: item.badge > 0
-              ? Badge(
-                  label: Text('${item.badge}'),
-                  backgroundColor: c.secondary,
-                  textColor: c.inkCard,
-                  child: icon,
-                )
-              : icon,
+          child: icon,
         ),
       ),
     );

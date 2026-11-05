@@ -1,14 +1,16 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:provider/provider.dart';
 import 'package:menly_app/core/network/api_client.dart';
+import 'package:menly_app/core/utils/format.dart';
 import 'package:menly_app/models/order_model.dart';
 import 'package:menly_app/features/order/presentation/providers/order_provider.dart';
 
-/// Man hinh thanh toan online VNPay su dung thu vien flutter_inappwebview: ^6.1.5 (AP-TT1)
-/// Ket noi truc tiep voi Backend API moi:
-/// - POST /api/v1/payments/vnpay/create (Tao link VNPay Sandbox HMAC-SHA512)
-/// - GET /api/v1/payments/vnpay/return (Nhan ket qua dieu huong tra ve)
+/// Man hinh thanh toan online VNPay su dung flutter_inappwebview (AP-TT1)
+/// Dong bo truc tiep voi Backend API:
+/// - POST /api/v1/payments/vnpay/create (Tao URL thanh toan VNPay Sandbox voi chu ky HmacSHA512)
+/// - GET /api/v1/payments/vnpay/return (Xac thuc chu ky & cap nhat trang thai don hang)
 class VNPayPaymentPage extends StatefulWidget {
   final OrderModel order;
 
@@ -22,6 +24,8 @@ class _VNPayPaymentPageState extends State<VNPayPaymentPage> {
   InAppWebViewController? _webViewController;
   double _progress = 0;
   bool _isLoading = true;
+  bool _isVerifying = false;
+  bool _hasHandledResult = false;
   String? _paymentUrl;
   String? _error;
   final ApiClient _api = ApiClient();
@@ -57,16 +61,28 @@ class _VNPayPaymentPageState extends State<VNPayPaymentPage> {
     _fetchPaymentUrl();
   }
 
-  /// Goi API POST /api/v1/payments/vnpay/create de tao URL thanh toan THAT
+  /// Goi API POST /api/v1/payments/vnpay/create de tao URL thanh toan VNPay
   Future<void> _fetchPaymentUrl() async {
     setState(() {
       _isLoading = true;
+      _isVerifying = false;
+      _hasHandledResult = false;
       _error = null;
     });
 
+    final amount = widget.order.total.toInt();
+    if (amount < 1000) {
+      setState(() {
+        _paymentUrl = null;
+        _error = 'Số tiền thanh toán tối thiểu qua VNPay là 1.000 đ.';
+        _isLoading = false;
+      });
+      return;
+    }
+
     try {
       final payload = <String, dynamic>{
-        'amount': widget.order.total,
+        'amount': amount,
         'orderCode': widget.order.code,
         'orderInfo': 'Thanh toan don hang ${widget.order.code}',
         'locale': 'vn',
@@ -81,23 +97,33 @@ class _VNPayPaymentPageState extends State<VNPayPaymentPage> {
 
       final res = await _api.dio.post('/payments/vnpay/create', data: payload);
 
-      if (res.statusCode == 200 && res.data['paymentUrl'] != null) {
-        setState(() {
-          _paymentUrl = res.data['paymentUrl'].toString();
-          _error = null;
-          _isLoading = false;
-        });
-        return;
+      if (res.statusCode == 200 && res.data != null) {
+        final url = res.data['paymentUrl']?.toString() ??
+            res.data['data']?['paymentUrl']?.toString();
+        if (url != null && url.isNotEmpty) {
+          setState(() {
+            _paymentUrl = url;
+            _error = null;
+            _isLoading = false;
+          });
+          return;
+        }
       }
 
-      // Backend khong tra ve URL hop le -> bao loi that, KHONG mo phong
       setState(() {
         _paymentUrl = null;
         _error = 'Không khởi tạo được cổng thanh toán VNPay. Vui lòng thử lại.';
         _isLoading = false;
       });
+    } on DioException catch (e) {
+      final backendError = e.response?.data?['error']?.toString();
+      setState(() {
+        _paymentUrl = null;
+        _error = backendError ??
+            'Không kết nối được tới máy chủ thanh toán. Vui lòng kiểm tra kết nối mạng.';
+        _isLoading = false;
+      });
     } catch (_) {
-      // Loi mang/backend -> bao loi that, KHONG mo phong
       setState(() {
         _paymentUrl = null;
         _error =
@@ -107,34 +133,84 @@ class _VNPayPaymentPageState extends State<VNPayPaymentPage> {
     }
   }
 
-  /// Kiem tra va xu ly khi VNPay dieu huong ve trang ket qua
+  /// Kiem tra va chan url callback khi VNPay dieu huong ve ket qua giao dich
   bool _handleVNPayReturn(WebUri? uri) {
-    if (uri == null) return false;
+    if (uri == null || _hasHandledResult) return false;
     final urlStr = uri.toString();
 
-    // Kiem tra xem URL co chua tham so ket qua cua VNPay hay khong
-    if (urlStr.contains('vnp_ResponseCode') ||
-        urlStr.contains('vnpay_return') ||
-        urlStr.contains('/vnpay/return')) {
-      final responseCode = uri.queryParameters['vnp_ResponseCode'];
-      final bankCode = uri.queryParameters['vnp_BankCode'];
-      final transactionNo = uri.queryParameters['vnp_TransactionNo'];
-      final txnRef = uri.queryParameters['vnp_TxnRef'] ?? widget.order.code;
+    final hasResponseParams = uri.queryParameters.containsKey('vnp_ResponseCode') ||
+        urlStr.contains('vnp_ResponseCode=') ||
+        urlStr.contains('/vnpay/return') ||
+        urlStr.contains('vnpay_return');
 
-      if (responseCode == '00') {
-        _handleSuccess(
-            bankCode: bankCode, transactionNo: transactionNo, txnRef: txnRef);
-      } else if (responseCode != null) {
-        _handleFailure(responseCode);
-      }
+    if (hasResponseParams) {
+      _hasHandledResult = true;
+      _processPaymentResult(uri);
       return true;
     }
     return false;
   }
 
+  /// Xu ly ket qua tra ve: Goi Backend /payments/vnpay/return de xac thuc chu ky & cap nhat DB
+  Future<void> _processPaymentResult(WebUri uri) async {
+    setState(() {
+      _isVerifying = true;
+      _isLoading = true;
+    });
+
+    final queryParams = Map<String, dynamic>.from(uri.queryParameters);
+    final responseCode = queryParams['vnp_ResponseCode']?.toString();
+    final bankCode = queryParams['vnp_BankCode']?.toString();
+    final transactionNo = queryParams['vnp_TransactionNo']?.toString();
+    final txnRef = queryParams['vnp_TxnRef']?.toString() ?? widget.order.code;
+
+    bool isSuccess = responseCode == '00';
+    String message = _vnpayMessages[responseCode] ?? 'Giao dịch thanh toán hoàn tất';
+
+    // Goi backend xac thuc chu ky checksum HmacSHA512 va cap nhat don hang trong database
+    try {
+      final res = await _api.dio.get(
+        '/payments/vnpay/return',
+        queryParameters: queryParams,
+      );
+
+      if (res.statusCode == 200 && res.data != null) {
+        final data = res.data['data'] ?? res.data;
+        if (data is Map<String, dynamic>) {
+          if (data['isSuccess'] != null) {
+            isSuccess = data['isSuccess'] == true;
+          }
+          if (data['message'] != null && data['message'].toString().isNotEmpty) {
+            message = data['message'].toString();
+          }
+        }
+      }
+    } catch (_) {
+      // Neu loi ket noi toi backend return, giu nguyen danh gia theo responseCode cua VNPay
+    }
+
+    if (!mounted) return;
+    setState(() {
+      _isVerifying = false;
+      _isLoading = false;
+    });
+
+    if (isSuccess) {
+      _handleSuccess(
+        bankCode: bankCode,
+        transactionNo: transactionNo,
+        txnRef: txnRef,
+      );
+    } else {
+      _handleFailure(responseCode, customMessage: message);
+    }
+  }
+
   void _handleSuccess(
       {String? bankCode, String? transactionNo, String? txnRef}) {
-    context.read<OrderProvider>().markAsPaidVNPay(widget.order.id);
+    final orderProv = context.read<OrderProvider>();
+    orderProv.markAsPaidVNPay(widget.order.id);
+    orderProv.loadOrders();
 
     showDialog(
       context: context,
@@ -147,7 +223,7 @@ class _VNPayPaymentPageState extends State<VNPayPaymentPage> {
           children: [
             Center(
               child: Text(
-                '${widget.order.total} đ',
+                formatPrice(widget.order.total),
                 style: const TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
@@ -157,7 +233,7 @@ class _VNPayPaymentPageState extends State<VNPayPaymentPage> {
             const SizedBox(height: 12),
             Text('• Mã đơn hàng: ${widget.order.code}',
                 style: const TextStyle(fontSize: 13)),
-            if (txnRef != null)
+            if (txnRef != null && txnRef.isNotEmpty)
               Text('• Mã giao dịch: $txnRef',
                   style: const TextStyle(fontSize: 13)),
             if (bankCode != null && bankCode.isNotEmpty)
@@ -168,7 +244,7 @@ class _VNPayPaymentPageState extends State<VNPayPaymentPage> {
                   style: const TextStyle(fontSize: 13)),
             const SizedBox(height: 8),
             Text(
-                'Đơn hàng đã được xác nhận thanh toán thành công qua cổng VNPay.',
+                'Đơn hàng đã được xác nhận thanh toán thành công và đồng bộ tới hệ thống.',
                 style: TextStyle(fontSize: 12, color: Colors.grey.shade700)),
           ],
         ),
@@ -189,12 +265,14 @@ class _VNPayPaymentPageState extends State<VNPayPaymentPage> {
     );
   }
 
-  void _handleFailure(String? code) {
-    final msg = _vnpayMessages[code] ??
+  void _handleFailure(String? code, {String? customMessage}) {
+    final msg = customMessage ??
+        _vnpayMessages[code] ??
         'Giao dịch thanh toán qua VNPay không thành công.';
 
     showDialog(
       context: context,
+      barrierDismissible: false,
       builder: (ctx) => AlertDialog(
         title: const Text('Thanh toán thất bại'),
         content: Column(
@@ -203,9 +281,9 @@ class _VNPayPaymentPageState extends State<VNPayPaymentPage> {
             Text(msg,
                 textAlign: TextAlign.center,
                 style: const TextStyle(fontSize: 14)),
-            if (code != null) ...[
+            if (code != null && code.isNotEmpty) ...[
               const SizedBox(height: 6),
-              Text('(Mã lỗi VNPay: $code)',
+              Text('(Mã phản hồi VNPay: $code)',
                   style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
             ],
           ],
@@ -235,6 +313,7 @@ class _VNPayPaymentPageState extends State<VNPayPaymentPage> {
   }
 
   Future<bool> _onWillPop() async {
+    if (_isVerifying) return false;
     if (_webViewController != null && await _webViewController!.canGoBack()) {
       await _webViewController!.goBack();
       return false;
@@ -263,7 +342,7 @@ class _VNPayPaymentPageState extends State<VNPayPaymentPage> {
     return shouldLeave ?? false;
   }
 
-  /// Giao dien loi that khi backend khong tra ve URL thanh toan VNPay
+  /// Giao dien thong bao loi khi khong tao duoc URL thanh toan VNPay
   Widget _buildErrorView() {
     return Center(
       child: Padding(
@@ -271,22 +350,36 @@ class _VNPayPaymentPageState extends State<VNPayPaymentPage> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.error_outline, size: 64, color: Colors.red.shade400),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.red.shade50,
+                shape: BoxShape.circle,
+              ),
+              child: Text(
+                '!',
+                style: TextStyle(
+                  fontSize: 32,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.red.shade600,
+                ),
+              ),
+            ),
             const SizedBox(height: 16),
             Text(
               _error ?? 'Không khởi tạo được cổng thanh toán VNPay.',
               textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 15),
+              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 20),
-            ElevatedButton.icon(
+            ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF005BAA),
                 foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               ),
               onPressed: _fetchPaymentUrl,
-              icon: const Icon(Icons.refresh),
-              label: const Text('Thử lại'),
+              child: const Text('Thử lại'),
             ),
             const SizedBox(height: 10),
             TextButton(
@@ -332,7 +425,7 @@ class _VNPayPaymentPageState extends State<VNPayPaymentPage> {
             ),
           ],
         ),
-        body: _isLoading
+        body: _isLoading && !_isVerifying
             ? const Center(
                 child: CircularProgressIndicator(color: Color(0xFF005BAA)))
             : _paymentUrl == null
@@ -347,11 +440,9 @@ class _VNPayPaymentPageState extends State<VNPayPaymentPage> {
                           _webViewController = controller;
                         },
                         onLoadStart: (controller, url) {
-                          setState(() => _isLoading = true);
                           _handleVNPayReturn(url);
                         },
                         onLoadStop: (controller, url) {
-                          setState(() => _isLoading = false);
                           _handleVNPayReturn(url);
                         },
                         onProgressChanged: (controller, progress) {
@@ -369,12 +460,38 @@ class _VNPayPaymentPageState extends State<VNPayPaymentPage> {
                           return NavigationActionPolicy.ALLOW;
                         },
                       ),
-                      if (_progress < 1.0)
+                      if (_progress < 1.0 && !_isVerifying)
                         LinearProgressIndicator(
                           value: _progress,
                           backgroundColor: Colors.transparent,
                           color: Colors.amber,
                           minHeight: 3,
+                        ),
+                      if (_isVerifying)
+                        Container(
+                          color: Colors.white.withValues(alpha: 0.92),
+                          child: const Center(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                CircularProgressIndicator(
+                                    color: Color(0xFF005BAA)),
+                                SizedBox(height: 16),
+                                Text(
+                                  'Đang xác thực kết quả thanh toán...',
+                                  style: TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.bold),
+                                ),
+                                SizedBox(height: 6),
+                                Text(
+                                  'Vui lòng không đóng ứng dụng trong giây lát',
+                                  style: TextStyle(
+                                      fontSize: 12, color: Colors.grey),
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
                     ],
                   ),

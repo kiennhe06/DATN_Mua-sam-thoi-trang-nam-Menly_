@@ -195,8 +195,8 @@ class OrderProvider extends ChangeNotifier {
   }
 
   /// AP-TT1: Xac nhan thanh toan VNPay thanh cong
-  void markAsPaidVNPay(String orderId) {
-    final index = _orders.indexWhere((o) => o.id == orderId);
+  void markAsPaidVNPay(String orderIdOrCode) {
+    final index = _orders.indexWhere((o) => o.id == orderIdOrCode || o.code == orderIdOrCode);
     if (index >= 0) {
       final order = _orders[index];
       _orders[index] = OrderModel(
