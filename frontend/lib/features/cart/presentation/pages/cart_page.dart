@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../../core/theme/app_colors.dart';
-import '../../../../models/cart_item_model.dart';
+import 'package:menly_app/features/cart/data/models/cart_item_model.dart';
 import '../providers/cart_provider.dart';
 import '../widgets/cart_bottom_bar.dart';
 import '../widgets/cart_clear_dialog.dart';

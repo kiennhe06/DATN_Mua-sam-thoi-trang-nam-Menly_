@@ -4,7 +4,7 @@ import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:provider/provider.dart';
 import 'package:menly_app/core/network/api_client.dart';
 import 'package:menly_app/core/utils/format.dart';
-import 'package:menly_app/models/order_model.dart';
+import 'package:menly_app/features/order/data/models/order_model.dart';
 import 'package:menly_app/features/order/presentation/providers/order_provider.dart';
 
 /// Man hinh thanh toan online VNPay su dung flutter_inappwebview (AP-TT1)

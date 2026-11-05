@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../../models/address_model.dart';
+import 'package:menly_app/features/address/data/models/address_model.dart';
 import '../providers/address_provider.dart';
 
 /// Man hinh So dia chi giao hang & Chon dia chi khi dat hang (AP-DC1)

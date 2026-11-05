@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 import '../../../../core/network/api_client.dart';
-import '../../../../models/voucher_model.dart';
+import 'package:menly_app/features/voucher/data/models/voucher_model.dart';
 
 /// Provider quan ly Khuyen mai & Gom ma giam gia
 /// Phu trach boi: Thanh Toan (TM10, AP-VC1)

@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:menly_app/core/network/api_client.dart';
-import 'package:menly_app/models/product_model.dart';
+import 'package:menly_app/features/product/data/models/product_model.dart';
 
 /// Provider quan ly Danh sach yeu thich (Wishlist) & Nut trai tim
 /// Ket noi truc tiep cac API backend da hoan thien (AP-YT1):

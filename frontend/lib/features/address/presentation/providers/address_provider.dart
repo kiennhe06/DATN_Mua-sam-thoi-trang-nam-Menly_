@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/network/api_client.dart';
-import '../../../../models/address_model.dart';
+import 'package:menly_app/features/address/data/models/address_model.dart';
 
 /// Provider quan ly So dia chi giao hang
 /// Phu trach boi: Thanh Toan (AP-DC1)

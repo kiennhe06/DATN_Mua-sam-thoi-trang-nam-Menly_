@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/format.dart';
-import '../../../../models/cart_item_model.dart';
+import 'package:menly_app/features/cart/data/models/cart_item_model.dart';
 
 class CartItemCard extends StatelessWidget {
   final CartItemModel item;
