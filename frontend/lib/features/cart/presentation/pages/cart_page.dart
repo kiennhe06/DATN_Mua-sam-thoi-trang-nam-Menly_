@@ -67,7 +67,7 @@ class CartPage extends StatelessWidget {
               },
             )
           : ListView(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 120),
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
               children: [
                 // Thanh chon tat ca & Ma giam gia
                 Container(

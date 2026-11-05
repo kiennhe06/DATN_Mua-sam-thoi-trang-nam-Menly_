@@ -559,7 +559,7 @@ class _HomePageState extends State<HomePage> {
               _buildInfoFooter(),
 
               // Khoang cach duoi tranh bi che boi AppPillNav noi
-              const SizedBox(height: 100),
+              const SizedBox(height: 24),
             ],
           ),
         ),
