@@ -59,6 +59,49 @@ class NotificationsPage extends StatelessWidget {
                 padding: const EdgeInsets.all(16),
                 children: [
                   if (vouchers.isNotEmpty) ...[
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 18),
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFFFF8A3D), Color(0xFFFFB15C)],
+                        ),
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.local_offer_rounded,
+                            color: Colors.white,
+                            size: 30,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Ưu đãi dành riêng cho bạn',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                                const SizedBox(height: 3),
+                                Text(
+                                  '${vouchers.length} voucher đang chờ bạn sử dụng',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                     Text(
                       'Ưu đãi và voucher',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
