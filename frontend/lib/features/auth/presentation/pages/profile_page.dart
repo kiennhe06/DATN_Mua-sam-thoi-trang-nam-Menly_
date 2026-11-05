@@ -8,6 +8,8 @@ import 'package:menly_app/features/address/presentation/pages/address_page.dart'
 import 'package:menly_app/features/auth/presentation/pages/change_password_page.dart';
 import 'package:menly_app/features/auth/presentation/pages/login_page.dart';
 import 'package:menly_app/features/auth/presentation/providers/auth_provider.dart';
+import 'package:menly_app/features/notification/presentation/pages/notifications_page.dart';
+import 'package:menly_app/features/notification/presentation/providers/notification_provider.dart';
 import 'package:menly_app/features/order/presentation/pages/my_orders_page.dart';
 import 'package:menly_app/features/order/presentation/pages/order_track_page.dart';
 import 'package:menly_app/features/order/presentation/pages/staff_order_management_page.dart';
@@ -385,6 +387,13 @@ class ProfilePage extends StatelessWidget {
                     subtitle: 'Nhập mã đơn hoặc số điện thoại để xem tình trạng đơn hàng',
                     badge: 'Mới',
                     onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const OrderTrackPage())),
+                  ),
+                  const Divider(height: 1),
+                  ProfileMenuItem(
+                    title: 'Thông báo',
+                    subtitle: 'Xem khuyến mãi, tin tức và thông báo từ shop',
+                    badge: '${context.watch<NotificationProvider>().unreadCount}',
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationsPage())),
                   ),
                   const Divider(height: 1),
                   ProfileMenuItem(

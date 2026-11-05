@@ -298,9 +298,31 @@ router.get('/audit-log', (_req, res) => {
 });
 
 // POST /api/v1/admin/notifications - gui thong bao
-router.post('/notifications', (_req, res) => {
-  // TODO: implement
-  res.status(501).json({ message: 'Chua duoc cai dat' });
+router.post('/notifications', async (req, res) => {
+  try {
+    const title = String(req.body?.title ?? '').trim();
+    const body = String(req.body?.body ?? '').trim();
+    const type = String(req.body?.type ?? 'promo');
+    const userId = req.body?.userId ? String(req.body.userId) : undefined;
+
+    if (!title || !body) {
+      return res.status(400).json({ error: 'Tiêu đề và nội dung thông báo không được để trống' });
+    }
+
+    const { NotificationViewModel } = await import('../../viewmodels/notification.viewmodel.js');
+    const vm = new NotificationViewModel();
+    const data = await vm.create({
+      userId,
+      title,
+      body,
+      type: ['order', 'promo', 'system'].includes(type) ? (type as 'order' | 'promo' | 'system') : 'promo',
+      data: req.body?.data ?? {},
+    });
+
+    return res.status(201).json({ data });
+  } catch (e) {
+    return res.status(400).json({ error: e instanceof Error ? e.message : 'Không thể tạo thông báo' });
+  }
 });
 
 // POST /api/v1/admin/banners - them banner
@@ -322,15 +344,39 @@ router.delete('/banners/:id', (_req, res) => {
 });
 
 // GET /api/v1/admin/returns - DS tra hang
-router.get('/returns', (_req, res) => {
-  // TODO: implement
-  res.status(501).json({ message: 'Chua duoc cai dat' });
+router.get('/returns', async (_req, res) => {
+  try {
+    const { OrderReturnViewModel } = await import('../../viewmodels/order-return.viewmodel.js');
+    const data = await new OrderReturnViewModel().listAll();
+    return res.json({ data });
+  } catch (e) {
+    return res.status(500).json({ error: e instanceof Error ? e.message : 'Lỗi khi tải danh sách trả hàng' });
+  }
 });
 
 // PATCH /api/v1/admin/returns/:id - duyet tra hang
-router.patch('/returns/:id', (_req, res) => {
-  // TODO: implement
-  res.status(501).json({ message: 'Chua duoc cai dat' });
+router.patch('/returns/:id', async (req, res) => {
+  try {
+    const status = String(req.body?.status ?? '').trim();
+    if (!status) {
+      return res.status(400).json({ error: 'Vui lòng chọn trạng thái mới cho yêu cầu trả hàng' });
+    }
+
+    const { OrderReturnViewModel } = await import('../../viewmodels/order-return.viewmodel.js');
+    const data = await new OrderReturnViewModel().updateStatus(req.params.id, {
+      status,
+      rejectionReason: req.body?.rejectionReason ?? req.body?.rejection_reason ?? null,
+      adminResolutionNote: req.body?.adminResolutionNote ?? req.body?.admin_resolution_note ?? null,
+    });
+
+    if (!data) {
+      return res.status(404).json({ error: 'Không tìm thấy yêu cầu trả hàng' });
+    }
+
+    return res.json({ data });
+  } catch (e) {
+    return res.status(400).json({ error: e instanceof Error ? e.message : 'Lỗi khi cập nhật yêu cầu trả hàng' });
+  }
 });
 
 // GET /api/v1/admin/reviews - DS danh gia

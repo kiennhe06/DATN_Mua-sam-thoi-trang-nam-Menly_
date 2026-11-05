@@ -7,6 +7,30 @@ const router = Router();
 const vm = new NotificationViewModel();
 router.use(requireAuth);
 
+// POST /api/v1/notifications - tao thong bao cho tai khoan hien tai
+router.post('/', async (req, res) => {
+  try {
+    const payload = {
+      userId: req.user!.id,
+      title: String(req.body?.title ?? '').trim(),
+      body: String(req.body?.body ?? '').trim(),
+      type: ['order', 'promo', 'system'].includes(String(req.body?.type ?? 'promo'))
+        ? String(req.body.type)
+        : 'promo',
+      data: req.body?.data ?? {},
+    };
+
+    if (!payload.title || !payload.body) {
+      return res.status(400).json({ error: 'Tiêu đề và nội dung thông báo không được để trống' });
+    }
+
+    const data = await vm.create(payload);
+    return res.status(201).json({ data });
+  } catch (e) {
+    return res.status(400).json({ error: e instanceof Error ? e.message : 'Loi' });
+  }
+});
+
 // GET /api/v1/notifications - danh sach thong bao cua toi
 router.get('/', async (req, res) => {
   try {
