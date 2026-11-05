@@ -4,6 +4,7 @@ import { ProductModel } from '../../models/product.model.js';
 import { OrderModel } from '../../models/order.model.js';
 import { VoucherModel } from '../../models/voucher.model.js';
 import { AdminModel } from '../../models/admin.model.js';
+import { ReviewModel } from '../../models/review.model.js';
 import {
   adminProductListSchema,
   adminProductSchema,
@@ -29,6 +30,7 @@ const productModel = new ProductModel();
 const orderModel = new OrderModel();
 const voucherModel = new VoucherModel();
 const adminModel = new AdminModel();
+const reviewModel = new ReviewModel();
 
 // Cac trang thai don hang hop le (khop enum order_status trong DB)
 const ORDER_STATUSES = [
@@ -334,21 +336,42 @@ router.patch('/returns/:id', (_req, res) => {
 });
 
 // GET /api/v1/admin/reviews - DS danh gia
-router.get('/reviews', (_req, res) => {
-  // TODO: implement
-  res.status(501).json({ message: 'Chua duoc cai dat' });
+router.get('/reviews', async (req, res, next) => {
+  const limitRaw = typeof req.query.limit === 'string' ? Number.parseInt(req.query.limit, 10) : NaN;
+  const limit = Number.isInteger(limitRaw) && limitRaw > 0 ? limitRaw : undefined;
+
+  try {
+    const items = await reviewModel.adminList({ limit });
+    return res.json({ data: { items } });
+  } catch (error) {
+    return next(error);
+  }
 });
 
 // DELETE /api/v1/admin/reviews/:id - xoa danh gia
-router.delete('/reviews/:id', (_req, res) => {
-  // TODO: implement
-  res.status(501).json({ message: 'Chua duoc cai dat' });
+router.delete('/reviews/:id', async (req, res, next) => {
+  try {
+    await reviewModel.adminDelete(req.params.id);
+    return res.json({ message: 'Đã xóa đánh giá' });
+  } catch (error) {
+    return next(error);
+  }
 });
 
 // POST /api/v1/admin/reviews/:id/reply - tra loi danh gia
-router.post('/reviews/:id/reply', (_req, res) => {
-  // TODO: implement
-  res.status(501).json({ message: 'Chua duoc cai dat' });
+router.post('/reviews/:id/reply', async (req, res, next) => {
+  const { reply } = (req.body ?? {}) as { reply?: unknown };
+  if (typeof reply !== 'string' || reply.trim().length === 0) {
+    return res.status(400).json({ error: 'Nội dung trả lời không được để trống' });
+  }
+
+  try {
+    const data = await reviewModel.adminReply(req.params.id, reply.trim());
+    if (!data) return res.status(404).json({ error: 'Không tìm thấy đánh giá' });
+    return res.json({ data, message: 'Đã trả lời đánh giá' });
+  } catch (error) {
+    return next(error);
+  }
 });
 
 // =========== QUAN LY MA GIAM GIA (VOUCHER) ===========

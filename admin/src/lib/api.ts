@@ -16,7 +16,7 @@ import { adminFetch as apiFetch, getApiUrl } from './api-client';
 export async function checkServerHealth(): Promise<boolean> {
   try {
     const BASE = getApiUrl();
-    const res = await fetch(`${BASE}/health`, { method: 'GET' });
+    const res = await fetch(`${BASE}/api/v1/health`, { method: 'GET' });
     return res.ok;
   } catch {
     return false;
@@ -37,6 +37,20 @@ export async function fetchCategories(): Promise<Category[]> {
 // Chuan hoa de cac man hinh (dem/gom danh muc, hien thi) doc dung field. Dung any vi
 // du lieu goc co the o ca hai dang snake/camel.
 function normalizeProduct(p: any): Product {
+  // Backend tra bien the o khoa snake_case `product_variants`; chuan hoa ve `variants`
+  // (camelCase) de trang San pham / Kho tinh dung ton kho theo tung bien the.
+  const rawVariants = p.variants ?? p.product_variants ?? [];
+  const variants = Array.isArray(rawVariants)
+    ? rawVariants.map((v: any) => ({
+        id: v.id,
+        productId: v.productId ?? v.product_id ?? p.id,
+        size: v.size ?? '',
+        color: v.color ?? '',
+        sku: v.sku ?? '',
+        stock: Number(v.stock ?? 0),
+      }))
+    : [];
+
   return {
     ...p,
     id: p.id,
@@ -48,6 +62,7 @@ function normalizeProduct(p: any): Product {
     thumbnailUrl: p.thumbnailUrl ?? p.thumbnail_url ?? null,
     isActive: p.isActive ?? p.is_active,
     createdAt: p.createdAt ?? p.created_at,
+    variants,
   };
 }
 
