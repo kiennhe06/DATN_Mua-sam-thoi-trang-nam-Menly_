@@ -53,7 +53,8 @@ export class ProductModel {
   }
 
   async findAdminAll(opts: AdminProductListOptions) {
-    let query = this.db.from('products').select('*');
+    // Kem bien the (product_variants) de trang quan tri tinh dung ton kho tung san pham
+    let query = this.db.from('products').select('*, product_variants(*)');
     if (opts.categoryId) query = query.eq('category_id', opts.categoryId);
     if (opts.search) query = query.ilike('name', `%${opts.search}%`);
     if (opts.approvalStatus) query = query.eq('approval_status', opts.approvalStatus);
