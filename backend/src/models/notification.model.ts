@@ -11,9 +11,73 @@ export interface NotificationRow {
   created_at: string;
 }
 
+export interface CreateNotificationInput {
+  userId?: string;
+  title: string;
+  body: string;
+  type?: 'order' | 'promo' | 'system';
+  data?: Record<string, unknown>;
+}
+
 // Lop truy cap du lieu cho: Thong bao
 export class NotificationModel {
   protected db = supabase;
+
+  async createNotification(input: CreateNotificationInput): Promise<NotificationRow[]> {
+    const title = input.title?.trim();
+    const body = input.body?.trim();
+
+    if (!title || !body) {
+      throw new Error('Tiêu đề và nội dung thông báo không được để trống');
+    }
+
+    const type = input.type ?? 'promo';
+    const data = input.data ?? {};
+
+    if (input.userId) {
+      const { data: inserted, error } = await this.db
+        .from('notifications')
+        .insert({
+          user_id: input.userId,
+          title,
+          body,
+          type,
+          data,
+        })
+        .select()
+        .single();
+
+      if (error) throw new Error(error.message);
+      return [inserted as NotificationRow];
+    }
+
+    const { data: users, error: profileError } = await this.db
+      .from('profiles')
+      .select('id')
+      .eq('is_active', true);
+
+    if (profileError) throw new Error(profileError.message);
+
+    const rows = (users ?? []).map((user) => ({
+      user_id: user.id,
+      title,
+      body,
+      type,
+      data,
+    }));
+
+    if (rows.length === 0) {
+      return [];
+    }
+
+    const { data: inserted, error } = await this.db
+      .from('notifications')
+      .insert(rows)
+      .select();
+
+    if (error) throw new Error(error.message);
+    return (inserted ?? []) as NotificationRow[];
+  }
 
   async findByUser(userId: string): Promise<NotificationRow[]> {
     const { data, error } = await this.db

@@ -12,7 +12,7 @@ String _formatDate(DateTime dt) {
   return '$d/$m/$y $h:$min';
 }
 
-/// Man hinh danh sach thong bao cua Menly
+/// Màn hình danh sách thông báo của Menly
 class NotificationsPage extends StatelessWidget {
   const NotificationsPage({super.key});
 
