@@ -274,7 +274,7 @@ class _VNPayPaymentPageState extends State<VNPayPaymentPage> {
       context: context,
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
-        title: const Text('Thanh toán thất bại'),
+        title: Text(code == '24' ? 'Đã hủy giao dịch VNPay' : 'Thanh toán thất bại'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [

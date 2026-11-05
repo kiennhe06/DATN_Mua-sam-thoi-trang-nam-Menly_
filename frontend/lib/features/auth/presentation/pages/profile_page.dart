@@ -500,7 +500,7 @@ class ProfilePage extends StatelessWidget {
                       child: const Text('Đăng nhập / Đăng ký', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                     ),
             ),
-            const SizedBox(height: 120), // Khoang cach duoi tranh bi che boi AppPillNav noi
+            const SizedBox(height: 24),
           ],
         ),
       ),

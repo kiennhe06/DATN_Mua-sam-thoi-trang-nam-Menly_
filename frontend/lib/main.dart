@@ -53,6 +53,11 @@ class MenlyApp extends StatelessWidget {
   }
 }
 
+class TabSwitchNotification extends Notification {
+  final int targetIndex;
+  const TabSwitchNotification(this.targetIndex);
+}
+
 /// Khung dieu huong chinh voi thanh Tab AppPillNav noi (4 tab: Trang chu, Yeu thich, Gio hang, Ca nhan)
 class MainNavigationShell extends StatefulWidget {
   const MainNavigationShell({super.key});
@@ -73,37 +78,45 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      extendBody: true,
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _pages,
-      ),
-      bottomNavigationBar: AppPillNav(
-        currentIndex: _currentIndex,
-        onTap: (idx) => setState(() => _currentIndex = idx),
-        items: const [
-          PillNavItem(
-            Icons.home_outlined,
-            selectedIcon: Icons.home,
-            label: 'Trang chủ',
-          ),
-          PillNavItem(
-            Icons.favorite_border,
-            selectedIcon: Icons.favorite,
-            label: 'Yêu thích',
-          ),
-          PillNavItem(
-            Icons.shopping_bag_outlined,
-            selectedIcon: Icons.shopping_bag,
-            label: 'Giỏ hàng',
-          ),
-          PillNavItem(
-            Icons.person_outline,
-            selectedIcon: Icons.person,
-            label: 'Cá nhân',
-          ),
-        ],
+    final cart = context.watch<CartProvider>();
+    return NotificationListener<TabSwitchNotification>(
+      onNotification: (notif) {
+        setState(() => _currentIndex = notif.targetIndex);
+        return true;
+      },
+      child: Scaffold(
+        extendBody: false,
+        body: IndexedStack(
+          index: _currentIndex,
+          children: _pages,
+        ),
+        bottomNavigationBar: AppPillNav(
+          currentIndex: _currentIndex,
+          onTap: (idx) => setState(() => _currentIndex = idx),
+          items: [
+            const PillNavItem(
+              Icons.home_outlined,
+              selectedIcon: Icons.home,
+              label: 'Trang chủ',
+            ),
+            const PillNavItem(
+              Icons.favorite_border,
+              selectedIcon: Icons.favorite,
+              label: 'Yêu thích',
+            ),
+            PillNavItem(
+              Icons.shopping_bag_outlined,
+              selectedIcon: Icons.shopping_bag,
+              badge: cart.totalItemCount,
+              label: 'Giỏ hàng',
+            ),
+            const PillNavItem(
+              Icons.person_outline,
+              selectedIcon: Icons.person,
+              label: 'Cá nhân',
+            ),
+          ],
+        ),
       ),
     );
   }

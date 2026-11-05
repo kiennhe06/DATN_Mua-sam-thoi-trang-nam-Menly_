@@ -22,12 +22,7 @@ class CartBottomBar extends StatelessWidget {
     final hasSelection = selectedCount > 0;
 
     return Container(
-      padding: EdgeInsets.fromLTRB(
-        20,
-        14,
-        20,
-        MediaQuery.of(context).padding.bottom + 90, // Khoang cach tren AppPillNav
-      ),
+      padding: const EdgeInsets.fromLTRB(20, 14, 20, 14),
       decoration: BoxDecoration(
         color: c.surface,
         border: Border(top: BorderSide(color: c.border)),
