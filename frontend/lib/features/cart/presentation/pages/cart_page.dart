@@ -1,3 +1,4 @@
+import '../../../../main.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -63,7 +64,7 @@ class CartPage extends StatelessWidget {
       body: cart.items.isEmpty
           ? CartEmptyView(
               onShopNow: () {
-                // Quay tro ve tab Trang chu
+                const TabSwitchNotification(0).dispatch(context);
               },
             )
           : ListView(

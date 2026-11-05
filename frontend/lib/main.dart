@@ -53,6 +53,11 @@ class MenlyApp extends StatelessWidget {
   }
 }
 
+class TabSwitchNotification extends Notification {
+  final int targetIndex;
+  const TabSwitchNotification(this.targetIndex);
+}
+
 /// Khung dieu huong chinh voi thanh Tab AppPillNav noi (4 tab: Trang chu, Yeu thich, Gio hang, Ca nhan)
 class MainNavigationShell extends StatefulWidget {
   const MainNavigationShell({super.key});
@@ -73,9 +78,14 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      extendBody: false,
-      body: IndexedStack(
+    return NotificationListener<TabSwitchNotification>(
+      onNotification: (notif) {
+        setState(() => _currentIndex = notif.targetIndex);
+        return true;
+      },
+      child: Scaffold(
+        extendBody: false,
+        body: IndexedStack(
         index: _currentIndex,
         children: _pages,
       ),
@@ -105,6 +115,7 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
           ),
         ],
       ),
+    ),
     );
   }
 }
