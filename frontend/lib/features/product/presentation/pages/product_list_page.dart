@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:menly_app/core/theme/app_theme.dart';
+import 'package:menly_app/core/utils/app_snackbar.dart';
+import 'package:menly_app/core/widgets/category_pill.dart';
+import 'package:menly_app/core/widgets/product_card.dart';
+import 'package:menly_app/features/cart/presentation/providers/cart_provider.dart';
 import 'package:menly_app/features/wishlist/presentation/providers/wishlist_provider.dart';
 import 'package:menly_app/features/product/presentation/providers/product_provider.dart';
 import 'product_detail_page.dart';
 import 'search_page.dart';
 
-/// Man hinh danh sach san pham (AP-SP1: Loc, Tim kiem, Sap xep; AP-YT1: Nut trai tim)
+/// Man hinh danh sach san pham cao cap Menly (AP-SP1: Loc, Tim kiem, Sap xep, Luoi 2 cot chu dong)
 class ProductListPage extends StatelessWidget {
   const ProductListPage({super.key});
 
@@ -31,20 +36,25 @@ class ProductListPage extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('Bộ lọc & Sắp xếp', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                      const Text('Bộ lọc & Sắp xếp',
+                          style: TextStyle(
+                              fontSize: 18, fontWeight: FontWeight.bold)),
                       TextButton(
                         onPressed: () {
                           prov.resetFilters();
                           Navigator.pop(ctx);
                         },
-                        child: const Text('Thiết lập lại', style: TextStyle(color: Colors.redAccent)),
+                        child: const Text('Thiết lập lại',
+                            style: TextStyle(color: AppTheme.accentRed)),
                       ),
                     ],
                   ),
                   const SizedBox(height: 12),
 
                   // Sap xep theo
-                  const Text('Sắp xếp theo:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                  const Text('Sắp xếp theo:',
+                      style:
+                          TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                   const SizedBox(height: 8),
                   Wrap(
                     spacing: 8,
@@ -57,11 +67,18 @@ class ProductListPage extends StatelessWidget {
                       final isSelected = currentSort == item['key'];
                       return ChoiceChip(
                         label: Text(item['label']!,
-                            style: TextStyle(color: isSelected ? Colors.white : Colors.black87, fontSize: 12)),
+                            style: TextStyle(
+                                color: isSelected
+                                    ? Colors.white
+                                    : AppTheme.textPrimary,
+                                fontSize: 12)),
                         selected: isSelected,
-                        selectedColor: Colors.black87,
+                        selectedColor: AppTheme.primary,
                         backgroundColor: Colors.grey.shade100,
-                        onSelected: (_) => setState(() => currentSort = item['key']!),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8)),
+                        onSelected: (_) =>
+                            setState(() => currentSort = item['key']!),
                       );
                     }).toList(),
                   ),
@@ -71,10 +88,15 @@ class ProductListPage extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('Khoảng giá:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                      const Text('Khoảng giá:',
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 14)),
                       Text(
                         '${currentRange.start.toInt()} đ - ${currentRange.end.toInt()} đ',
-                        style: const TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 13),
+                        style: const TextStyle(
+                            color: AppTheme.accentRed,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13),
                       ),
                     ],
                   ),
@@ -83,10 +105,12 @@ class ProductListPage extends StatelessWidget {
                     min: 0,
                     max: 1000000,
                     divisions: 20,
-                    activeColor: Colors.black87,
+                    activeColor: AppTheme.primary,
                     inactiveColor: Colors.grey.shade300,
-                    labels: RangeLabels('${currentRange.start.toInt()}', '${currentRange.end.toInt()}'),
-                    onChanged: (values) => setState(() => currentRange = values),
+                    labels: RangeLabels('${currentRange.start.toInt()}',
+                        '${currentRange.end.toInt()}'),
+                    onChanged: (values) =>
+                        setState(() => currentRange = values),
                   ),
                   const SizedBox(height: 16),
 
@@ -94,17 +118,20 @@ class ProductListPage extends StatelessWidget {
                     width: double.infinity,
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.black87,
+                        backgroundColor: AppTheme.primary,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10)),
                       ),
                       onPressed: () {
                         prov.setSortBy(currentSort);
-                        prov.setPriceRange(currentRange.start, currentRange.end);
+                        prov.setPriceRange(
+                            currentRange.start, currentRange.end);
                         Navigator.pop(ctx);
                       },
-                      child: const Text('Áp dụng bộ lọc', style: TextStyle(fontWeight: FontWeight.bold)),
+                      child: const Text('Áp dụng bộ lọc',
+                          style: TextStyle(fontWeight: FontWeight.bold)),
                     ),
                   ),
                 ],
@@ -122,20 +149,22 @@ class ProductListPage extends StatelessWidget {
     final wishlistProv = context.watch<WishlistProvider>();
 
     return Scaffold(
+      backgroundColor: AppTheme.scaffoldBackground,
       appBar: AppBar(
         title: const Text('Sản phẩm Menly'),
         centerTitle: true,
         actions: [
-          // Nut tim kiem (TM03)
-          IconButton(
-            icon: const Icon(Icons.search),
-            onPressed: () {
-              Navigator.push(context, MaterialPageRoute(builder: (_) => const SearchPage()));
-            },
+          TextButton(
+            child: const Text('Tìm kiếm',
+                style: TextStyle(
+                    fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
+            onPressed: () => Navigator.push(
+                context, MaterialPageRoute(builder: (_) => const SearchPage())),
           ),
-          // Nut bo loc & sap xep
-          IconButton(
-            icon: const Icon(Icons.tune),
+          TextButton(
+            child: const Text('Lọc',
+                style: TextStyle(
+                    fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
             onPressed: () => _showFilterModal(context, productProv),
           ),
         ],
@@ -148,56 +177,51 @@ class ProductListPage extends StatelessWidget {
             color: Colors.white,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
               itemCount: productProv.categories.length,
               separatorBuilder: (_, __) => const SizedBox(width: 8),
               itemBuilder: (ctx, i) {
                 final cat = productProv.categories[i];
                 final isSelected = productProv.selectedCategory == cat;
-                return ChoiceChip(
-                  label: Text(
-                    cat,
-                    style: TextStyle(
-                      color: isSelected ? Colors.white : Colors.black87,
-                      fontSize: 13,
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                    ),
-                  ),
+                return CategoryPill(
+                  label: cat,
                   selected: isSelected,
-                  selectedColor: Colors.black87,
-                  backgroundColor: Colors.grey.shade100,
-                  onSelected: (_) => productProv.setCategory(cat),
+                  onTap: () => productProv.setCategory(cat),
                 );
               },
             ),
           ),
 
-          // Neu dang loc theo tu khoa hoac gia, hien thi thanh thong bao
-          if (productProv.searchQuery.isNotEmpty || productProv.minPrice > 0 || productProv.maxPrice < 1000000)
+          if (productProv.searchQuery.isNotEmpty ||
+              productProv.minPrice > 0 ||
+              productProv.maxPrice < 1000000)
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               color: Colors.amber.shade50,
               child: Row(
                 children: [
-                  const Icon(Icons.filter_list, size: 16, color: Colors.orange),
-                  const SizedBox(width: 6),
                   Expanded(
                     child: Text(
                       'Đang lọc: ${productProv.searchQuery.isNotEmpty ? '"${productProv.searchQuery}" • ' : ''}${productProv.products.length} kết quả',
-                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+                      style: const TextStyle(
+                          fontSize: 12, fontWeight: FontWeight.w500),
                     ),
                   ),
                   TextButton(
                     onPressed: () => productProv.resetFilters(),
-                    style: TextButton.styleFrom(visualDensity: VisualDensity.compact, padding: EdgeInsets.zero),
-                    child: const Text('Bỏ lọc', style: TextStyle(fontSize: 12, color: Colors.red)),
+                    style: TextButton.styleFrom(
+                        visualDensity: VisualDensity.compact,
+                        padding: EdgeInsets.zero),
+                    child: const Text('Bỏ lọc',
+                        style:
+                            TextStyle(fontSize: 12, color: AppTheme.accentRed)),
                   ),
                 ],
               ),
             ),
           const Divider(height: 1),
 
-          // Luoi san pham (AP-SP1)
+          // Luoi 2 cot san pham chuan UI/UX
           Expanded(
             child: productProv.isLoading
                 ? const Center(child: CircularProgressIndicator())
@@ -206,14 +230,13 @@ class ProductListPage extends StatelessWidget {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.inventory_2_outlined, size: 70, color: Colors.grey.shade400),
-                            const SizedBox(height: 12),
                             const Text('Không tìm thấy sản phẩm phù hợp',
-                                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                                style: TextStyle(
+                                    fontSize: 16, fontWeight: FontWeight.bold)),
                             const SizedBox(height: 8),
                             ElevatedButton(
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.black87,
+                                backgroundColor: AppTheme.primary,
                                 foregroundColor: Colors.white,
                               ),
                               onPressed: () => productProv.resetFilters(),
@@ -225,8 +248,9 @@ class ProductListPage extends StatelessWidget {
                     : RefreshIndicator(
                         onRefresh: () => productProv.loadProducts(),
                         child: GridView.builder(
-                          padding: const EdgeInsets.all(12),
-                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          padding: const EdgeInsets.all(14),
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
                             crossAxisCount: 2,
                             childAspectRatio: 0.65,
                             crossAxisSpacing: 12,
@@ -237,129 +261,35 @@ class ProductListPage extends StatelessWidget {
                             final p = productProv.products[i];
                             final isFav = wishlistProv.isFavorite(p.id);
 
-                            return InkWell(
+                            return ProductCard(
+                              product: p,
+                              isFavorite: isFav,
+                              badge: p.isNew
+                                  ? 'MỚI'
+                                  : (p.isBestSeller ? 'HOT' : null),
                               onTap: () {
                                 Navigator.push(
                                   context,
-                                  MaterialPageRoute(builder: (_) => ProductDetailPage(product: p)),
+                                  MaterialPageRoute(
+                                      builder: (_) =>
+                                          ProductDetailPage(product: p)),
                                 );
                               },
-                              borderRadius: BorderRadius.circular(12),
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(color: Colors.grey.shade200),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withValues(alpha: 0.04),
-                                      blurRadius: 6,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ],
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    // Anh san pham + Heart Icon (AP-YT1)
-                                    Stack(
-                                      children: [
-                                        ClipRRect(
-                                          borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-                                          child: Image.network(
-                                            p.thumbnailUrl,
-                                            height: 160,
-                                            width: double.infinity,
-                                            fit: BoxFit.cover,
-                                            errorBuilder: (_, __, ___) => Container(
-                                              height: 160,
-                                              color: Colors.grey.shade200,
-                                              child: const Icon(Icons.checkroom, size: 40),
-                                            ),
-                                          ),
-                                        ),
-                                        Positioned(
-                                          top: 8,
-                                          right: 8,
-                                          child: CircleAvatar(
-                                            radius: 16,
-                                            backgroundColor: Colors.white.withValues(alpha: 0.9),
-                                            child: IconButton(
-                                              padding: EdgeInsets.zero,
-                                              icon: Icon(
-                                                isFav ? Icons.favorite : Icons.favorite_border,
-                                                color: isFav ? Colors.red : Colors.black87,
-                                                size: 18,
-                                              ),
-                                              onPressed: () => wishlistProv.toggleFavorite(p),
-                                            ),
-                                          ),
-                                        ),
-                                        if (p.isNew)
-                                          Positioned(
-                                            top: 8,
-                                            left: 8,
-                                            child: Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                              decoration: BoxDecoration(
-                                                color: Colors.blue.shade700,
-                                                borderRadius: BorderRadius.circular(4),
-                                              ),
-                                              child: const Text('MỚI',
-                                                  style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
-                                            ),
-                                          ),
-                                      ],
-                                    ),
-
-                                    // Thong tin
-                                    Padding(
-                                      padding: const EdgeInsets.all(8.0),
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            p.categoryName,
-                                            style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
-                                          ),
-                                          const SizedBox(height: 2),
-                                          Text(
-                                            p.name,
-                                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                                            maxLines: 2,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                          const SizedBox(height: 4),
-                                          Text(
-                                            '${p.price} đ',
-                                            style: const TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                              color: Colors.redAccent,
-                                              fontSize: 15,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 4),
-                                          Row(
-                                            children: [
-                                              const Icon(Icons.star, color: Colors.amber, size: 14),
-                                              const SizedBox(width: 2),
-                                              Text(
-                                                '${p.ratingAvg}',
-                                                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
-                                              ),
-                                              const SizedBox(width: 4),
-                                              Text(
-                                                '(${p.ratingCount})',
-                                                style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
-                                              ),
-                                            ],
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
+                              onToggleFavorite: () =>
+                                  wishlistProv.toggleFavorite(p),
+                              onAdd: () {
+                                final cart = context.read<CartProvider>();
+                                final s = p.variants.isNotEmpty
+                                    ? p.variants.first.size
+                                    : 'M';
+                                final col = p.variants.isNotEmpty
+                                    ? p.variants.first.color
+                                    : 'Đen';
+                                cart.addToCart(p,
+                                    size: s, color: col, quantity: 1);
+                                AppSnackBar.show(context,
+                                    message: 'Đã thêm "${p.name}" vào giỏ');
+                              },
                             );
                           },
                         ),

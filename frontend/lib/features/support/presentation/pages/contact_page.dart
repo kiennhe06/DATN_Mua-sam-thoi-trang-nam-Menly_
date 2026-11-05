@@ -56,13 +56,11 @@ class _ContactPageState extends State<ContactPage> {
           const Text('Kênh hỗ trợ', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           _contactTile(
-            icon: Icons.phone_outlined,
             title: 'Hotline',
             subtitle: '1900 6868 (8:00 – 22:00 hàng ngày)',
             onTap: _copyHotline,
           ),
           _contactTile(
-            icon: Icons.email_outlined,
             title: 'Email',
             subtitle: 'support@menly.vn',
             onTap: () {
@@ -73,7 +71,6 @@ class _ContactPageState extends State<ContactPage> {
             },
           ),
           _contactTile(
-            icon: Icons.location_on_outlined,
             title: 'Địa chỉ',
             subtitle: '12 Nguyễn Trãi, Quận 5, TP. Hồ Chí Minh',
           ),
@@ -150,7 +147,6 @@ class _ContactPageState extends State<ContactPage> {
   }
 
   Widget _contactTile({
-    required IconData icon,
     required String title,
     required String subtitle,
     VoidCallback? onTap,
@@ -163,10 +159,14 @@ class _ContactPageState extends State<ContactPage> {
         side: BorderSide(color: Colors.grey.shade200),
       ),
       child: ListTile(
-        leading: Icon(icon, color: Colors.black87),
         title: Text(title, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
         subtitle: Text(subtitle),
-        trailing: onTap == null ? null : const Icon(Icons.copy, size: 18, color: Colors.grey),
+        trailing: onTap == null
+            ? null
+            : TextButton(
+                onPressed: onTap,
+                child: const Text('Sao chép', style: TextStyle(fontSize: 12)),
+              ),
         onTap: onTap,
       ),
     );

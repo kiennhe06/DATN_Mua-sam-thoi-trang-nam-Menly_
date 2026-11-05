@@ -1,6 +1,4 @@
 import 'package:flutter/foundation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:menly_app/core/mock_data.dart';
 import 'package:menly_app/core/network/api_client.dart';
 import 'package:menly_app/models/product_model.dart';
 
@@ -14,6 +12,7 @@ class WishlistProvider extends ChangeNotifier {
   final ApiClient _api = ApiClient();
   final List<ProductModel> _favorites = [];
   bool _isLoading = false;
+  String? _error;
 
   WishlistProvider() {
     loadFavorites();
@@ -22,6 +21,7 @@ class WishlistProvider extends ChangeNotifier {
   List<ProductModel> get favorites => _favorites;
   int get count => _favorites.length;
   bool get isLoading => _isLoading;
+  String? get error => _error;
 
   /// Kiem tra xem 1 san pham co dang trong danh sach yeu thich khong
   bool isFavorite(String productId) {
@@ -35,7 +35,6 @@ class WishlistProvider extends ChangeNotifier {
     if (exists) {
       _favorites.removeWhere((p) => p.id == product.id);
       notifyListeners();
-      await _saveToLocal();
 
       // Goi API backend DELETE /api/v1/wishlist/:productId
       try {
@@ -45,7 +44,6 @@ class WishlistProvider extends ChangeNotifier {
     } else {
       _favorites.insert(0, product);
       notifyListeners();
-      await _saveToLocal();
 
       // Goi API backend POST /api/v1/wishlist/:productId
       try {
@@ -59,7 +57,6 @@ class WishlistProvider extends ChangeNotifier {
   Future<void> removeFavorite(String productId) async {
     _favorites.removeWhere((p) => p.id == productId);
     notifyListeners();
-    await _saveToLocal();
 
     try {
       await _api.dio.delete('/wishlist/$productId');
@@ -71,7 +68,6 @@ class WishlistProvider extends ChangeNotifier {
     final ids = _favorites.map((p) => p.id).toList();
     _favorites.clear();
     notifyListeners();
-    await _saveToLocal();
 
     for (var id in ids) {
       try {
@@ -80,9 +76,10 @@ class WishlistProvider extends ChangeNotifier {
     }
   }
 
-  /// Load tu Backend API GET /api/v1/wishlist (kem fallback SharedPreferences)
+  /// Load tu Backend API GET /api/v1/wishlist (chi dung du lieu that tu may chu)
   Future<void> loadFavorites() async {
     _isLoading = true;
+    _error = null;
     notifyListeners();
 
     try {
@@ -93,58 +90,25 @@ class WishlistProvider extends ChangeNotifier {
 
         for (var item in list) {
           if (item['products'] != null) {
-            loaded.add(ProductModel.fromJson(Map<String, dynamic>.from(item['products'])));
+            loaded.add(ProductModel.fromJson(
+                Map<String, dynamic>.from(item['products'])));
           }
         }
 
-        if (loaded.isNotEmpty) {
-          _favorites.clear();
-          _favorites.addAll(loaded);
-          await _saveToLocal();
-          _isLoading = false;
-          notifyListeners();
-          return;
-        }
+        _favorites
+          ..clear()
+          ..addAll(loaded);
+      } else {
+        _favorites.clear();
+        _error = 'Không tải được danh sách yêu thích';
       }
     } catch (_) {
-      // Backend offline hoac chua dang nhap -> Dung local cache
+      // Loi API hoac chua dang nhap -> trang thai loi that, khong dung du lieu gia
+      _favorites.clear();
+      _error = 'Không tải được danh sách yêu thích. Vui lòng thử lại.';
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
-
-    // Fallback load tu SharedPreferences
-    await _loadFromLocal();
-    _isLoading = false;
-    notifyListeners();
-  }
-
-  Future<void> _loadFromLocal() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final ids = prefs.getStringList('wishlist_ids') ?? [];
-      if (ids.isNotEmpty) {
-        _favorites.clear();
-        for (var id in ids) {
-          final found = MockData.products.cast<ProductModel?>().firstWhere(
-                (p) => p?.id == id,
-                orElse: () => null,
-              );
-          if (found != null && !_favorites.any((p) => p.id == id)) {
-            _favorites.add(found);
-          }
-        }
-      } else {
-        if (MockData.products.length >= 2) {
-          _favorites.add(MockData.products[0]);
-          _favorites.add(MockData.products[4]);
-        }
-      }
-    } catch (_) {}
-  }
-
-  Future<void> _saveToLocal() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final ids = _favorites.map((p) => p.id).toList();
-      await prefs.setStringList('wishlist_ids', ids);
-    } catch (_) {}
   }
 }

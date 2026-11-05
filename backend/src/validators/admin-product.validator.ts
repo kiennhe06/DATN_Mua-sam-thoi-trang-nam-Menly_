@@ -2,11 +2,15 @@ import { z } from 'zod';
 
 export const adminProductListSchema = z.object({
   search: z.string().trim().optional(),
+  q: z.string().trim().optional(),
   categoryId: z.string().uuid().optional(),
   approvalStatus: z.enum(['pending', 'approved', 'rejected']).optional(),
   isActive: z.enum(['true', 'false']).transform((value) => value === 'true').optional(),
-  limit: z.coerce.number().int().min(1).max(100).default(100),
-});
+  limit: z.coerce.number().int().min(1).max(500).default(100),
+}).transform((data) => ({
+  ...data,
+  search: data.search || data.q,
+}));
 
 export const adminProductSchema = z
   .object({

@@ -10,6 +10,7 @@ interface DashboardCircularSectionProps {
   totalOrdersCount: number;
   totalRevenue: number;
   finalDonutSegments: DonutSegment[];
+  totalProducts: number;
   dateLabel?: string;
 }
 
@@ -19,6 +20,7 @@ export function DashboardCircularSection({
   totalOrdersCount,
   totalRevenue,
   finalDonutSegments,
+  totalProducts,
   dateLabel,
 }: DashboardCircularSectionProps) {
   const fullRevenueVnd = `${new Intl.NumberFormat('vi-VN').format(totalRevenue)} ₫`;
@@ -66,14 +68,25 @@ export function DashboardCircularSection({
 
       {/* Cơ cấu danh mục (Donut Chart) */}
       <div>
-        <DonutChart
-          title="Phân bổ Cơ cấu Danh mục (Donut Chart)"
-          subtitle="Tỷ trọng 400 sản phẩm phân bổ đều qua 5 danh mục thời trang nam cao cấp"
-          segments={finalDonutSegments}
-          totalLabel="400 SP"
-          size={190}
-          thickness={24}
-        />
+        {finalDonutSegments.length > 0 ? (
+          <DonutChart
+            title="Phân bổ Cơ cấu Danh mục (Donut Chart)"
+            subtitle={`Tỷ trọng ${totalProducts} sản phẩm phân bổ qua ${finalDonutSegments.length} danh mục`}
+            segments={finalDonutSegments}
+            totalLabel={`${totalProducts} SP`}
+            size={190}
+            thickness={24}
+          />
+        ) : (
+          <div className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800 shadow-lg">
+            <h3 className="font-bold text-white text-base">
+              Phân bổ Cơ cấu Danh mục (Donut Chart)
+            </h3>
+            <p className="mt-8 mb-6 text-center text-sm text-slate-400">
+              Chưa có dữ liệu sản phẩm theo danh mục.
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );

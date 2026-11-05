@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 
 interface PingEntry { time: number; ms: number; ok: boolean }
-interface ServiceStatus { name: string; url: string; status: 'online' | 'offline' | 'checking'; latency: number | null; icon: React.ElementType; color: string }
+interface ServiceStatus { name: string; url: string; status: 'online' | 'offline' | 'checking' | 'unknown'; latency: number | null; icon: React.ElementType; color: string }
 
 function Sparkline({ data, color = '#f59e0b' }: { data: number[]; color?: string }) {
   if (data.length < 2) return <div className="w-full h-10 flex items-center justify-center text-slate-600 text-[10px]">Đang thu thập...</div>;
@@ -68,10 +68,9 @@ export default function SettingsPage() {
 
     setServices(prev => prev.map((s, i) => {
       if (i === 0) return { ...s, status: ok ? 'online' : 'offline', latency: ms };
-      // Simulate external service checks with randomized realistic values
-      const fakeOk = Math.random() > 0.05;
-      const fakeMs = Math.floor(Math.random() * 120 + 30);
-      return { ...s, status: fakeOk ? 'online' : 'offline', latency: fakeMs };
+      // External services (Supabase, VNPay) cannot be probed directly from the
+      // browser (CORS), so their status is not monitored here.
+      return { ...s, status: 'unknown', latency: null };
     }));
   }, []);
 
@@ -120,6 +119,19 @@ export default function SettingsPage() {
       : s.status === 'offline'
         ? 'bg-red-500/10 text-red-400 border-red-500/30'
         : 'bg-slate-700/50 text-slate-400 border-slate-600/30';
+
+  const statusLabel = (s: ServiceStatus) => {
+    switch (s.status) {
+      case 'online':
+        return '● Online';
+      case 'offline':
+        return '● Offline';
+      case 'unknown':
+        return 'Không giám sát';
+      default:
+        return '...';
+    }
+  };
 
   return (
     <div className="flex-1 flex flex-col min-h-0">
@@ -240,7 +252,7 @@ export default function SettingsPage() {
                       <span className="text-[10px] font-mono text-slate-400">{svc.latency}ms</span>
                     )}
                     <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${statusBadge(svc)}`}>
-                      {svc.status === 'checking' ? '...' : svc.status === 'online' ? '● Online' : '● Offline'}
+                      {statusLabel(svc)}
                     </span>
                   </div>
                 </div>
@@ -327,7 +339,7 @@ export default function SettingsPage() {
             {[
               { icon: HardDrive, label: 'VNPay Sandbox', desc: 'HMAC-SHA512' },
               { icon: Shield, label: 'RLS Supabase', desc: 'Row Level Security' },
-              { icon: Activity, label: '400 Sản phẩm', desc: 'Dữ liệu thực tế' },
+              { icon: Activity, label: 'Dữ liệu sản phẩm', desc: 'Nguồn từ Supabase' },
               { icon: Zap, label: 'Clean Arch', desc: 'MVVM Pattern' },
             ].map((item) => (
               <div key={item.label} className="flex items-center gap-2 p-2.5 rounded-xl bg-slate-950/80 border border-slate-800">

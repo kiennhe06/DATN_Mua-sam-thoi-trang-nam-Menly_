@@ -8,6 +8,10 @@ dist/
 .env
 .env*.local
 
+# Local scratch / connection test scripts (may contain secrets)
+.envmp-*
+*supabase-test.mjs
+
 # Flutter
 frontend/.dart_tool/
 frontend/build/

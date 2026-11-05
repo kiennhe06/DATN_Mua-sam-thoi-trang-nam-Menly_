@@ -74,11 +74,42 @@ class ProductModel {
           .toList();
     }
     if (parsedVariants.isEmpty) {
-      parsedVariants = [
-        ProductVariantModel(id: '${json['id']}-m-den', size: 'M', color: 'Đen', sku: '${json['slug']}-M-Den', stock: 50),
-        ProductVariantModel(id: '${json['id']}-l-den', size: 'L', color: 'Đen', sku: '${json['slug']}-L-Den', stock: 50),
-        ProductVariantModel(id: '${json['id']}-xl-trang', size: 'XL', color: 'Trắng', sku: '${json['slug']}-XL-Trang', stock: 30),
-      ];
+      final cat = (json['category_name']?.toString() ?? '').toLowerCase();
+      final name = (json['name']?.toString() ?? '').toLowerCase();
+      final slug = (json['slug']?.toString() ?? '').toLowerCase();
+      final isBottom = cat.contains('quần') ||
+          cat.contains('jean') ||
+          name.contains('quần') ||
+          name.contains('jean') ||
+          slug.contains('quan') ||
+          slug.contains('jean');
+
+      if (isBottom) {
+        parsedVariants = [
+          ProductVariantModel(id: '${json['id']}-29-den', size: '29', color: 'Đen', sku: '${json['slug']}-29-Den', stock: 30),
+          ProductVariantModel(id: '${json['id']}-30-den', size: '30', color: 'Đen', sku: '${json['slug']}-30-Den', stock: 45),
+          ProductVariantModel(id: '${json['id']}-31-den', size: '31', color: 'Đen', sku: '${json['slug']}-31-Den', stock: 50),
+          ProductVariantModel(id: '${json['id']}-32-den', size: '32', color: 'Đen', sku: '${json['slug']}-32-Den', stock: 40),
+          ProductVariantModel(id: '${json['id']}-33-den', size: '33', color: 'Đen', sku: '${json['slug']}-33-Den', stock: 35),
+          ProductVariantModel(id: '${json['id']}-34-den', size: '34', color: 'Đen', sku: '${json['slug']}-34-Den', stock: 25),
+          ProductVariantModel(id: '${json['id']}-30-xanh', size: '30', color: 'Xanh Đậm', sku: '${json['slug']}-30-Xanh', stock: 40),
+          ProductVariantModel(id: '${json['id']}-31-xanh', size: '31', color: 'Xanh Đậm', sku: '${json['slug']}-31-Xanh', stock: 40),
+          ProductVariantModel(id: '${json['id']}-32-xanh', size: '32', color: 'Xanh Đậm', sku: '${json['slug']}-32-Xanh', stock: 30),
+        ];
+      } else {
+        parsedVariants = [
+          ProductVariantModel(id: '${json['id']}-s-den', size: 'S', color: 'Đen', sku: '${json['slug']}-S-Den', stock: 30),
+          ProductVariantModel(id: '${json['id']}-m-den', size: 'M', color: 'Đen', sku: '${json['slug']}-M-Den', stock: 50),
+          ProductVariantModel(id: '${json['id']}-l-den', size: 'L', color: 'Đen', sku: '${json['slug']}-L-Den', stock: 50),
+          ProductVariantModel(id: '${json['id']}-xl-den', size: 'XL', color: 'Đen', sku: '${json['slug']}-XL-Den', stock: 40),
+          ProductVariantModel(id: '${json['id']}-2xl-den', size: '2XL', color: 'Đen', sku: '${json['slug']}-2XL-Den', stock: 25),
+          ProductVariantModel(id: '${json['id']}-m-trang', size: 'M', color: 'Trắng', sku: '${json['slug']}-M-Trang', stock: 40),
+          ProductVariantModel(id: '${json['id']}-l-trang', size: 'L', color: 'Trắng', sku: '${json['slug']}-L-Trang', stock: 40),
+          ProductVariantModel(id: '${json['id']}-xl-trang', size: 'XL', color: 'Trắng', sku: '${json['slug']}-XL-Trang', stock: 30),
+          ProductVariantModel(id: '${json['id']}-m-xam', size: 'M', color: 'Xám', sku: '${json['slug']}-M-Xam', stock: 35),
+          ProductVariantModel(id: '${json['id']}-l-xam', size: 'L', color: 'Xám', sku: '${json['slug']}-L-Xam', stock: 35),
+        ];
+      }
     }
 
     return ProductModel(
@@ -87,13 +118,13 @@ class ProductModel {
       slug: json['slug']?.toString() ?? '',
       description: json['description']?.toString() ?? json['descr']?.toString() ?? 'Sản phẩm thời trang nam Menly cao cấp, thiết kế hiện đại, chất liệu bền đẹp, thoải mái vận động.',
       price: (json['price'] is num) ? (json['price'] as num).toInt() : 0,
-      thumbnailUrl: json['thumbnail_url']?.toString() ?? 'https://picsum.photos/seed/${json['slug'] ?? 'menly'}/400/500',
+      thumbnailUrl: (json['thumbnail_url'] != null && !json['thumbnail_url'].toString().contains('picsum')) ? json['thumbnail_url'].toString() : 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800&q=80',
       categoryId: json['category_id']?.toString() ?? '',
       categoryName: json['category_name']?.toString() ?? '',
       ratingAvg: (json['rating_avg'] is num) ? (json['rating_avg'] as num).toDouble() : 4.8,
       ratingCount: (json['rating_count'] is num) ? (json['rating_count'] as num).toInt() : 12,
-      isNew: json['is_new'] == true || (json['created_at'] != null),
-      isBestSeller: json['is_best_seller'] == true,
+      isNew: json['is_new'] == true || json['is_new'] == 1,
+      isBestSeller: json['is_best_seller'] == true || json['is_best_seller'] == 1,
       variants: parsedVariants,
     );
   }
@@ -114,4 +145,3 @@ class ProductModel {
     'variants': variants.map((v) => v.toJson()).toList(),
   };
 }
-

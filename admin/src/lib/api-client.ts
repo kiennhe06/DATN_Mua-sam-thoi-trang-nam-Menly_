@@ -1,7 +1,5 @@
 const DEFAULT_API_URL = 'http://localhost:5000';
 
-import { handlePreviewRequest } from './preview-api';
-
 export function getApiUrl(): string {
   if (typeof window !== 'undefined') {
     return (
@@ -31,13 +29,6 @@ export async function adminFetch<T>(
   path: string,
   options: RequestInit = {},
 ): Promise<T> {
-  if (
-    typeof window !== 'undefined' &&
-    localStorage.getItem('menshop_admin_token') === 'ui-preview'
-  ) {
-    return handlePreviewRequest<T>(path, options);
-  }
-
   const headers = new Headers(options.headers);
   headers.set('Accept', 'application/json');
   headers.set('Authorization', `Bearer ${getAdminToken()}`);
@@ -58,13 +49,10 @@ export async function adminFetch<T>(
   const data = await response.json().catch(() => null);
   if (!response.ok) {
     if (response.status === 401 && typeof window !== 'undefined') {
-      const curToken = localStorage.getItem('menshop_admin_token') || '';
-      if (!curToken.includes('ui-preview') && !curToken.includes('demo-access')) {
-        localStorage.removeItem('menshop_admin_token');
-        localStorage.removeItem('menshop_admin_user');
-        if (window.location.pathname !== '/login') {
-          window.location.assign('/login');
-        }
+      localStorage.removeItem('menshop_admin_token');
+      localStorage.removeItem('menshop_admin_user');
+      if (window.location.pathname !== '/login') {
+        window.location.assign('/login');
       }
     }
     const message =

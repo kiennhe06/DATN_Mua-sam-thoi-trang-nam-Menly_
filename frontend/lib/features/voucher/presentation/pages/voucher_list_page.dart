@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import '../../../../core/mock_data.dart';
 import '../providers/voucher_provider.dart';
 
 /// Trang khuyen mai gom ma giam gia Menly (TM10)
@@ -11,7 +10,7 @@ class VoucherListPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final voucherProv = context.watch<VoucherProvider>();
-    final vouchers = MockData.vouchers;
+    final vouchers = voucherProv.vouchers;
 
     return Scaffold(
       appBar: AppBar(
@@ -128,16 +127,7 @@ class VoucherListPage extends StatelessWidget {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(
-                              v.discountType == 'percentage'
-                                  ? Icons.percent_rounded
-                                  : Icons.local_shipping_outlined,
-                              size: 32,
-                              color: v.discountType == 'percentage'
-                                  ? Colors.deepOrange
-                                  : Colors.blue.shade700,
-                            ),
-                            const SizedBox(height: 6),
+
                             Text(
                               v.discountType == 'percentage'
                                   ? 'GIẢM ${v.discountValue}%'
@@ -182,7 +172,7 @@ class VoucherListPage extends StatelessWidget {
                                   IconButton(
                                     constraints: const BoxConstraints(),
                                     padding: EdgeInsets.zero,
-                                    icon: const Icon(Icons.copy, size: 18, color: Colors.grey),
+                                    icon: const Text("Sao chép", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.blueGrey)),
                                     tooltip: 'Sao chép mã',
                                     onPressed: () {
                                       Clipboard.setData(ClipboardData(text: v.code));
@@ -206,7 +196,7 @@ class VoucherListPage extends StatelessWidget {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                'Đơn tối thiểu ${v.minOrderValue} đ',
+                                'Không giới hạn đơn tối thiểu',
                                 style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                               ),
                               const SizedBox(height: 8),

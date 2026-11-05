@@ -1,3 +1,4 @@
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:menly_app/core/network/api_client.dart';
@@ -36,6 +37,12 @@ class _RegisterPageState extends State<RegisterPage> {
           'role': 'customer',
         },
       );
+
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('saved_user_name', _fullNameController.text.trim());
+        await prefs.setString('saved_user_phone', _phoneController.text.trim());
+      } catch (_) {}
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -84,8 +91,7 @@ class _RegisterPageState extends State<RegisterPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const Icon(Icons.person_add_alt_1_rounded, size: 72, color: Colors.black87),
-                    const SizedBox(height: 16),
+
                     const Text(
                       'Tạo tài khoản mới',
                       textAlign: TextAlign.center,
@@ -96,7 +102,7 @@ class _RegisterPageState extends State<RegisterPage> {
                       controller: _fullNameController,
                       decoration: const InputDecoration(
                         labelText: 'Họ và tên',
-                        prefixIcon: Icon(Icons.person_outline),
+                        
                         border: OutlineInputBorder(),
                       ),
                       validator: (value) {
@@ -112,7 +118,7 @@ class _RegisterPageState extends State<RegisterPage> {
                       keyboardType: TextInputType.emailAddress,
                       decoration: const InputDecoration(
                         labelText: 'Email',
-                        prefixIcon: Icon(Icons.email_outlined),
+                        
                         border: OutlineInputBorder(),
                       ),
                       validator: (value) {
@@ -128,12 +134,9 @@ class _RegisterPageState extends State<RegisterPage> {
                       obscureText: _obscurePassword,
                       decoration: InputDecoration(
                         labelText: 'Mật khẩu',
-                        prefixIcon: const Icon(Icons.lock_outline),
+                        
                         border: const OutlineInputBorder(),
-                        suffixIcon: IconButton(
-                          icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility),
-                          onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
-                        ),
+                        suffixIcon: TextButton(child: Text(_obscurePassword ? 'Hiện' : 'Ẩn', style: const TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)), onPressed: () => setState(() => _obscurePassword = !_obscurePassword)),
                       ),
                       validator: (value) {
                         if ((value ?? '').length < 6) {
@@ -148,19 +151,19 @@ class _RegisterPageState extends State<RegisterPage> {
                       keyboardType: TextInputType.phone,
                       decoration: const InputDecoration(
                         labelText: 'Số điện thoại',
-                        prefixIcon: Icon(Icons.phone_outlined),
+                        
                         border: OutlineInputBorder(),
                       ),
                     ),
                     const SizedBox(height: 24),
-                    FilledButton.icon(
+                    FilledButton(
                       onPressed: _isSubmitting ? null : _submitRegister,
                       style: FilledButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         backgroundColor: Colors.black87,
                       ),
-                      icon: const Icon(Icons.app_registration_rounded),
-                      label: Text(_isSubmitting ? 'Đang đăng ký...' : 'Đăng ký'),
+                      
+                      child: Text(_isSubmitting ? 'Đang đăng ký...' : 'Đăng ký'),
                     ),
                     const SizedBox(height: 16),
                     Row(

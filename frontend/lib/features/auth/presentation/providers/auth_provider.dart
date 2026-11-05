@@ -1,6 +1,176 @@
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../../../../core/network/api_client.dart';
 
-/// Quan ly trang thai cho: auth
+class UserModel {
+  final String id;
+  final String email;
+  final String fullName;
+  final String? phone;
+  final String? avatarUrl;
+  final String role;
+
+  UserModel({
+    required this.id,
+    required this.email,
+    required this.fullName,
+    this.phone,
+    this.avatarUrl,
+    this.role = 'customer',
+  });
+
+  UserModel copyWith({
+    String? fullName,
+    String? phone,
+    String? avatarUrl,
+  }) {
+    return UserModel(
+      id: id,
+      email: email,
+      fullName: fullName ?? this.fullName,
+      phone: phone ?? this.phone,
+      avatarUrl: avatarUrl ?? this.avatarUrl,
+      role: role,
+    );
+  }
+
+  factory UserModel.fromJson(Map<String, dynamic> json) {
+    return UserModel(
+      id: json['id']?.toString() ?? '',
+      email: json['email']?.toString() ?? '',
+      fullName: json['full_name']?.toString() ??
+          json['fullName']?.toString() ??
+          'Khách hàng Menly',
+      phone: json['phone']?.toString(),
+      avatarUrl:
+          json['avatar_url']?.toString() ?? json['avatarUrl']?.toString(),
+      role: json['role']?.toString() ?? 'customer',
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'email': email,
+        'full_name': fullName,
+        'phone': phone,
+        'avatar_url': avatarUrl,
+        'role': role,
+      };
+}
+
 class AuthProvider extends ChangeNotifier {
-  // TODO: goi API va luu du lieu
+  final ApiClient _api = ApiClient();
+  UserModel? _user;
+  bool _isLoading = false;
+
+  UserModel? get user => _user;
+  bool get isLoggedIn => _user != null;
+  bool get isLoading => _isLoading;
+
+  Future<void> init() async {
+    await loadProfile();
+  }
+
+  Future<void> loadProfile() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final userStr = prefs.getString('user_profile');
+      if (userStr != null) {
+        _user = UserModel.fromJson(jsonDecode(userStr));
+        notifyListeners();
+      }
+
+      final token = prefs.getString('access_token');
+      if (token != null) {
+        try {
+          final res = await _api.dio.get('/auth/me');
+          if (res.statusCode == 200 &&
+              res.data != null &&
+              res.data['data'] != null) {
+            _user = UserModel.fromJson(res.data['data']);
+            await prefs.setString('user_profile', jsonEncode(_user!.toJson()));
+            notifyListeners();
+          }
+        } catch (_) {}
+      }
+      // Bo sung ten hoac so dien thoai tu bo nho dem neu profile server chua kip dong bo
+      if (_user != null) {
+        final cachedName = prefs.getString('saved_user_name');
+        final cachedPhone = prefs.getString('saved_user_phone');
+        bool changed = false;
+        String newName = _user!.fullName;
+        String? newPhone = _user!.phone;
+        if ((newName.isEmpty || newName == 'Khách hàng Menly') && cachedName != null && cachedName.isNotEmpty) {
+          newName = cachedName;
+          changed = true;
+        }
+        if ((newPhone == null || newPhone.isEmpty) && cachedPhone != null && cachedPhone.isNotEmpty) {
+          newPhone = cachedPhone;
+          changed = true;
+        }
+        if (changed) {
+          _user = _user!.copyWith(fullName: newName, phone: newPhone);
+          await prefs.setString('user_profile', jsonEncode(_user!.toJson()));
+          notifyListeners();
+        }
+      }
+      // Khi chua co token: de _user = null (khach), khong bia user demo
+    } catch (_) {}
+  }
+
+  Future<bool> updateProfile({
+    required String fullName,
+    required String phone,
+    String? avatarUrl,
+  }) async {
+    if (_user == null) return false;
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      _user = _user!.copyWith(
+        fullName: fullName.trim(),
+        phone: phone.trim(),
+        avatarUrl: avatarUrl?.trim(),
+      );
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('user_profile', jsonEncode(_user!.toJson()));
+
+      try {
+        await _api.dio.put('/profile', data: {
+          'full_name': _user!.fullName,
+          'phone': _user!.phone,
+          'avatar_url': _user!.avatarUrl,
+        });
+      } catch (_) {}
+
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (_) {
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<void> logout() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('access_token');
+    await prefs.remove('refresh_token');
+    await prefs.remove('user_profile');
+    _user = null;
+    notifyListeners();
+  }
+
+  /// Cap nhat thong tin nguoi dung ngay sau khi dang nhap thanh cong,
+  /// luu ca vao bo nho va SharedPreferences de khong bi mat phien khi chuyen tab.
+  Future<void> setUserFromLogin(UserModel user) async {
+    _user = user;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('user_profile', jsonEncode(user.toJson()));
+  }
 }

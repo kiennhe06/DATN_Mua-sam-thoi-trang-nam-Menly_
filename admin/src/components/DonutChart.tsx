@@ -115,7 +115,7 @@ export function DonutChart({
                   {totalLabel}
                 </span>
                 <span className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">
-                  5 Danh mục
+                  {segments.length} Danh mục
                 </span>
               </>
             )}

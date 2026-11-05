@@ -123,10 +123,10 @@ class _StaffOrderManagementPageState extends State<StaffOrderManagementPage> {
               controller: _searchCtrl,
               decoration: InputDecoration(
                 hintText: 'Tìm theo mã đơn, SĐT hoặc tên khách...',
-                prefixIcon: const Icon(Icons.search),
+                
                 suffixIcon: _searchCtrl.text.isNotEmpty
                     ? IconButton(
-                        icon: const Icon(Icons.clear),
+                        icon: const Text('✕', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
                         onPressed: () {
                           _searchCtrl.clear();
                           orderProv.setStaffSearchQuery('');
@@ -245,14 +245,14 @@ class _StaffOrderManagementPageState extends State<StaffOrderManagementPage> {
 
                                 // Neu dang cho xu ly -> Chuyen sang giao hang
                                 if (order.status == OrderStatus.processing)
-                                  ElevatedButton.icon(
+                                  ElevatedButton(
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: Colors.blue.shade700,
                                       foregroundColor: Colors.white,
                                       visualDensity: VisualDensity.compact,
                                     ),
-                                    icon: const Icon(Icons.local_shipping, size: 16),
-                                    label: const Text('Giao hàng', style: TextStyle(fontSize: 12)),
+                                    
+                                    child: const Text('Giao hàng', style: TextStyle(fontSize: 12)),
                                     onPressed: () {
                                       orderProv.updateOrderStatusByStaff(order.id, OrderStatus.shipping);
                                       ScaffoldMessenger.of(context).showSnackBar(
@@ -263,14 +263,14 @@ class _StaffOrderManagementPageState extends State<StaffOrderManagementPage> {
 
                                 // Neu dang giao hang -> Xac nhan hoan thanh
                                 if (order.status == OrderStatus.shipping)
-                                  ElevatedButton.icon(
+                                  ElevatedButton(
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: Colors.green,
                                       foregroundColor: Colors.white,
                                       visualDensity: VisualDensity.compact,
                                     ),
-                                    icon: const Icon(Icons.check, size: 16),
-                                    label: const Text('Đã giao xong', style: TextStyle(fontSize: 12)),
+                                    
+                                    child: const Text('Đã giao xong', style: TextStyle(fontSize: 12)),
                                     onPressed: () {
                                       orderProv.updateOrderStatusByStaff(order.id, OrderStatus.delivered);
                                       ScaffoldMessenger.of(context).showSnackBar(

@@ -1,6 +1,5 @@
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:menly_app/core/mock_data.dart';
 import 'package:menly_app/core/network/api_client.dart';
 import 'package:menly_app/models/banner_model.dart';
 import 'package:menly_app/models/category_model.dart';
@@ -29,7 +28,8 @@ class ProductProvider extends ChangeNotifier {
   String _selectedCategory = 'Tất cả';
   String? _selectedCategoryId;
   String _searchQuery = '';
-  String _sortBy = 'newest'; // 'newest', 'price_asc', 'price_desc', 'best_seller'
+  String _sortBy =
+      'newest'; // 'newest', 'price_asc', 'price_desc', 'best_seller'
   double _minPrice = 0;
   double _maxPrice = 1000000;
 
@@ -51,12 +51,16 @@ class ProductProvider extends ChangeNotifier {
   double get maxPrice => _maxPrice;
 
   /// Lay danh sach san pham moi nhat (TM11)
-  List<ProductModel> get newProducts =>
-      _allProducts.where((p) => p.isNew).toList();
+  List<ProductModel> get newProducts {
+    final list = _allProducts.where((p) => p.isNew).toList();
+    return list.isNotEmpty ? list : _allProducts.take(8).toList();
+  }
 
   /// Lay danh sach san pham ban chay (TM11)
-  List<ProductModel> get bestSellers =>
-      _allProducts.where((p) => p.isBestSeller).toList();
+  List<ProductModel> get bestSellers {
+    final list = _allProducts.where((p) => p.isBestSeller).toList();
+    return list.isNotEmpty ? list : _allProducts.skip(4).take(8).toList();
+  }
 
   /// Danh muc san pham (ket noi API /categories)
   List<String> get categories {
@@ -90,19 +94,16 @@ class ProductProvider extends ChangeNotifier {
     try {
       final res = await _api.dio.get('/banners');
       if (res.statusCode == 200 && res.data['data'] != null) {
-        final list = (res.data['data'] as List)
+        _banners = (res.data['data'] as List)
             .map((b) => BannerModel.fromJson(Map<String, dynamic>.from(b)))
             .toList();
-        if (list.isNotEmpty) {
-          _banners = list;
-          notifyListeners();
-          return;
-        }
+      } else {
+        _banners = [];
       }
     } catch (_) {
-      // Fallback mockup banners cho AP-BN1 khi offline
+      // Loi API -> khong hien banner (khong dung du lieu gia)
+      _banners = [];
     }
-    _banners = MockData.banners;
     notifyListeners();
   }
 
@@ -136,24 +137,29 @@ class ProductProvider extends ChangeNotifier {
 
       final res = await _api.dio.get('/products', queryParameters: queryParams);
       if (res.statusCode == 200 && res.data['data'] != null) {
-        final apiProducts = (res.data['data'] as List)
-            .map((p) => ProductModel.fromJson(Map<String, dynamic>.from(p)))
-            .toList();
-
-        if (apiProducts.isNotEmpty) {
-          _allProducts = apiProducts;
-          _applyFilters();
-          _loading = false;
-          notifyListeners();
-          return;
-        }
+        final list = res.data['data'] as List;
+        _allProducts = list.asMap().entries.map((entry) {
+          final idx = entry.key;
+          final json = Map<String, dynamic>.from(entry.value);
+          if (json['is_new'] == null) {
+            json['is_new'] = idx < 10;
+          }
+          if (json['is_best_seller'] == null) {
+            json['is_best_seller'] = (idx >= 6 && idx < 18) ||
+                (json['rating_count'] != null && (json['rating_count'] as num) >= 10);
+          }
+          return ProductModel.fromJson(json);
+        }).toList();
+      } else {
+        _allProducts = [];
+        _error = 'Không tải được danh sách sản phẩm';
       }
-    } catch (e) {
-      _error = e.toString();
+    } catch (_) {
+      // Loi API -> trang thai loi that, khong thay the bang du lieu gia
+      _allProducts = [];
+      _error = 'Không tải được danh sách sản phẩm. Vui lòng thử lại.';
     }
 
-    // Fallback mockup products khi chua seed DB hoac offline
-    _allProducts = List.from(MockData.products);
     _applyFilters();
     _loading = false;
     notifyListeners();
@@ -164,7 +170,8 @@ class ProductProvider extends ChangeNotifier {
     try {
       final res = await _api.dio.get('/products/$id');
       if (res.statusCode == 200 && res.data['data'] != null) {
-        return ProductModel.fromJson(Map<String, dynamic>.from(res.data['data']));
+        return ProductModel.fromJson(
+            Map<String, dynamic>.from(res.data['data']));
       }
     } catch (_) {}
     // Fallback
@@ -182,16 +189,16 @@ class ProductProvider extends ChangeNotifier {
         return other.categoryId == product.categoryId;
       }
       if (product.categoryName.isNotEmpty && other.categoryName.isNotEmpty) {
-        return other.categoryName.toLowerCase() == product.categoryName.toLowerCase();
+        return other.categoryName.toLowerCase() ==
+            product.categoryName.toLowerCase();
       }
       return false;
     }
 
-    final sources = _allProducts.isNotEmpty
-        ? List<ProductModel>.from(_allProducts)
-        : List<ProductModel>.from(MockData.products);
+    final sources = List<ProductModel>.from(_allProducts);
 
-    final related = sources.where((p) => p.id != product.id && sameCategory(p)).toList();
+    final related =
+        sources.where((p) => p.id != product.id && sameCategory(p)).toList();
 
     if (related.length < limit) {
       for (final p in sources) {
@@ -287,7 +294,9 @@ class ProductProvider extends ChangeNotifier {
         if (_selectedCategoryId != null && p.categoryId.isNotEmpty) {
           return p.categoryId == _selectedCategoryId;
         }
-        return p.categoryName.toLowerCase().contains(_selectedCategory.toLowerCase());
+        return p.categoryName
+            .toLowerCase()
+            .contains(_selectedCategory.toLowerCase());
       }).toList();
     }
 
@@ -302,7 +311,9 @@ class ProductProvider extends ChangeNotifier {
     }
 
     // Filter theo khoang gia
-    result = result.where((p) => p.price >= _minPrice && p.price <= _maxPrice).toList();
+    result = result
+        .where((p) => p.price >= _minPrice && p.price <= _maxPrice)
+        .toList();
 
     // Sap xep
     switch (_sortBy) {
@@ -313,7 +324,8 @@ class ProductProvider extends ChangeNotifier {
         result.sort((a, b) => b.price.compareTo(a.price));
         break;
       case 'best_seller':
-        result.sort((a, b) => (b.isBestSeller ? 1 : 0).compareTo(a.isBestSeller ? 1 : 0));
+        result.sort((a, b) =>
+            (b.isBestSeller ? 1 : 0).compareTo(a.isBestSeller ? 1 : 0));
         break;
       case 'newest':
       default:
@@ -349,10 +361,7 @@ class ProductProvider extends ChangeNotifier {
         _recentlyViewed = ids
             .map((id) => _allProducts.cast<ProductModel?>().firstWhere(
                   (p) => p?.id == id,
-                  orElse: () => MockData.products.cast<ProductModel?>().firstWhere(
-                    (p) => p?.id == id,
-                    orElse: () => null,
-                  ),
+                  orElse: () => null,
                 ))
             .whereType<ProductModel>()
             .toList();
@@ -375,12 +384,13 @@ class ProductProvider extends ChangeNotifier {
   Future<void> loadSearchHistory() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      _searchHistory = prefs.getStringList('search_history') ?? [
-        'Áo sơ mi trắng',
-        'Quần jeans slimfit',
-        'Áo khoác bomber',
-        'Áo polo nam',
-      ];
+      _searchHistory = prefs.getStringList('search_history') ??
+          [
+            'Áo sơ mi trắng',
+            'Quần jeans slimfit',
+            'Áo khoác bomber',
+            'Áo polo nam',
+          ];
     } catch (_) {
       _searchHistory = ['Áo sơ mi', 'Áo thun', 'Quần jeans'];
     }

@@ -125,26 +125,20 @@ export default function DashboardPage() {
     return 'Tất cả các ngày';
   }, [preset, customDay, fromDay, toDay]);
 
-  // Category donut segments (5 categories x 25 items)
+  // Category donut segments — real product count per category from backend data
   const categoryColors = ['#f59e0b', '#3b82f6', '#10b981', '#6366f1', '#a855f7'];
-  const donutSegments: DonutSegment[] = categories.map((cat, idx) => ({
-    id: cat.id,
-    label: cat.name,
-    value: 25,
-    count: 25,
-    color: categoryColors[idx % categoryColors.length],
-  }));
-
-  const finalDonutSegments: DonutSegment[] =
-    donutSegments.length > 0
-      ? donutSegments
-      : [
-          { id: 'c1', label: 'Áo Sơ Mi Nam', value: 25, count: 25, color: '#f59e0b' },
-          { id: 'c2', label: 'Áo Polo & T-Shirt', value: 25, count: 25, color: '#3b82f6' },
-          { id: 'c3', label: 'Quần Tây & Kaki', value: 25, count: 25, color: '#10b981' },
-          { id: 'c4', label: 'Quần Jeans Nam', value: 25, count: 25, color: '#6366f1' },
-          { id: 'c5', label: 'Áo Khoác & Blazer', value: 25, count: 25, color: '#a855f7' },
-        ];
+  const finalDonutSegments: DonutSegment[] = categories
+    .map((cat, idx) => {
+      const count = products.filter((p) => p.categoryId === cat.id).length;
+      return {
+        id: cat.id,
+        label: cat.name,
+        value: count,
+        count,
+        color: categoryColors[idx % categoryColors.length],
+      };
+    })
+    .filter((seg) => seg.count > 0);
 
   return (
     <div className="flex-1 flex flex-col">
@@ -200,6 +194,7 @@ export default function DashboardPage() {
           totalOrdersCount={totalOrdersCount}
           totalRevenue={totalRevenue}
           finalDonutSegments={finalDonutSegments}
+          totalProducts={products.length}
           dateLabel={dateLabel}
         />
       </div>

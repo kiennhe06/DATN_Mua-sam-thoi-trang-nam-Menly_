@@ -72,7 +72,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const Icon(Icons.lock_reset_rounded, size: 72, color: Colors.black87),
+                    
                     const SizedBox(height: 20),
                     const Text(
                       'Khôi phục mật khẩu',
@@ -91,7 +91,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                       keyboardType: TextInputType.emailAddress,
                       decoration: const InputDecoration(
                         labelText: 'Email',
-                        prefixIcon: Icon(Icons.email_outlined),
+                        
                         border: OutlineInputBorder(),
                       ),
                       validator: (value) {
@@ -102,14 +102,14 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                       },
                     ),
                     const SizedBox(height: 20),
-                    FilledButton.icon(
+                    FilledButton(
                       onPressed: _isSubmitting ? null : _submit,
                       style: FilledButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         backgroundColor: Colors.black87,
                       ),
-                      icon: const Icon(Icons.send_rounded),
-                      label: Text(_isSubmitting ? 'Đang gửi...' : 'Gửi hướng dẫn'),
+                      
+                      child: Text(_isSubmitting ? 'Đang gửi...' : 'Gửi hướng dẫn'),
                     ),
                   ],
                 ),
