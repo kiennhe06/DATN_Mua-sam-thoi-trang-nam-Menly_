@@ -16,6 +16,8 @@ $$;
 
 -- Tao don hang nguyen tu: tao don + chi tiet + tru kho + ap ma giam gia, trong 1 giao dich
 -- p_items dang: [{"variant_id":"...","quantity":2}, ...]
+drop function if exists public.create_order(uuid, text, text, text, text, jsonb, text, text);
+
 create or replace function public.create_order(
   p_user_id uuid,
   p_payment_method text,
@@ -24,7 +26,8 @@ create or replace function public.create_order(
   p_ship_address text,
   p_items jsonb,
   p_voucher_code text default null,
-  p_idempotency_key text default null
+  p_idempotency_key text default null,
+  p_shipping_fee int default 0
 ) returns public.orders
 language plpgsql
 as $$
@@ -32,7 +35,7 @@ declare
   v_order public.orders;
   v_code text;
   v_subtotal int := 0;
-  v_shipping int := 0;
+  v_shipping int := greatest(0, coalesce(p_shipping_fee, 0));
   v_discount int := 0;
   v_total int;
   item jsonb;
@@ -41,6 +44,9 @@ declare
   v_qty int;
   v_voucher public.vouchers;
 begin
+  if auth.uid() is not null and auth.uid() <> p_user_id then
+    raise exception 'Không thể tạo đơn hàng cho tài khoản khác';
+  end if;
   if p_payment_method not in ('cod','vnpay') then
     raise exception 'Phuong thuc thanh toan khong hop le';
   end if;
@@ -116,6 +122,52 @@ begin
     where id = v_order.id
     returning * into v_order;
 
+  return v_order;
+end;
+$$;
+
+create or replace function public.cancel_order(
+  p_order_id uuid,
+  p_user_id uuid,
+  p_reason text default null,
+  p_is_admin boolean default false
+) returns public.orders
+language plpgsql
+as $$
+declare
+  v_order public.orders;
+  v_item public.order_items;
+  v_from_status public.order_status;
+begin
+  if p_is_admin and not exists (
+    select 1 from public.profiles
+    where id = p_user_id and role in ('admin', 'staff')
+  ) then
+    raise exception 'Tài khoản không có quyền quản trị đơn hàng';
+  end if;
+  if not p_is_admin and auth.uid() is not null and auth.uid() <> p_user_id then
+    raise exception 'Không thể hủy đơn hàng của tài khoản khác';
+  end if;
+  select * into v_order from public.orders
+   where id = p_order_id and (p_is_admin or user_id = p_user_id)
+   for update;
+  if not found then raise exception 'Không tìm thấy đơn hàng'; end if;
+  if v_order.status not in ('processing', 'pending_payment') then
+    raise exception 'Đơn hàng không thể hủy ở trạng thái hiện tại';
+  end if;
+  v_from_status := v_order.status;
+
+  for v_item in select * from public.order_items where order_id = p_order_id loop
+    update public.product_variants
+       set stock = stock + v_item.quantity
+     where id = v_item.variant_id;
+    insert into public.inventory_movements (variant_id, change, reason, order_id, created_by, note)
+    values (v_item.variant_id, v_item.quantity, 'cancel', p_order_id, p_user_id, p_reason);
+  end loop;
+
+  update public.orders set status = 'cancelled' where id = p_order_id returning * into v_order;
+  insert into public.order_status_history (order_id, from_status, to_status, changed_by, note)
+  values (p_order_id, v_from_status, 'cancelled', p_user_id, p_reason);
   return v_order;
 end;
 $$;

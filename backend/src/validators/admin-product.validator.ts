@@ -21,14 +21,24 @@ export const adminProductSchema = z
       .trim()
       .min(1)
       .max(220)
-      .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, 'Slug chỉ gồm chữ thường, số và dấu gạch ngang'),
-    description: z.string().trim().max(5000).optional(),
+      .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, 'Slug chỉ gồm chữ thường, số và dấu gạch ngang')
+      .optional(),
+    description: z.string().trim().max(5000).nullable().optional(),
     price: z.number().int().min(0),
-    thumbnailUrl: z.union([z.string().url(), z.literal('')]).optional(),
+    thumbnailUrl: z.union([z.string().url(), z.literal('')]).nullable().optional(),
+    images: z.array(z.string().url()).max(20).optional(),
+    isActive: z.boolean().optional(),
+    variants: z.array(z.object({
+      size: z.string().trim().min(1).max(30),
+      color: z.string().trim().min(1).max(60),
+      sku: z.string().trim().min(1).max(100),
+      stock: z.number().int().min(0),
+    }).strict()).min(1).max(100).optional(),
   })
   .strict();
 
 export const updateAdminProductSchema = adminProductSchema
+  .omit({ images: true, variants: true })
   .partial()
   .refine((value) => Object.keys(value).length > 0, 'Cần có ít nhất một trường để cập nhật');
 

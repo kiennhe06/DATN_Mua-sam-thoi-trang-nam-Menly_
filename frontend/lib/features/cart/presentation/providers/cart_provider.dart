@@ -20,6 +20,7 @@ class CartProvider extends ChangeNotifier {
   int? _shippingFeeFromApi;
   String? _shippingNote;
   bool _isLoading = false;
+  String? _errorMessage;
 
   final RegExp _uuidRegex = RegExp(
       r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$');
@@ -31,6 +32,7 @@ class CartProvider extends ChangeNotifier {
   List<CartItemModel> get items => _items;
   VoucherModel? get appliedVoucher => _appliedVoucher;
   bool get isLoading => _isLoading;
+  String? get errorMessage => _errorMessage;
   String? get shippingNote => _shippingNote;
 
   /// Tong so san pham trong gio
@@ -143,8 +145,24 @@ class CartProvider extends ChangeNotifier {
   }
 
   /// Them san pham vao gio (POST /api/v1/cart/items)
-  Future<void> addToCart(ProductModel product,
+  Future<bool> addToCart(ProductModel product,
       {String size = 'M', String color = 'Đen', int quantity = 1}) async {
+    ProductVariantModel? selectedVariant;
+    for (final variant in product.variants) {
+      if (variant.size == size && variant.color == color) {
+        selectedVariant = variant;
+        break;
+      }
+    }
+    if (selectedVariant == null ||
+        !_uuidRegex.hasMatch(selectedVariant.id) ||
+        selectedVariant.stock < quantity) {
+      _errorMessage =
+          'Biến thể đã chọn không còn hàng hoặc chưa được thiết lập.';
+      notifyListeners();
+      return false;
+    }
+
     final existingIndex = _items.indexWhere(
       (item) =>
           item.product.id == product.id &&
@@ -152,22 +170,18 @@ class CartProvider extends ChangeNotifier {
           item.color == color,
     );
 
-    String variantId = '';
-    if (product.variants.isNotEmpty) {
-      try {
-        final matched = product.variants
-            .firstWhere((v) => v.size == size && v.color == color);
-        variantId = matched.id;
-      } catch (_) {
-        variantId = product.variants.first.id;
-      }
+    final variantId = selectedVariant.id;
+    final previousQuantity =
+        existingIndex >= 0 ? _items[existingIndex].quantity : null;
+    final newQuantity = (previousQuantity ?? 0) + quantity;
+    if (newQuantity > selectedVariant.stock || newQuantity > 20) {
+      _errorMessage = 'Số lượng vượt quá tồn kho hiện tại.';
+      notifyListeners();
+      return false;
     }
 
     if (existingIndex >= 0) {
-      _items[existingIndex].quantity += quantity;
-      if (_items[existingIndex].quantity > 20) {
-        _items[existingIndex].quantity = 20;
-      }
+      _items[existingIndex].quantity = newQuantity;
     } else {
       _items.insert(
           0,
@@ -181,25 +195,32 @@ class CartProvider extends ChangeNotifier {
             isSelected: true,
           ));
     }
+    _errorMessage = null;
     notifyListeners();
 
-    // Dong bo backend POST /api/v1/cart/items neu variantId la UUID hop le
-    if (_uuidRegex.hasMatch(variantId)) {
-      try {
-        final res = await _api.dio.post('/cart/items', data: {
-          'variantId': variantId,
-          'quantity': quantity,
-        });
-        if (res.statusCode == 201 && res.data['data'] != null) {
-          final rawList = res.data['data'] as List;
-          _items.clear();
-          for (var item in rawList) {
-            _items.add(
-                CartItemModel.fromBackendJson(Map<String, dynamic>.from(item)));
-          }
-          notifyListeners();
-        }
-      } catch (_) {}
+    try {
+      final res = await _api.dio.post('/cart/items', data: {
+        'variantId': variantId,
+        'quantity': quantity,
+      });
+      final rawList = res.data?['data'];
+      if (rawList is! List)
+        throw StateError('Backend trả về giỏ hàng không hợp lệ');
+      _items
+        ..clear()
+        ..addAll(rawList.map((item) =>
+            CartItemModel.fromBackendJson(Map<String, dynamic>.from(item))));
+      notifyListeners();
+      return true;
+    } catch (error) {
+      if (existingIndex >= 0 && previousQuantity != null) {
+        _items[existingIndex].quantity = previousQuantity;
+      } else {
+        _items.removeWhere((item) => item.variantId == variantId);
+      }
+      _errorMessage = 'Không thể đồng bộ giỏ hàng: $error';
+      notifyListeners();
+      return false;
     }
   }
 

@@ -17,6 +17,11 @@ import {
   voucherIdSchema,
 } from '../../validators/admin-voucher.validator.js';
 import {
+  adminBannerSchema,
+  adminNotificationSchema,
+  inventoryAdjustmentSchema,
+} from '../../validators/admin.validator.js';
+import {
   adminCreateUserSchema,
   adminUpdateUserSchema,
   toggleLockSchema,
@@ -71,6 +76,20 @@ router.get('/products', async (req, res, next) => {
   }
 });
 
+// GET /api/v1/admin/products/:id - chi tiet san pham
+router.get('/products/:id', async (req, res, next) => {
+  const id = parseProductId(req.params.id, res);
+  if (!id) return;
+
+  try {
+    const data = await productModel.findAdminById(id);
+    if (!data) return res.status(404).json({ error: 'Không tìm thấy sản phẩm' });
+    return res.json({ data });
+  } catch (error) {
+    return next(error);
+  }
+});
+
 // POST /api/v1/admin/products - them SP
 router.post('/products', async (req, res, next) => {
   const parsed = adminProductSchema.safeParse(req.body);
@@ -82,7 +101,7 @@ router.post('/products', async (req, res, next) => {
   }
 
   try {
-    const data = await productModel.createAdminProduct(parsed.data);
+    const data = await productModel.createAdminProduct(parsed.data, req.user?.id);
     return res.status(201).json({ data });
   } catch (error) {
     return next(error);
@@ -188,20 +207,49 @@ router.put('/orders/:id/status', async (req, res, next) => {
     if (!data) return res.status(404).json({ error: 'Không tìm thấy đơn hàng' });
     return res.json({ data, message: 'Đã cập nhật trạng thái đơn hàng' });
   } catch (error) {
+    if (error instanceof Error && error.message.includes('không thể hủy')) {
+      return res.status(409).json({ error: error.message });
+    }
     return next(error);
   }
 });
 
-// POST /api/v1/admin/inventory/adjust - dieu chinh kho
-router.post('/inventory/adjust', (_req, res) => {
-  // TODO: implement
-  res.status(501).json({ message: 'Chua duoc cai dat' });
+// POST /api/v1/admin/inventory/adjust - điều chỉnh tồn kho
+router.post('/inventory/adjust', async (req, res, next) => {
+  const parsed = inventoryAdjustmentSchema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: 'Thông tin điều chỉnh kho không hợp lệ', details: parsed.error.flatten().fieldErrors });
+  try {
+    const data = await adminModel.adjustInventory(parsed.data, req.user!.id);
+    if (!data) return res.status(404).json({ error: 'Không tìm thấy biến thể sản phẩm' });
+    return res.json({ data });
+  } catch (error) {
+    if (error instanceof Error && (error.message.includes('Tồn kho') || error.message.includes('được cập nhật'))) {
+      return res.status(409).json({ error: error.message });
+    }
+    return next(error);
+  }
 });
 
-// GET /api/v1/admin/inventory/movements - lich su kho
-router.get('/inventory/movements', (_req, res) => {
-  // TODO: implement
-  res.status(501).json({ message: 'Chua duoc cai dat' });
+// GET /api/v1/admin/inventory/movements - lịch sử kho
+router.get('/inventory/movements', async (req, res, next) => {
+  try {
+    return res.json({ data: await adminModel.listInventoryMovements() });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+router.get('/audit-log', async (req, res, next) => {
+  const limitRaw = typeof req.query.limit === 'string' ? Number.parseInt(req.query.limit, 10) : 200;
+  if (!Number.isInteger(limitRaw) || limitRaw < 1 || limitRaw > 500) {
+    return res.status(400).json({ error: 'Giới hạn nhật ký không hợp lệ' });
+  }
+
+  try {
+    return res.json({ data: await adminModel.listAuditLogs(limitRaw) });
+  } catch (error) {
+    return next(error);
+  }
 });
 
 // GET /api/v1/admin/users - DS nguoi dung
@@ -277,6 +325,9 @@ router.patch('/users/:id/lock', async (req, res, next) => {
   if (!parsed.success) {
     return res.status(400).json({ error: 'Giá trị khóa không hợp lệ' });
   }
+  if (id.data === req.user?.id && parsed.data.isLocked) {
+    return res.status(400).json({ error: 'Không thể tự khóa tài khoản đang đăng nhập' });
+  }
 
   try {
     const user = await adminModel.setLock(id.data, parsed.data.isLocked);
@@ -287,62 +338,55 @@ router.patch('/users/:id/lock', async (req, res, next) => {
   }
 });
 
-// GET /api/v1/admin/stats - thong ke tong quan
-router.get('/stats', (_req, res) => {
-  // TODO: implement
-  res.status(501).json({ message: 'Chua duoc cai dat' });
-});
-
-// GET /api/v1/admin/audit-log - nhat ky
-router.get('/audit-log', (_req, res) => {
-  // TODO: implement
-  res.status(501).json({ message: 'Chua duoc cai dat' });
-});
-
-// POST /api/v1/admin/notifications - gui thong bao
-router.post('/notifications', async (req, res) => {
+// GET /api/v1/admin/stats - thống kê tổng quan
+router.get('/stats', async (_req, res, next) => {
   try {
-    const title = String(req.body?.title ?? '').trim();
-    const body = String(req.body?.body ?? '').trim();
-    const type = String(req.body?.type ?? 'promo');
-    const userId = req.body?.userId ? String(req.body.userId) : undefined;
-
-    if (!title || !body) {
-      return res.status(400).json({ error: 'Tiêu đề và nội dung thông báo không được để trống' });
-    }
-
-    const { NotificationViewModel } = await import('../../viewmodels/notification.viewmodel.js');
-    const vm = new NotificationViewModel();
-    const data = await vm.create({
-      userId,
-      title,
-      body,
-      type: ['order', 'promo', 'system'].includes(type) ? (type as 'order' | 'promo' | 'system') : 'promo',
-      data: req.body?.data ?? {},
-    });
-
-    return res.status(201).json({ data });
-  } catch (e) {
-    return res.status(400).json({ error: e instanceof Error ? e.message : 'Không thể tạo thông báo' });
+    const [orders, products, users] = await Promise.all([
+      orderModel.adminListOrders({ limit: 500 }),
+      productModel.findAdminAll({ search: undefined, limit: 500 }),
+      adminModel.listUsers(),
+    ]);
+    const activeOrders = orders.filter((order) => !['cancelled', 'expired'].includes(order.status));
+    return res.json({ data: {
+      ordersCount: orders.length,
+      productsCount: products.length,
+      usersCount: users.length,
+      revenue: activeOrders.reduce((sum, order) => sum + Number(order.total), 0),
+    } });
+  } catch (error) {
+    return next(error);
   }
 });
 
-// POST /api/v1/admin/banners - them banner
-router.post('/banners', (_req, res) => {
-  // TODO: implement
-  res.status(501).json({ message: 'Chua duoc cai dat' });
+// POST /api/v1/admin/notifications - gửi thông báo
+router.post('/notifications', async (req, res, next) => {
+  const parsed = adminNotificationSchema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: 'Thông tin thông báo không hợp lệ', details: parsed.error.flatten().fieldErrors });
+  try {
+    return res.status(201).json({ data: await adminModel.createNotification(parsed.data, req.user!.id) });
+  } catch (error) {
+    return next(error);
+  }
 });
 
-// PUT /api/v1/admin/banners/:id - sua banner
-router.put('/banners/:id', (_req, res) => {
-  // TODO: implement
-  res.status(501).json({ message: 'Chua duoc cai dat' });
+// GET /api/v1/admin/banners - danh sách banner quản trị
+router.get('/banners', async (_req, res, next) => {
+  try {
+    return res.json({ data: await adminModel.listBanners() });
+  } catch (error) {
+    return next(error);
+  }
 });
 
-// DELETE /api/v1/admin/banners/:id - xoa banner
-router.delete('/banners/:id', (_req, res) => {
-  // TODO: implement
-  res.status(501).json({ message: 'Chua duoc cai dat' });
+// POST /api/v1/admin/banners - tạo banner
+router.post('/banners', async (req, res, next) => {
+  const parsed = adminBannerSchema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: 'Thông tin banner không hợp lệ', details: parsed.error.flatten().fieldErrors });
+  try {
+    return res.status(201).json({ data: await adminModel.createBanner(parsed.data) });
+  } catch (error) {
+    return next(error);
+  }
 });
 
 // GET /api/v1/admin/returns - DS tra hang
