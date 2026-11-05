@@ -39,8 +39,8 @@ class NotificationProvider extends ChangeNotifier {
   List<NotificationItem> _notifications = [];
   bool _isLoading = false;
 
-  NotificationProvider() {
-    loadNotifications();
+  NotificationProvider({bool autoLoad = true}) {
+    if (autoLoad) loadNotifications();
   }
 
   List<NotificationItem> get notifications => _notifications;

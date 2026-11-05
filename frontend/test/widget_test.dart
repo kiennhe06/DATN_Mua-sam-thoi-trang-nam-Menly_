@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:menly_app/features/auth/presentation/pages/login_page.dart';
+import 'package:menly_app/features/notification/presentation/pages/notifications_page.dart';
+import 'package:menly_app/features/notification/presentation/providers/notification_provider.dart';
 import 'package:menly_app/features/voucher/presentation/pages/voucher_list_page.dart';
 import 'package:menly_app/features/voucher/presentation/providers/voucher_provider.dart';
 
@@ -24,6 +26,23 @@ void main() {
 
     expect(find.text('Kho Voucher'), findsOneWidget);
     expect(find.text('WELCOME10'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Thong bao hien thi uu dai va voucher dang hoat dong', (tester) async {
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider(create: (_) => NotificationProvider(autoLoad: false)),
+          ChangeNotifierProvider(create: (_) => VoucherProvider(autoLoad: false)),
+        ],
+        child: const MaterialApp(home: NotificationsPage()),
+      ),
+    );
+
+    expect(find.text('Ưu đãi và voucher'), findsOneWidget);
+    expect(find.text('Giảm 10% cho đơn đầu tiên'), findsOneWidget);
+    expect(find.textContaining('WELCOME10'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
