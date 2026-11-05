@@ -204,7 +204,7 @@ class _VoucherListPageState extends State<VoucherListPage> {
               ),
             ),
             const SizedBox(height: 12),
-            if (voucherProv.isLoading)
+            if (voucherProv.isLoading && vouchers.isEmpty)
               const Center(
                 child: Padding(
                   padding: EdgeInsets.all(24),
@@ -315,9 +315,10 @@ class _VoucherCard extends StatelessWidget {
         border: Border.all(color: AppTheme.border),
         boxShadow: AppTheme.softShadow,
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
           Container(
             width: 118,
             padding: const EdgeInsets.all(12),
@@ -469,7 +470,8 @@ class _VoucherCard extends StatelessWidget {
               ),
             ),
           ),
-        ],
+          ],
+        ),
       ),
     );
   }
