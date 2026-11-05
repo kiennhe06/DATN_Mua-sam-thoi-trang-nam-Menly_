@@ -84,10 +84,20 @@ class _NavButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
     final iconData = (selected && item.selectedIcon != null) ? item.selectedIcon! : item.icon;
-    final icon = Icon(
-      iconData,
-      size: 23,
-      color: selected ? c.onPrimary : c.textSecondary,
+    final icon = Badge.count(
+      count: item.badge,
+      isLabelVisible: item.badge > 0,
+      backgroundColor: c.danger,
+      textColor: Colors.white,
+      textStyle: const TextStyle(
+        fontSize: 10,
+        fontWeight: FontWeight.bold,
+      ),
+      child: Icon(
+        iconData,
+        size: 23,
+        color: selected ? c.onPrimary : c.textSecondary,
+      ),
     );
 
     return Pressable(

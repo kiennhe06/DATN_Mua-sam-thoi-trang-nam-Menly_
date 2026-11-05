@@ -1,3 +1,4 @@
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:menly_app/core/network/api_client.dart';
@@ -36,6 +37,12 @@ class _RegisterPageState extends State<RegisterPage> {
           'role': 'customer',
         },
       );
+
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('saved_user_name', _fullNameController.text.trim());
+        await prefs.setString('saved_user_phone', _phoneController.text.trim());
+      } catch (_) {}
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

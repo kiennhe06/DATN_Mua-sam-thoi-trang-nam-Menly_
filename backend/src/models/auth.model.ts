@@ -144,16 +144,19 @@ export class AuthModel {
 
     // Trường hợp hồ sơ chưa có do trigger chưa tạo, tạo mới bản ghi mặc định
     let currentProfile = profile;
+    const metaRole = (authData.user.user_metadata?.role as string) || 'customer';
+    const metaFullName = (authData.user.user_metadata?.full_name as string) || '';
+    const metaPhone = (authData.user.user_metadata?.phone as string) || null;
+
     if (!currentProfile) {
-      const defaultRole = (authData.user.user_metadata?.role as string) || 'customer';
-      const defaultFullName = (authData.user.user_metadata?.full_name as string) || '';
       const { data: newProfile, error: createProfileError } = await supabase
         .from('profiles')
         .insert({
           id: authData.user.id,
           email: authData.user.email ?? email,
-          full_name: defaultFullName,
-          role: defaultRole,
+          full_name: metaFullName,
+          phone: metaPhone,
+          role: metaRole,
           is_active: true,
           is_locked: false,
         })
@@ -164,6 +167,22 @@ export class AuthModel {
         throw new Error(createProfileError.message);
       }
       currentProfile = newProfile;
+    } else {
+      // Tu dong cap nhat sdt hoac ho ten neu trong bang profiles dang de trong
+      const updates: Record<string, string> = {};
+      if ((!currentProfile.phone || currentProfile.phone.trim() === '') && metaPhone) {
+        updates.phone = metaPhone;
+        currentProfile.phone = metaPhone;
+      }
+      if ((!currentProfile.full_name || currentProfile.full_name.trim() === '') && metaFullName) {
+        updates.full_name = metaFullName;
+        currentProfile.full_name = metaFullName;
+      }
+      if (Object.keys(updates).length > 0) {
+        try {
+          await supabase.from('profiles').update(updates).eq('id', currentProfile.id);
+        } catch (_) {}
+      }
     }
 
     if (currentProfile.is_locked) {

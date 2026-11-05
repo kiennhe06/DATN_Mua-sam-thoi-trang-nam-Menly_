@@ -94,6 +94,27 @@ class AuthProvider extends ChangeNotifier {
           }
         } catch (_) {}
       }
+      // Bo sung ten hoac so dien thoai tu bo nho dem neu profile server chua kip dong bo
+      if (_user != null) {
+        final cachedName = prefs.getString('saved_user_name');
+        final cachedPhone = prefs.getString('saved_user_phone');
+        bool changed = false;
+        String newName = _user!.fullName;
+        String? newPhone = _user!.phone;
+        if ((newName.isEmpty || newName == 'Khách hàng Menly') && cachedName != null && cachedName.isNotEmpty) {
+          newName = cachedName;
+          changed = true;
+        }
+        if ((newPhone == null || newPhone.isEmpty) && cachedPhone != null && cachedPhone.isNotEmpty) {
+          newPhone = cachedPhone;
+          changed = true;
+        }
+        if (changed) {
+          _user = _user!.copyWith(fullName: newName, phone: newPhone);
+          await prefs.setString('user_profile', jsonEncode(_user!.toJson()));
+          notifyListeners();
+        }
+      }
       // Khi chua co token: de _user = null (khach), khong bia user demo
     } catch (_) {}
   }

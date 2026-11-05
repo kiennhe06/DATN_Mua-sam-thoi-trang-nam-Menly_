@@ -1,3 +1,5 @@
+import 'package:shared_preferences/shared_preferences.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 import 'order_success_page.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -77,6 +79,32 @@ class _CheckoutPageState extends State<CheckoutPage> {
       _nameCtrl.text = defaultAddr.recipientName;
       _phoneCtrl.text = defaultAddr.phone;
       _addressCtrl.text = defaultAddr.fullAddress;
+    } else {
+      final user = context.read<AuthProvider>().user;
+      if (user != null) {
+        if (user.fullName.isNotEmpty && user.fullName != 'Khách hàng Menly') {
+          _nameCtrl.text = user.fullName;
+        }
+        if (user.phone != null && user.phone!.isNotEmpty) {
+          _phoneCtrl.text = user.phone!;
+        }
+      }
+      SharedPreferences.getInstance().then((prefs) {
+        if (!mounted) return;
+        if (_nameCtrl.text.isEmpty) {
+          _nameCtrl.text = prefs.getString('saved_user_name') ??
+              prefs.getString('last_ship_name') ??
+              '';
+        }
+        if (_phoneCtrl.text.isEmpty) {
+          _phoneCtrl.text = prefs.getString('saved_user_phone') ??
+              prefs.getString('last_ship_phone') ??
+              '';
+        }
+        if (_addressCtrl.text.isEmpty) {
+          _addressCtrl.text = prefs.getString('last_ship_address') ?? '';
+        }
+      });
     }
   }
 
@@ -141,6 +169,27 @@ class _CheckoutPageState extends State<CheckoutPage> {
       final discount = _calculateDiscount(cart);
       final shippingFee = cart.shippingFee;
       final total = _calculateTotal(cart);
+
+      final authProv = context.read<AuthProvider>();
+
+      // Tu dong ghi nho ten, so dien thoai, dia chi cho cac lan mua sam tiep theo
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('saved_user_name', name);
+      await prefs.setString('saved_user_phone', phone);
+      await prefs.setString('last_ship_name', name);
+      await prefs.setString('last_ship_phone', phone);
+      await prefs.setString('last_ship_address', address);
+
+      // Dong bo lai sdt vao ho so nguoi dung neu chua co
+      if (authProv.user != null) {
+        final currentPhone = authProv.user!.phone;
+        if (currentPhone == null || currentPhone.trim().isEmpty) {
+          authProv.updateProfile(
+            fullName: name.isNotEmpty ? name : authProv.user!.fullName,
+            phone: phone,
+          );
+        }
+      }
 
       final createdOrder = await orderProv.createOrder(
         items: items,
