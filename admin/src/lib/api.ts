@@ -60,6 +60,11 @@ function normalizeProduct(p: any): Product {
     description: p.description ?? null,
     price: Number(p.price ?? 0),
     thumbnailUrl: p.thumbnailUrl ?? p.thumbnail_url ?? null,
+    categoryName: p.categoryName ?? p.category_name ?? p.categories?.name ?? '',
+    variants: Array.isArray(rawVariants) ? rawVariants : [],
+    images: Array.isArray(rawImages)
+      ? rawImages.map((image: any) => typeof image === 'string' ? image : image.url).filter(Boolean)
+      : [],
     isActive: p.isActive ?? p.is_active,
     createdAt: p.createdAt ?? p.created_at,
     variants,
@@ -217,15 +222,11 @@ export async function updateOrderStatus(
 
 // ========== INVENTORY ==========
 export async function fetchInventoryMovements(): Promise<InventoryMovement[]> {
-  try {
-    const data = await apiFetch<{ data: InventoryMovement[] } | InventoryMovement[]>(
-      '/api/v1/admin/inventory/movements'
-    );
-    if (Array.isArray(data)) return data;
-    return (data as { data: InventoryMovement[] }).data || [];
-  } catch {
-    return [];
-  }
+  const data = await apiFetch<{ data: InventoryMovement[] } | InventoryMovement[]>(
+    '/api/v1/admin/inventory/movements'
+  );
+  if (Array.isArray(data)) return data;
+  return (data as { data: InventoryMovement[] }).data || [];
 }
 
 export async function adjustInventory(
@@ -331,17 +332,19 @@ export async function fetchAdminVouchers(): Promise<Voucher[]> {
 }
 
 export async function createVoucher(data: CreateVoucherInput): Promise<Voucher> {
-  return apiFetch<Voucher>('/api/v1/admin/vouchers', {
+  const result = await apiFetch<Voucher | { data: Voucher }>('/api/v1/admin/vouchers', {
     method: 'POST',
     body: JSON.stringify(data),
   });
+  return 'data' in result ? result.data : result;
 }
 
 export async function updateVoucher(id: string, data: Partial<CreateVoucherInput>): Promise<Voucher> {
-  return apiFetch<Voucher>(`/api/v1/admin/vouchers/${id}`, {
+  const result = await apiFetch<Voucher | { data: Voucher }>(`/api/v1/admin/vouchers/${id}`, {
     method: 'PUT',
     body: JSON.stringify(data),
   });
+  return 'data' in result ? result.data : result;
 }
 
 export async function deleteVoucher(id: string): Promise<boolean> {

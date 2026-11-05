@@ -14,7 +14,9 @@ class OrderProvider extends ChangeNotifier {
   final ApiClient _api = ApiClient();
   List<OrderModel> _orders = [];
   bool _isLoading = false;
-  String _selectedStatusFilter = 'all'; // 'all', 'pending_payment', 'processing', 'shipping', 'delivered', 'canceled'
+  String? _errorMessage;
+  String _selectedStatusFilter =
+      'all'; // 'all', 'pending_payment', 'processing', 'shipping', 'delivered', 'canceled'
 
   // Staff management state (AP-QT9)
   String _staffStatusFilter = 'all';
@@ -29,12 +31,14 @@ class OrderProvider extends ChangeNotifier {
   String get selectedStatusFilter => _selectedStatusFilter;
   String get staffStatusFilter => _staffStatusFilter;
   String get staffSearchQuery => _staffSearchQuery;
+  String? get errorMessage => _errorMessage;
 
   // =================== AP-DH2 & TM07: ĐƠN CỦA TÔI ===================
 
   /// Tai danh sach don hang tu Backend API (GET /api/v1/orders)
   Future<void> loadOrders() async {
     _isLoading = true;
+    _errorMessage = null;
     notifyListeners();
 
     try {
@@ -43,12 +47,34 @@ class OrderProvider extends ChangeNotifier {
         final rawList = res.data['data'] ?? res.data;
         if (rawList is List) {
           _orders = rawList
-              .map((item) => OrderModel.fromJson(Map<String, dynamic>.from(item)))
+              .map((item) =>
+                  OrderModel.fromJson(Map<String, dynamic>.from(item)))
               .toList();
         }
       }
-    } catch (_) {
-      // Giu nguyen don hang cuc bo khi backend chua san sang hoac khong co mang
+    } catch (error) {
+      _errorMessage = 'Không thể tải đơn hàng: $error';
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> loadStaffOrders() async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+    try {
+      final response = await _api.dio.get('/orders/staff');
+      final rawList = response.data?['data'];
+      if (rawList is! List) {
+        throw StateError('Backend trả về danh sách đơn hàng không hợp lệ');
+      }
+      _orders = rawList
+          .map((item) => OrderModel.fromJson(Map<String, dynamic>.from(item)))
+          .toList();
+    } catch (error) {
+      _errorMessage = 'Không thể tải danh sách đơn hàng: $error';
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -92,24 +118,33 @@ class OrderProvider extends ChangeNotifier {
 
   OrderModel? findById(String orderId) => getOrderById(orderId);
 
-  Future<bool> cancelOrderApi(String orderId, {String reason = 'Khách hàng yêu cầu hủy'}) =>
+  Future<bool> cancelOrderApi(String orderId,
+          {String reason = 'Khách hàng yêu cầu hủy'}) =>
       cancelOrder(orderId, reason: reason);
 
   /// Huy don hang (AP-DH2) - Dong bo PUT /api/v1/orders/:id/cancel
-  Future<bool> cancelOrder(String orderId, {String reason = 'Khách hàng yêu cầu hủy'}) async {
+  Future<bool> cancelOrder(String orderId,
+      {String reason = 'Khách hàng yêu cầu hủy'}) async {
     final index = _orders.indexWhere((o) => o.id == orderId);
     if (index >= 0) {
       final order = _orders[index];
       if (order.canCancel) {
-        order.status = OrderStatus.canceled;
-        order.cancelReason = reason;
-        notifyListeners();
-
         try {
-          await _api.dio.put('/orders/$orderId/cancel', data: {'reason': reason});
-        } catch (_) {}
-
-        return true;
+          final response = await _api.dio
+              .put('/orders/$orderId/cancel', data: {'reason': reason});
+          final rawOrder = response.data?['data'];
+          if (rawOrder is! Map)
+            throw StateError('Backend không trả về đơn hàng đã cập nhật');
+          _orders[index] =
+              OrderModel.fromJson(Map<String, dynamic>.from(rawOrder));
+          _errorMessage = null;
+          notifyListeners();
+          return true;
+        } catch (error) {
+          _errorMessage = 'Không thể hủy đơn hàng: $error';
+          notifyListeners();
+          return false;
+        }
       }
     }
     return false;
@@ -128,68 +163,39 @@ class OrderProvider extends ChangeNotifier {
     required int total,
     String? voucherCode,
   }) async {
-    final orderItems = items.map((item) {
-      return OrderItemModel(
-        id: 'ord-item-${DateTime.now().millisecondsSinceEpoch}-${item.id}',
-        productName: item.product.name,
-        size: item.size,
-        color: item.color,
-        unitPrice: item.product.price,
-        quantity: item.quantity,
-        thumbnailUrl: item.product.thumbnailUrl,
-      );
-    }).toList();
+    final response = await _api.dio.post('/orders', data: {
+      'payment_method': paymentMethod,
+      'ship_name': shipName,
+      'ship_phone': shipPhone,
+      'ship_address': shipAddress,
+      'subtotal': subtotal,
+      'shipping_fee': shippingFee,
+      'discount_amount': discountAmount,
+      'total': total,
+      'idempotency_key': 'app-${DateTime.now().microsecondsSinceEpoch}',
+      if (voucherCode != null && voucherCode.isNotEmpty)
+        'voucher_code': voucherCode,
+      'items': items
+          .map((i) => {
+                'variant_id': i.variantId,
+                'quantity': i.quantity,
+                'product_name': i.product.name,
+                'size': i.size,
+                'color': i.color,
+                'unit_price': i.product.price,
+              })
+          .toList(),
+    });
 
-    OrderModel createdOrder = OrderModel(
-      id: 'ord-${DateTime.now().millisecondsSinceEpoch}',
-      code: 'MNL-${DateTime.now().millisecondsSinceEpoch % 100000}',
-      status: paymentMethod == 'vnpay' ? OrderStatus.pendingPayment : OrderStatus.processing,
-      paymentMethod: paymentMethod,
-      isPaid: false,
-      subtotal: subtotal,
-      discountAmount: discountAmount,
-      shippingFee: shippingFee,
-      total: total,
-      shipName: shipName,
-      shipPhone: shipPhone,
-      shipAddress: shipAddress,
-      createdAt: DateTime.now(),
-      items: orderItems,
-    );
-
-    // Goi Backend API POST /api/v1/orders
-    try {
-      final res = await _api.dio.post('/orders', data: {
-        'payment_method': paymentMethod,
-        'ship_name': shipName,
-        'ship_phone': shipPhone,
-        'ship_address': shipAddress,
-        'subtotal': subtotal,
-        'shipping_fee': shippingFee,
-        'discount_amount': discountAmount,
-        'total': total,
-        if (voucherCode != null && voucherCode.isNotEmpty) 'voucher_code': voucherCode,
-        'items': items
-            .map((i) => {
-                  'variant_id': i.variantId,
-                  'quantity': i.quantity,
-                  'product_name': i.product.name,
-                  'size': i.size,
-                  'color': i.color,
-                  'unit_price': i.product.price,
-                })
-            .toList(),
-      });
-
-      if ((res.statusCode == 200 || res.statusCode == 201) && res.data != null) {
-        final data = res.data['data'] ?? res.data;
-        if (data is Map<String, dynamic>) {
-          createdOrder = OrderModel.fromJson(data);
-        }
-      }
-    } catch (_) {}
-
+    final rawOrder = response.data?['data'];
+    if (rawOrder is! Map)
+      throw StateError('Backend không trả về đơn hàng vừa tạo');
+    final createdOrder =
+        OrderModel.fromJson(Map<String, dynamic>.from(rawOrder));
+    if (createdOrder.id.isEmpty)
+      throw StateError('Backend trả về mã đơn hàng không hợp lệ');
     _orders.insert(0, createdOrder);
+    _errorMessage = null;
     notifyListeners();
     return createdOrder;
   }
@@ -216,7 +222,37 @@ class OrderProvider extends ChangeNotifier {
         items: order.items,
         cancelReason: order.cancelReason,
       );
+      final paymentData = result.data?['data'];
+      if (paymentData is! Map || paymentData['isSuccess'] != true) {
+        _errorMessage = 'Backend không xác nhận giao dịch VNPay thành công';
+        notifyListeners();
+        return false;
+      }
+
+      final confirmedOrderId = paymentData['orderId']?.toString() ?? orderId;
+      final orderResponse = await _api.dio.get('/orders/$confirmedOrderId');
+      final rawOrder = orderResponse.data?['data'];
+      if (rawOrder is! Map)
+        throw StateError('Backend không trả về đơn hàng đã thanh toán');
+      final confirmedOrder =
+          OrderModel.fromJson(Map<String, dynamic>.from(rawOrder));
+      if (!confirmedOrder.isPaid)
+        throw StateError('Đơn hàng chưa được ghi nhận thanh toán');
+
+      final index =
+          _orders.indexWhere((order) => order.id == confirmedOrder.id);
+      if (index < 0) {
+        _orders.insert(0, confirmedOrder);
+      } else {
+        _orders[index] = confirmedOrder;
+      }
+      _errorMessage = null;
       notifyListeners();
+      return true;
+    } catch (error) {
+      _errorMessage = 'Không xác minh được giao dịch VNPay: $error';
+      notifyListeners();
+      return false;
     }
   }
 
@@ -227,7 +263,8 @@ class OrderProvider extends ChangeNotifier {
     List<OrderModel> result = List.from(_orders);
 
     if (_staffStatusFilter != 'all') {
-      result = result.where((o) => o.status.value == _staffStatusFilter).toList();
+      result =
+          result.where((o) => o.status.value == _staffStatusFilter).toList();
     }
 
     if (_staffSearchQuery.trim().isNotEmpty) {
@@ -253,23 +290,45 @@ class OrderProvider extends ChangeNotifier {
   }
 
   /// Nhan vien chuyen trang thai don hang (AP-QT9)
-  void updateOrderStatusByStaff(String orderId, OrderStatus nextStatus) {
+  Future<bool> updateOrderStatusByStaff(
+      String orderId, OrderStatus nextStatus) async {
     final index = _orders.indexWhere((o) => o.id == orderId);
     if (index >= 0) {
-      _orders[index].status = nextStatus;
-      notifyListeners();
+      try {
+        final response = await _api.dio.put('/orders/$orderId/status', data: {
+          'status': nextStatus.value,
+        });
+        final rawOrder = response.data?['data'];
+        if (rawOrder is! Map)
+          throw StateError('Backend không trả về đơn hàng đã cập nhật');
+        _orders[index] =
+            OrderModel.fromJson(Map<String, dynamic>.from(rawOrder));
+        _errorMessage = null;
+        notifyListeners();
+        return true;
+      } catch (error) {
+        _errorMessage = 'Không thể cập nhật trạng thái đơn hàng: $error';
+        notifyListeners();
+      }
     }
+    return false;
   }
 
   /// Thong ke tong quan cho nhan vien
   Map<String, dynamic> get staffStatistics {
     final totalRevenue = _orders
-        .where((o) => o.status != OrderStatus.canceled)
+        .where((o) =>
+            o.status != OrderStatus.canceled && o.status != OrderStatus.expired)
         .fold(0, (sum, o) => sum + o.total);
 
-    final pendingCount = _orders.where((o) => o.status == OrderStatus.processing).length;
-    final shippingCount = _orders.where((o) => o.status == OrderStatus.shipping).length;
-    final deliveredCount = _orders.where((o) => o.status == OrderStatus.delivered).length;
+    final pendingCount = _orders
+        .where((o) =>
+            o.status == OrderStatus.paid || o.status == OrderStatus.processing)
+        .length;
+    final shippingCount =
+        _orders.where((o) => o.status == OrderStatus.shipping).length;
+    final deliveredCount =
+        _orders.where((o) => o.status == OrderStatus.delivered).length;
 
     return {
       'totalOrders': _orders.length,

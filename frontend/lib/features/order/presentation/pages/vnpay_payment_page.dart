@@ -28,6 +28,7 @@ class _VNPayPaymentPageState extends State<VNPayPaymentPage> {
   bool _hasHandledResult = false;
   String? _paymentUrl;
   String? _error;
+  bool _paymentResultHandled = false;
   final ApiClient _api = ApiClient();
 
   final InAppWebViewSettings _settings = InAppWebViewSettings(

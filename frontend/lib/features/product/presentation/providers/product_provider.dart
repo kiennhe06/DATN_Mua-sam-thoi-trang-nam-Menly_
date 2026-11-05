@@ -65,17 +65,7 @@ class ProductProvider extends ChangeNotifier {
   /// Danh muc san pham (ket noi API /categories)
   List<String> get categories {
     final list = ['Tất cả'];
-    if (_categories.isNotEmpty) {
-      list.addAll(_categories.map((c) => c.name));
-    } else {
-      list.addAll([
-        'Áo sơ mi',
-        'Áo thun',
-        'Quần jeans',
-        'Quần tây',
-        'Áo khoác',
-      ]);
-    }
+    list.addAll(_categories.map((c) => c.name));
     return list;
   }
 

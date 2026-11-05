@@ -101,7 +101,8 @@ export class VoucherModel {
       return { valid: false, discountAmount: 0, message: 'Mã giảm giá không tồn tại hoặc đã hết hạn' };
     }
 
-    if (new Date(voucher.end_date) < new Date()) {
+    const now = Date.now();
+    if (new Date(voucher.start_date).getTime() > now || new Date(voucher.end_date).getTime() < now) {
       return { valid: false, discountAmount: 0, message: 'Mã giảm giá đã hết hạn' };
     }
 

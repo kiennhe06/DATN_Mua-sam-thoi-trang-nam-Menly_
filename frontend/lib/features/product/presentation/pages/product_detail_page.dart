@@ -45,35 +45,20 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
     return _product.variants.any((v) => int.tryParse(v.size) != null);
   }
 
-  List<String> get _standardSizes {
-    return _isPants
-        ? const ['29', '30', '31', '32', '33', '34']
-        : const ['S', 'M', 'L', 'XL', '2XL'];
-  }
-
-  List<String> get _standardColors {
-    return _isPants
-        ? const ['Đen', 'Xanh Đậm', 'Xám', 'Xanh Nhạt', 'Be']
-        : const ['Đen', 'Trắng', 'Xám', 'Xanh Navy', 'Be'];
-  }
-
   List<String> _getAvailableSizes() {
-    final fromVariants = _product.variants.map((v) => v.size).toSet().toList();
-    if (fromVariants.length >= 3) {
-      return fromVariants;
-    }
-    final set = {...fromVariants, ..._standardSizes};
-    return _standardSizes.where((s) => set.contains(s)).toList();
+    return _product.variants
+        .where((variant) => variant.stock > 0)
+        .map((variant) => variant.size)
+        .toSet()
+        .toList();
   }
 
   List<String> _getAvailableColors() {
-    final fromVariants =
-        _product.variants.map((v) => v.color).toSet().toList();
-    if (fromVariants.length >= 3) {
-      return fromVariants;
-    }
-    final set = {...fromVariants, ..._standardColors};
-    return set.toList();
+    return _product.variants
+        .where((variant) => variant.stock > 0)
+        .map((variant) => variant.color)
+        .toSet()
+        .toList();
   }
 
   void _initSelection() {
@@ -330,8 +315,8 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                           },
                           children: [
                             TableRow(
-                              decoration: const BoxDecoration(
-                                  color: Color(0xFFF1F5F9)),
+                              decoration:
+                                  const BoxDecoration(color: Color(0xFFF1F5F9)),
                               children: [
                                 const Padding(
                                     padding: EdgeInsets.all(10),
@@ -365,8 +350,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                               return TableRow(
                                 decoration: BoxDecoration(
                                   color: isSelected
-                                      ? AppTheme.primary
-                                          .withValues(alpha: 0.1)
+                                      ? AppTheme.primary.withValues(alpha: 0.1)
                                       : Colors.transparent,
                                 ),
                                 children: [
@@ -379,8 +363,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                                         SnackBar(
                                           content: Text(
                                               'Đã chọn kích cỡ $rowSize theo bảng quy đổi'),
-                                          duration:
-                                              const Duration(seconds: 1),
+                                          duration: const Duration(seconds: 1),
                                         ),
                                       );
                                     },
@@ -407,8 +390,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                                         SnackBar(
                                           content: Text(
                                               'Đã chọn kích cỡ $rowSize theo bảng quy đổi'),
-                                          duration:
-                                              const Duration(seconds: 1),
+                                          duration: const Duration(seconds: 1),
                                         ),
                                       );
                                     },
@@ -416,8 +398,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                                       padding: const EdgeInsets.symmetric(
                                           horizontal: 10, vertical: 12),
                                       child: Text(row[1],
-                                          style:
-                                              const TextStyle(fontSize: 12)),
+                                          style: const TextStyle(fontSize: 12)),
                                     ),
                                   ),
                                   InkWell(
@@ -429,8 +410,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                                         SnackBar(
                                           content: Text(
                                               'Đã chọn kích cỡ $rowSize theo bảng quy đổi'),
-                                          duration:
-                                              const Duration(seconds: 1),
+                                          duration: const Duration(seconds: 1),
                                         ),
                                       );
                                     },
@@ -438,8 +418,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                                       padding: const EdgeInsets.symmetric(
                                           horizontal: 10, vertical: 12),
                                       child: Text(row[2],
-                                          style:
-                                              const TextStyle(fontSize: 12)),
+                                          style: const TextStyle(fontSize: 12)),
                                     ),
                                   ),
                                   InkWell(
@@ -451,8 +430,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                                         SnackBar(
                                           content: Text(
                                               'Đã chọn kích cỡ $rowSize theo bảng quy đổi'),
-                                          duration:
-                                              const Duration(seconds: 1),
+                                          duration: const Duration(seconds: 1),
                                         ),
                                       );
                                     },
@@ -460,8 +438,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                                       padding: const EdgeInsets.symmetric(
                                           horizontal: 10, vertical: 12),
                                       child: Text(row[3],
-                                          style:
-                                              const TextStyle(fontSize: 12)),
+                                          style: const TextStyle(fontSize: 12)),
                                     ),
                                   ),
                                 ],
@@ -512,26 +489,14 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
   }
 
   String _resolveVariantId(ProductModel p) {
-    if (p.variants.isNotEmpty) {
-      try {
-        final match = p.variants.firstWhere(
-          (v) =>
-              v.size.toLowerCase() == _selectedSize.toLowerCase() &&
-              v.color.toLowerCase() == _selectedColor.toLowerCase(),
-        );
-        return match.id;
-      } catch (_) {
-        try {
-          final sizeMatch = p.variants.firstWhere(
-            (v) => v.size.toLowerCase() == _selectedSize.toLowerCase(),
-          );
-          return sizeMatch.id;
-        } catch (_) {
-          return p.variants.first.id;
-        }
+    for (final variant in p.variants) {
+      if (variant.size.toLowerCase() == _selectedSize.toLowerCase() &&
+          variant.color.toLowerCase() == _selectedColor.toLowerCase() &&
+          variant.stock >= _quantity) {
+        return variant.id;
       }
     }
-    return '${p.id}-${_selectedSize.toLowerCase()}-${_selectedColor.toLowerCase()}';
+    return '';
   }
 
   void _showShareSheet() {
@@ -606,6 +571,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
 
     final availableSizes = _getAvailableSizes();
     final availableColors = _getAvailableColors();
+    final canPurchase = _resolveVariantId(p).isNotEmpty;
 
     if (!availableSizes.contains(_selectedSize) && availableSizes.isNotEmpty) {
       _selectedSize = availableSizes.first;
@@ -707,8 +673,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                                   fontWeight: FontWeight.bold, fontSize: 14)),
                           Text(' (${p.ratingCount} đánh giá)',
                               style: const TextStyle(
-                                  color: AppTheme.textSecondary,
-                                  fontSize: 13)),
+                                  color: AppTheme.textSecondary, fontSize: 13)),
                         ],
                       ),
                     ],
@@ -781,8 +746,8 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                   // DROPDOWN KICH CO
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 2),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(10),
@@ -839,10 +804,20 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                   const SizedBox(height: 12),
 
                   // DROPDOWN MAU SAC
+                  if (p.variants.isEmpty || availableSizes.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Text(
+                        p.variants.isEmpty
+                            ? 'Sản phẩm chưa có biến thể hàng hóa.'
+                            : 'Sản phẩm hiện đã hết hàng.',
+                        style: const TextStyle(color: Colors.red),
+                      ),
+                    ),
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 2),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(10),
@@ -987,8 +962,8 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
 
                   // 5. MO TA CHI TIET
                   const Text('Mô tả sản phẩm',
-                      style: TextStyle(
-                          fontWeight: FontWeight.bold, fontSize: 17)),
+                      style:
+                          TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
                   const SizedBox(height: 8),
                   Text(
                     p.description,
@@ -1036,26 +1011,32 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12)),
                   ),
-                  onPressed: () {
-                    cart.addToCart(
-                      p,
-                      size: _selectedSize,
-                      color: _selectedColor,
-                      quantity: _quantity,
-                    );
+                  onPressed: canPurchase
+                      ? () async {
+                          final added = await cart.addToCart(
+                            p,
+                            size: _selectedSize,
+                            color: _selectedColor,
+                            quantity: _quantity,
+                          );
+                          if (!context.mounted) return;
 
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                            'Đã thêm $_quantity x "${p.name}" (Size: $_selectedSize, Màu: $_selectedColor) vào giỏ hàng'),
-                        backgroundColor: AppTheme.primary,
-                        duration: const Duration(seconds: 2),
-                      ),
-                    );
-                  },
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(added
+                                  ? 'Đã thêm $_quantity x "${p.name}" (Size: $_selectedSize, Màu: $_selectedColor) vào giỏ hàng'
+                                  : cart.errorMessage ??
+                                      'Không thể thêm sản phẩm vào giỏ'),
+                              backgroundColor:
+                                  added ? AppTheme.primary : Colors.red,
+                              duration: const Duration(seconds: 2),
+                            ),
+                          );
+                        }
+                      : null,
                   child: const Text('Thêm vào giỏ',
-                      style: TextStyle(
-                          fontWeight: FontWeight.bold, fontSize: 14)),
+                      style:
+                          TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                 ),
               ),
               const SizedBox(width: 10),
@@ -1068,28 +1049,31 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12)),
                   ),
-                  onPressed: () {
-                    final variantId = _resolveVariantId(p);
-                    final directItem = CartItemModel(
-                      id: 'buy-now-${DateTime.now().millisecondsSinceEpoch}',
-                      product: p,
-                      variantId: variantId,
-                      size: _selectedSize,
-                      color: _selectedColor,
-                      quantity: _quantity,
-                      isSelected: true,
-                    );
+                  onPressed: canPurchase
+                      ? () {
+                          final variantId = _resolveVariantId(p);
+                          final directItem = CartItemModel(
+                            id: 'buy-now-${DateTime.now().millisecondsSinceEpoch}',
+                            product: p,
+                            variantId: variantId,
+                            size: _selectedSize,
+                            color: _selectedColor,
+                            quantity: _quantity,
+                            isSelected: true,
+                          );
 
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => CheckoutPage(customItems: [directItem]),
-                      ),
-                    );
-                  },
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  CheckoutPage(customItems: [directItem]),
+                            ),
+                          );
+                        }
+                      : null,
                   child: const Text('Mua ngay',
-                      style: TextStyle(
-                          fontWeight: FontWeight.bold, fontSize: 14)),
+                      style:
+                          TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                 ),
               ),
             ],

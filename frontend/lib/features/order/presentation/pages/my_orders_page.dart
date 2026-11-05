@@ -59,11 +59,14 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
                   : orders.isEmpty
                       ? ListView(
                           physics: const AlwaysScrollableScrollPhysics(),
-                          children: const [
-                            SizedBox(height: 80),
+                          children: [
+                            const SizedBox(height: 80),
                             StatusView(
-                              title: 'Không có đơn hàng nào',
-                              message: 'Bạn chưa có đơn hàng nào ở trạng thái này.',
+                              title: orderProv.errorMessage == null
+                                  ? 'Không có đơn hàng nào'
+                                  : 'Không tải được đơn hàng',
+                              message: orderProv.errorMessage ??
+                                  'Bạn chưa có đơn hàng nào ở trạng thái này.',
                             ),
                           ],
                         )
