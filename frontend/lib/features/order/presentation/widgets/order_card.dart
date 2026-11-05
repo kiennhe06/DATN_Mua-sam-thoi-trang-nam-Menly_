@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/format.dart';
-import '../../../../models/order_model.dart';
+import 'package:menly_app/features/order/data/models/order_model.dart';
 import '../pages/order_detail_page.dart';
 import 'order_cancel_dialog.dart';
 import '../providers/order_provider.dart';

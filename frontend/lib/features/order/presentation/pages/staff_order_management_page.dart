@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../../models/order_model.dart';
+import 'package:menly_app/features/order/data/models/order_model.dart';
 import '../providers/order_provider.dart';
 import 'order_detail_page.dart';
 

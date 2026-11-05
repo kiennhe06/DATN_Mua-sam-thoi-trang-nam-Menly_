@@ -1,12 +1,12 @@
-import '../../../../models/order_model.dart';
-import 'my_orders_page.dart';
+import 'package:menly_app/features/order/data/models/order_model.dart';
+import '../widgets/checkout_payment_cancelled_dialog.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import 'order_success_page.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../../models/address_model.dart';
-import '../../../../models/cart_item_model.dart';
+import 'package:menly_app/features/address/data/models/address_model.dart';
+import 'package:menly_app/features/cart/data/models/cart_item_model.dart';
 import '../../../address/presentation/pages/address_page.dart';
 import '../../../address/presentation/providers/address_provider.dart';
 import '../../../cart/presentation/providers/cart_provider.dart';
@@ -253,65 +253,10 @@ class _CheckoutPageState extends State<CheckoutPage> {
     }
   }
   void _showPaymentCancelledDialog(OrderModel order) {
-    showDialog(
+    CheckoutPaymentCancelledDialog.show(
       context: context,
-      barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Chưa hoàn tất thanh toán'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Giao dịch thanh toán qua VNPay cho đơn hàng ${order.code} chưa hoàn tất hoặc đã bị hủy.',
-              style: const TextStyle(fontSize: 14),
-            ),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.amber.shade50,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.amber.shade300),
-              ),
-              child: Text(
-                'Đơn hàng của bạn đã được tạo ở trạng thái "Chờ thanh toán". Bạn có thể thực hiện thanh toán lại hoặc theo dõi tại mục Đơn hàng của tôi.',
-                style: TextStyle(
-                  fontSize: 12.5,
-                  color: Colors.brown.shade800,
-                  height: 1.4,
-                ),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              _retryVNPayPayment(order);
-            },
-            child: const Text('Thanh toán lại',
-                style: TextStyle(fontWeight: FontWeight.bold)),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.black87,
-              foregroundColor: Colors.white,
-            ),
-            onPressed: () {
-              Navigator.pop(ctx);
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const MyOrdersPage(),
-                ),
-              );
-            },
-            child: const Text('Đơn hàng của tôi'),
-          ),
-        ],
-      ),
+      order: order,
+      onRetry: () => _retryVNPayPayment(order),
     );
   }
 

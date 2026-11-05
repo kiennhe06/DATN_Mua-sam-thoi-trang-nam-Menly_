@@ -6,7 +6,7 @@ import '../theme/app_theme.dart';
 import '../utils/format.dart';
 import 'add_to_cart_button.dart';
 import 'pressable.dart';
-import '../../../models/product_model.dart';
+import 'package:menly_app/features/product/data/models/product_model.dart';
 
 /// The san pham chuan UI/UX Menly:
 /// Bo goc tron, hieu ung hover/press nhe, anh theo ty le, nut tim yeu thich va nut them gio.

@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_buttons.dart';
-import '../../../../models/order_model.dart';
+import 'package:menly_app/features/order/data/models/order_model.dart';
 import '../providers/order_provider.dart';
 import '../widgets/order_timeline_card.dart';
 import '../widgets/order_recipient_card.dart';

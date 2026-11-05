@@ -1,9 +1,9 @@
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:menly_app/core/network/api_client.dart';
-import 'package:menly_app/models/banner_model.dart';
-import 'package:menly_app/models/category_model.dart';
-import 'package:menly_app/models/product_model.dart';
+import 'package:menly_app/features/home/data/models/banner_model.dart';
+import 'package:menly_app/features/product/data/models/category_model.dart';
+import 'package:menly_app/features/product/data/models/product_model.dart';
 
 /// Provider quan ly San pham, Banner, Danh muc, Da xem gan day, Lich su tim kiem
 /// Ket noi truc tiep cac API backend da hoan thien:

@@ -1,7 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:menly_app/core/network/api_client.dart';
-import 'package:menly_app/models/order_model.dart';
+import 'package:menly_app/features/order/data/models/order_model.dart';
 
 class OrderTrackPage extends StatefulWidget {
   const OrderTrackPage({super.key});

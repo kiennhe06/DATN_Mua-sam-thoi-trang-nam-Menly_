@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:menly_app/core/share/product_share.dart';
 import 'package:menly_app/core/theme/app_theme.dart';
-import 'package:menly_app/models/cart_item_model.dart';
-import 'package:menly_app/models/product_model.dart';
+import 'package:menly_app/features/cart/data/models/cart_item_model.dart';
+import 'package:menly_app/features/product/data/models/product_model.dart';
 import 'package:menly_app/features/cart/presentation/providers/cart_provider.dart';
 import 'package:menly_app/features/order/presentation/pages/checkout_page.dart';
 import 'package:menly_app/features/wishlist/presentation/providers/wishlist_provider.dart';
 import 'package:menly_app/features/product/presentation/providers/product_provider.dart';
+import '../widgets/product_perk_item.dart';
+import '../widgets/product_related_grid.dart';
 
 /// Trang Chi tiet san pham cao cap Menly (Chon Size & Mau theo dang Dropdown tien loi)
 class ProductDetailPage extends StatefulWidget {
@@ -966,15 +968,15 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                     child: const Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _DetailPerk(
+                        ProductPerkItem(
                             title: 'Đổi trả 30 ngày',
                             subtitle: 'Miễn phí đổi size/màu tận nhà'),
                         Divider(height: 16),
-                        _DetailPerk(
+                        ProductPerkItem(
                             title: 'Giao nhanh 24h',
                             subtitle: 'Nội thành nhận ngay trong ngày'),
                         Divider(height: 16),
-                        _DetailPerk(
+                        ProductPerkItem(
                             title: 'Chất lượng cam kết',
                             subtitle:
                                 '100% Cotton chải kỹ, thoáng mát, bền form'),
@@ -996,7 +998,11 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                         color: AppTheme.textSecondary),
                   ),
                   const SizedBox(height: 30),
-                  _buildRelatedProducts(),
+                  ProductRelatedGrid(
+                    product: _product,
+                    relatedProducts: _relatedProducts,
+                    wishlist: wishlist,
+                  ),
                   const SizedBox(height: 16),
                 ],
               ),
@@ -1090,166 +1096,6 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildRelatedProducts() {
-    if (_relatedProducts.isEmpty) return const SizedBox.shrink();
-
-    final wishlist = context.watch<WishlistProvider>();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text('Sản phẩm liên quan',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
-        const SizedBox(height: 4),
-        Text(
-          'Gợi ý cùng danh mục với ${_product.categoryName.isNotEmpty ? _product.categoryName : 'sản phẩm này'}',
-          style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-        ),
-        const SizedBox(height: 14),
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: _relatedProducts.length,
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            childAspectRatio: 0.65,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-          ),
-          itemBuilder: (ctx, i) {
-            final related = _relatedProducts[i];
-            final isFav = wishlist.isFavorite(related.id);
-
-            return InkWell(
-              onTap: () {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(
-                      builder: (_) => ProductDetailPage(product: related)),
-                );
-              },
-              borderRadius: BorderRadius.circular(12),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.grey.shade200),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.03),
-                      blurRadius: 6,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Stack(
-                      children: [
-                        ClipRRect(
-                          borderRadius: const BorderRadius.vertical(
-                              top: Radius.circular(12)),
-                          child: Image.network(
-                            related.thumbnailUrl,
-                            width: double.infinity,
-                            height: 180,
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => Container(
-                              width: double.infinity,
-                              height: 180,
-                              color: Colors.grey.shade200,
-                              child: const Center(
-                                child: Text('Menly',
-                                    style: TextStyle(
-                                        color: Colors.grey,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 13)),
-                              ),
-                            ),
-                          ),
-                        ),
-                        Positioned(
-                          top: 8,
-                          right: 8,
-                          child: CircleAvatar(
-                            radius: 14,
-                            backgroundColor:
-                                Colors.white.withValues(alpha: 0.9),
-                            child: IconButton(
-                              padding: EdgeInsets.zero,
-                              icon: Icon(
-                                isFav ? Icons.favorite : Icons.favorite_border,
-                                color: isFav
-                                    ? AppTheme.accentRed
-                                    : AppTheme.textPrimary,
-                                size: 16,
-                              ),
-                              onPressed: () => wishlist.toggleFavorite(related),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.all(10),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            related.name,
-                            style: const TextStyle(
-                                fontWeight: FontWeight.bold, fontSize: 13),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            '${related.price} đ',
-                            style: const TextStyle(
-                              color: AppTheme.accentRed,
-                              fontWeight: FontWeight.w900,
-                              fontSize: 14,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        ),
-      ],
-    );
-  }
-}
-
-class _DetailPerk extends StatelessWidget {
-  final String title;
-  final String subtitle;
-
-  const _DetailPerk({required this.title, required this.subtitle});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(title,
-            style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 13,
-                color: AppTheme.textPrimary)),
-        const SizedBox(height: 2),
-        Text(subtitle,
-            style:
-                const TextStyle(fontSize: 11, color: AppTheme.textSecondary)),
-      ],
     );
   }
 }

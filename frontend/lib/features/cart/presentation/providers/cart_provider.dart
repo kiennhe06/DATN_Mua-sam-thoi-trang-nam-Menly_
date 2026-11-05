@@ -1,8 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:menly_app/core/network/api_client.dart';
-import 'package:menly_app/models/cart_item_model.dart';
-import 'package:menly_app/models/product_model.dart';
-import 'package:menly_app/models/voucher_model.dart';
+import 'package:menly_app/features/cart/data/models/cart_item_model.dart';
+import 'package:menly_app/features/product/data/models/product_model.dart';
+import 'package:menly_app/features/voucher/data/models/voucher_model.dart';
 
 /// Provider quan ly Gio hang va Ap dung ma giam gia
 /// Ket noi truc tiep cac API backend moi nhat (AP-GH1, AP-VC1):

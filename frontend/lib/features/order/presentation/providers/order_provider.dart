@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import '../../../../core/network/api_client.dart';
-import '../../../../models/cart_item_model.dart';
-import '../../../../models/order_model.dart';
+import 'package:menly_app/features/cart/data/models/cart_item_model.dart';
+import 'package:menly_app/features/order/data/models/order_model.dart';
 
 /// Provider quan ly Don hang khach hang & Don hang nhan vien tren app
 /// Phu trach boi: Thanh Toan (AP-DH2, TM07, AP-QT9, AP-TT1)
