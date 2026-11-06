@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:menly_app/core/theme/app_theme.dart';
 import '../providers/voucher_provider.dart';
+import 'package:menly_app/features/notification/presentation/providers/notification_provider.dart';
 
 /// Trang khuyen mai gom ma giam gia Menly (TM10)
 class VoucherListPage extends StatefulWidget {
@@ -446,6 +447,12 @@ class _VoucherCard extends StatelessWidget {
                       ElevatedButton(
                         onPressed: isCollected ? null : () {
                           context.read<VoucherProvider>().collectVoucher(v.id);
+                          context.read<NotificationProvider>().addNotification(
+                            title: 'Đã lưu voucher ${v.code}',
+                            body: 'Bạn đã lưu thành công ưu đãi ${v.title}. Hãy áp dụng tại bước thanh toán để nhận giảm giá!',
+                            type: 'promo',
+                            data: {'code': v.code, 'voucherId': v.id},
+                          );
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: Text('Đã lưu mã ${v.code} vào ví của bạn'),

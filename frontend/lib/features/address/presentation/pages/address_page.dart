@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:menly_app/features/address/data/models/address_model.dart';
 import '../../data/vietnam_administrative_data.dart';
 import '../providers/address_provider.dart';
+import 'package:menly_app/features/notification/presentation/providers/notification_provider.dart';
 
 /// Man hinh So dia chi giao hang & Chon dia chi khi dat hang (AP-DC1)
 class AddressPage extends StatelessWidget {
@@ -235,6 +236,11 @@ class AddressPage extends StatelessWidget {
                               detailAddress: detailCtrl.text.trim(),
                               isDefault: isDefault,
                             ));
+                            context.read<NotificationProvider>().addNotification(
+                              title: 'Đã thêm địa chỉ nhận hàng mới',
+                              body: 'Địa chỉ của ${nameCtrl.text.trim()} tại $finalDistrict, $finalProvince đã được thêm vào sổ địa chỉ.',
+                              type: 'system',
+                            );
                           } else {
                             addrProv.updateAddress(addressToEdit.copyWith(
                               recipientName: nameCtrl.text.trim(),
@@ -245,6 +251,11 @@ class AddressPage extends StatelessWidget {
                               detailAddress: detailCtrl.text.trim(),
                               isDefault: isDefault,
                             ));
+                            context.read<NotificationProvider>().addNotification(
+                              title: 'Đã cập nhật địa chỉ nhận hàng',
+                              body: 'Địa chỉ giao hàng tại $finalDistrict, $finalProvince đã được cập nhật thành công.',
+                              type: 'system',
+                            );
                           }
                           Navigator.pop(ctx);
                         },

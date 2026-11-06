@@ -1,53 +1,95 @@
 import 'package:flutter/foundation.dart';
 import '../../../../core/network/api_client.dart';
+import '../../data/default_notifications.dart';
+import '../../data/models/notification_model.dart';
 
-class NotificationItem {
-  final String id;
-  final String title;
-  final String body;
-  final String type;
-  bool isRead;
-  final DateTime createdAt;
+export '../../data/models/notification_model.dart';
 
-  NotificationItem({
-    required this.id,
-    required this.title,
-    required this.body,
-    this.type = 'general',
-    this.isRead = false,
-    required this.createdAt,
-  });
-
-  factory NotificationItem.fromJson(Map<String, dynamic> json) {
-    return NotificationItem(
-      id: json['id']?.toString() ?? '',
-      title: json['title']?.toString() ?? '',
-      body: json['body']?.toString() ?? json['message']?.toString() ?? '',
-      type: json['type']?.toString() ?? 'general',
-      isRead: json['is_read'] == true,
-      createdAt: json['created_at'] != null
-          ? DateTime.tryParse(json['created_at'].toString()) ?? DateTime.now()
-          : DateTime.now(),
-    );
-  }
-}
-
-/// Quan ly trang thai cho: Thong bao
-/// Ket noi: GET/PATCH/DELETE /api/v1/notifications
+/// Provider quản lý thông báo cho Menly (AP-TB1)
+/// Hỗ trợ lọc theo loại thông báo: Tất cả, Đơn hàng, Khuyến mãi, Hệ thống, Chưa đọc
+/// Kết nối API: GET/POST/PATCH/DELETE /api/v1/notifications
 class NotificationProvider extends ChangeNotifier {
   final ApiClient _api = ApiClient();
-  List<NotificationItem> _notifications = [];
+
+  static const String filterAll = 'all';
+  static const String filterOrder = 'order';
+  static const String filterPromo = 'promo';
+  static const String filterSystem = 'system';
+  static const String filterUnread = 'unread';
+
+  List<NotificationModel> _notifications = [];
   bool _isLoading = false;
+  String _selectedFilter = filterAll;
 
   NotificationProvider({bool autoLoad = true}) {
-    if (autoLoad) loadNotifications();
+    // Khởi tạo trước với dữ liệu mẫu phong phú để giao diện luôn đầy đủ
+    _notifications = getInitialSampleNotifications();
+    if (autoLoad) {
+      loadNotifications();
+    }
   }
 
-  List<NotificationItem> get notifications => _notifications;
+  List<NotificationModel> get notifications => _notifications;
   bool get isLoading => _isLoading;
-  int get unreadCount => _notifications.where((n) => !n.isRead).length;
+  String get selectedFilter => _selectedFilter;
 
-  /// Load danh sach thong bao tu backend (GET /api/v1/notifications)
+  /// Danh sách thông báo sau khi lọc theo loại đang chọn
+  List<NotificationModel> get filteredNotifications {
+    switch (_selectedFilter) {
+      case filterOrder:
+        return _notifications.where((n) => n.type == 'order').toList();
+      case filterPromo:
+        return _notifications
+            .where((n) => n.type == 'promo' || n.type == 'voucher')
+            .toList();
+      case filterSystem:
+        return _notifications
+            .where((n) => n.type == 'system' || n.type == 'account')
+            .toList();
+      case filterUnread:
+        return _notifications.where((n) => !n.isRead).toList();
+      case filterAll:
+      default:
+        return _notifications;
+    }
+  }
+
+  // Thống kê số lượng theo từng loại
+  int get totalCount => _notifications.length;
+  int get unreadCount => _notifications.where((n) => !n.isRead).length;
+  int get orderCount => _notifications.where((n) => n.type == 'order').length;
+  int get promoCount => _notifications
+      .where((n) => n.type == 'promo' || n.type == 'voucher')
+      .length;
+  int get systemCount => _notifications
+      .where((n) => n.type == 'system' || n.type == 'account')
+      .length;
+
+  int getCountForFilter(String filter) {
+    switch (filter) {
+      case filterOrder:
+        return orderCount;
+      case filterPromo:
+        return promoCount;
+      case filterSystem:
+        return systemCount;
+      case filterUnread:
+        return unreadCount;
+      case filterAll:
+      default:
+        return totalCount;
+    }
+  }
+
+  /// Thay đổi bộ lọc hiện tại
+  void setFilter(String filter) {
+    if (_selectedFilter != filter) {
+      _selectedFilter = filter;
+      notifyListeners();
+    }
+  }
+
+  /// Load danh sách thông báo từ backend (GET /api/v1/notifications)
   Future<void> loadNotifications() async {
     _isLoading = true;
     notifyListeners();
@@ -55,19 +97,66 @@ class NotificationProvider extends ChangeNotifier {
       final res = await _api.dio.get('/notifications');
       if (res.statusCode == 200 && res.data['data'] != null) {
         final list = res.data['data'] as List;
-        _notifications = list
-            .map((item) => NotificationItem.fromJson(Map<String, dynamic>.from(item)))
+        final serverItems = list
+            .map((item) =>
+                NotificationModel.fromJson(Map<String, dynamic>.from(item)))
             .toList();
+
+        if (serverItems.isNotEmpty) {
+          // Kết hợp thông báo server với các thông báo hệ thống mặc định nếu chưa trùng
+          final serverIds = serverItems.map((e) => e.id).toSet();
+          final retained =
+              _notifications.where((n) => !serverIds.contains(n.id)).toList();
+          _notifications = [...serverItems, ...retained];
+        }
       }
     } catch (_) {
-      // Khong co thong bao hoac chua dang nhap
+      // Dùng dữ liệu hiện tại nếu offline hoặc chưa đăng nhập
+      if (_notifications.isEmpty) {
+        _notifications = getInitialSampleNotifications();
+      }
     } finally {
       _isLoading = false;
       notifyListeners();
     }
   }
 
-  /// Danh dau 1 thong bao da doc (PATCH /api/v1/notifications/:id/read)
+  /// Thêm một thông báo mới từ bất kỳ nơi nào trong ứng dụng
+  /// (Khi đặt hàng, hủy thanh toán, áp voucher, cập nhật địa chỉ...)
+  Future<void> addNotification({
+    required String title,
+    required String body,
+    String type = 'system',
+    Map<String, dynamic>? data,
+  }) async {
+    final newItem = NotificationModel(
+      id: 'notif-${DateTime.now().millisecondsSinceEpoch}',
+      title: title,
+      body: body,
+      type: type,
+      isRead: false,
+      createdAt: DateTime.now(),
+      data: data,
+    );
+
+    _notifications.insert(0, newItem);
+    notifyListeners();
+
+    // Đồng bộ lên backend nếu đã đăng nhập
+    try {
+      final backendType = (type == 'order' || type == 'promo' || type == 'system')
+          ? type
+          : 'system';
+      await _api.dio.post('/notifications', data: {
+        'title': title,
+        'body': body,
+        'type': backendType,
+        if (data != null) 'data': data,
+      });
+    } catch (_) {}
+  }
+
+  /// Đánh dấu 1 thông báo đã đọc (PATCH /api/v1/notifications/:id/read)
   Future<void> markRead(String id) async {
     final idx = _notifications.indexWhere((n) => n.id == id);
     if (idx >= 0) {
@@ -79,7 +168,7 @@ class NotificationProvider extends ChangeNotifier {
     }
   }
 
-  /// Danh dau tat ca da doc (PATCH /api/v1/notifications/read-all)
+  /// Đánh dấu tất cả đã đọc (PATCH /api/v1/notifications/read-all)
   Future<void> markAllRead() async {
     for (var n in _notifications) {
       n.isRead = true;
@@ -90,12 +179,18 @@ class NotificationProvider extends ChangeNotifier {
     } catch (_) {}
   }
 
-  /// Xoa 1 thong bao (DELETE /api/v1/notifications/:id)
+  /// Xóa 1 thông báo (DELETE /api/v1/notifications/:id)
   Future<void> deleteNotification(String id) async {
     _notifications.removeWhere((n) => n.id == id);
     notifyListeners();
     try {
       await _api.dio.delete('/notifications/$id');
     } catch (_) {}
+  }
+
+  /// Xóa toàn bộ thông báo đã đọc
+  void clearReadNotifications() {
+    _notifications.removeWhere((n) => n.isRead);
+    notifyListeners();
   }
 }

@@ -13,6 +13,7 @@ import '../../../cart/presentation/providers/cart_provider.dart';
 import '../../../voucher/presentation/widgets/voucher_select_sheet.dart';
 import '../providers/order_provider.dart';
 import 'vnpay_payment_page.dart';
+import 'package:menly_app/features/notification/presentation/providers/notification_provider.dart';
 
 /// Man hinh Dat hang & Thanh toan (AP-DH2, AP-TT1, AP-VC1, AP-DC1)
 /// Ho tro:
@@ -224,6 +225,12 @@ class _CheckoutPageState extends State<CheckoutPage> {
         if (!mounted) return;
 
         if (paymentSuccess == true) {
+          context.read<NotificationProvider>().addNotification(
+            title: 'Thanh toán VNPay thành công #${createdOrder.code}',
+            body: 'Giao dịch thanh toán trực tuyến ${createdOrder.total}đ cho đơn hàng #${createdOrder.code} qua VNPay đã thành công.',
+            type: 'order',
+            data: {'orderId': createdOrder.id, 'orderCode': createdOrder.code},
+          );
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
@@ -233,9 +240,21 @@ class _CheckoutPageState extends State<CheckoutPage> {
         } else {
           // Nguoi dung huy thanh toan hoac thanh toan that bai:
           // KHONG chuyen den trang thanh toan thanh cong!
+          context.read<NotificationProvider>().addNotification(
+            title: 'Chưa hoàn tất thanh toán #${createdOrder.code}',
+            body: 'Giao dịch qua VNPay chưa hoàn tất. Đơn hàng #${createdOrder.code} đang ở trạng thái chờ thanh toán.',
+            type: 'order',
+            data: {'orderId': createdOrder.id, 'orderCode': createdOrder.code},
+          );
           _showPaymentCancelledDialog(createdOrder);
         }
       } else {
+        context.read<NotificationProvider>().addNotification(
+          title: 'Đặt hàng thành công #${createdOrder.code}',
+          body: 'Đơn hàng gồm ${createdOrder.items.length} sản phẩm trị giá ${createdOrder.total}đ đã được ghi nhận. Menly đang chuẩn bị đơn cho bạn.',
+          type: 'order',
+          data: {'orderId': createdOrder.id, 'orderCode': createdOrder.code},
+        );
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
@@ -269,6 +288,12 @@ class _CheckoutPageState extends State<CheckoutPage> {
     );
     if (!mounted) return;
     if (success == true) {
+      context.read<NotificationProvider>().addNotification(
+        title: 'Thanh toán VNPay thành công #${order.code}',
+        body: 'Giao dịch thanh toán trực tuyến cho đơn hàng #${order.code} qua cổng VNPay đã thành công.',
+        type: 'order',
+        data: {'orderId': order.id, 'orderCode': order.code},
+      );
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
