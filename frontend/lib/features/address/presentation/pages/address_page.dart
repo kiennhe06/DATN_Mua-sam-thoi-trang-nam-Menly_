@@ -33,8 +33,19 @@ class AddressPage extends StatelessWidget {
       selectedDistrict = availableDistricts.first;
     }
 
+    // Lấy danh sách Phường / Xã tương ứng với Tỉnh / Thành phố và Quận / Huyện
+    List<String> availableWards = getWardsForDistrict(selectedProvince, selectedDistrict ?? '');
+    String? selectedWard = addressToEdit?.ward;
+    if (selectedWard != null && selectedWard.isNotEmpty) {
+      if (!availableWards.contains(selectedWard)) {
+        availableWards = [selectedWard, ...availableWards];
+      }
+    } else if (availableWards.isNotEmpty) {
+      selectedWard = availableWards.first;
+    }
+
     final districtCtrl = TextEditingController(text: selectedDistrict ?? 'Quận 1');
-    final wardCtrl = TextEditingController(text: addressToEdit?.ward ?? 'Phường Bến Nghé');
+    final wardCtrl = TextEditingController(text: selectedWard ?? 'Phường Bến Nghé');
     final detailCtrl = TextEditingController(text: addressToEdit?.detailAddress ?? '');
     bool isDefault = addressToEdit?.isDefault ?? false;
 
@@ -120,9 +131,25 @@ class AddressPage extends StatelessWidget {
                                 if (availableDistricts.isNotEmpty) {
                                   selectedDistrict = availableDistricts.first;
                                   districtCtrl.text = selectedDistrict!;
+                                  availableWards = getWardsForDistrict(val, selectedDistrict!);
+                                  if (availableWards.isNotEmpty) {
+                                    selectedWard = availableWards.first;
+                                    wardCtrl.text = selectedWard!;
+                                  } else {
+                                    selectedWard = null;
+                                    wardCtrl.text = '';
+                                  }
                                 } else {
                                   selectedDistrict = null;
                                   districtCtrl.text = '';
+                                  availableWards = getWardsForProvince(val);
+                                  if (availableWards.isNotEmpty) {
+                                    selectedWard = availableWards.first;
+                                    wardCtrl.text = selectedWard!;
+                                  } else {
+                                    selectedWard = null;
+                                    wardCtrl.text = '';
+                                  }
                                 }
                               });
                             },
@@ -158,6 +185,14 @@ class AddressPage extends StatelessWidget {
                                     setState(() {
                                       selectedDistrict = val;
                                       districtCtrl.text = val;
+                                      availableWards = getWardsForDistrict(selectedProvince, val);
+                                      if (availableWards.isNotEmpty) {
+                                        selectedWard = availableWards.first;
+                                        wardCtrl.text = selectedWard!;
+                                      } else {
+                                        selectedWard = null;
+                                        wardCtrl.text = '';
+                                      }
                                     });
                                   },
                                 )
@@ -174,14 +209,46 @@ class AddressPage extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 10),
-                    TextField(
-                      controller: wardCtrl,
-                      decoration: const InputDecoration(
-                        labelText: 'Phường / Xã',
-                        border: OutlineInputBorder(),
-                        isDense: true,
-                      ),
-                    ),
+                    // Dropdown Phường / Xã tương ứng theo Quận / Huyện và Tỉnh / Thành phố
+                    availableWards.isNotEmpty
+                        ? DropdownButtonFormField<String>(
+                            key: ValueKey('ward_${selectedProvince}_${selectedDistrict}_$selectedWard'),
+                            initialValue: availableWards.contains(selectedWard)
+                                ? selectedWard
+                                : (availableWards.isNotEmpty ? availableWards.first : null),
+                            isExpanded: true,
+                            menuMaxHeight: 350,
+                            decoration: const InputDecoration(
+                              labelText: 'Phường / Xã',
+                              border: OutlineInputBorder(),
+                              isDense: true,
+                              contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                            ),
+                            items: availableWards.map((w) => DropdownMenuItem(
+                              value: w,
+                              child: Text(
+                                w,
+                                style: const TextStyle(fontSize: 13),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            )).toList(),
+                            onChanged: (val) {
+                              if (val == null) return;
+                              setState(() {
+                                selectedWard = val;
+                                wardCtrl.text = val;
+                              });
+                            },
+                          )
+                        : TextField(
+                            controller: wardCtrl,
+                            decoration: const InputDecoration(
+                              labelText: 'Phường / Xã',
+                              border: OutlineInputBorder(),
+                              isDense: true,
+                              contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                            ),
+                          ),
                     const SizedBox(height: 10),
                     TextField(
                       controller: detailCtrl,
@@ -212,12 +279,14 @@ class AddressPage extends StatelessWidget {
                         onPressed: () {
                           final finalProvince = selectedProvince;
                           final finalDistrict = selectedDistrict ?? districtCtrl.text.trim();
+                          final finalWard = selectedWard ?? wardCtrl.text.trim();
 
                           if (nameCtrl.text.trim().isEmpty ||
                               phoneCtrl.text.trim().isEmpty ||
                               detailCtrl.text.trim().isEmpty ||
                               finalProvince.trim().isEmpty ||
-                              finalDistrict.trim().isEmpty) {
+                              finalDistrict.trim().isEmpty ||
+                              finalWard.trim().isEmpty) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(content: Text('Vui lòng điền đầy đủ thông tin địa chỉ')),
                             );
@@ -232,7 +301,7 @@ class AddressPage extends StatelessWidget {
                               phone: phoneCtrl.text.trim(),
                               province: finalProvince,
                               district: finalDistrict,
-                              ward: wardCtrl.text.trim(),
+                              ward: finalWard,
                               detailAddress: detailCtrl.text.trim(),
                               isDefault: isDefault,
                             ));
@@ -247,7 +316,7 @@ class AddressPage extends StatelessWidget {
                               phone: phoneCtrl.text.trim(),
                               province: finalProvince,
                               district: finalDistrict,
-                              ward: wardCtrl.text.trim(),
+                              ward: finalWard,
                               detailAddress: detailCtrl.text.trim(),
                               isDefault: isDefault,
                             ));
