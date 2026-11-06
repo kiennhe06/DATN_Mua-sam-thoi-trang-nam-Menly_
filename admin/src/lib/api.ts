@@ -197,13 +197,15 @@ export async function fetchAdminOrders(
       shipName: o.shipName || o.ship_name || o.ship?.name || '',
       shipPhone: o.shipPhone || o.ship_phone || o.ship?.phone || '',
       shipAddress: o.shipAddress || o.ship_address || o.ship?.address || '',
-      shippingAddress: o.shippingAddress || {
-        name: o.shipName || o.ship_name || o.ship?.name || '',
-        phone: o.shipPhone || o.ship_phone || o.ship?.phone || '',
-        address: o.shipAddress || o.ship_address || o.ship?.address || '',
-        note: o.note || '',
-      },
+      voucherCode: o.voucherCode || o.voucher_code || null,
+      discountAmount: Number(o.discountAmount ?? o.discount_amount ?? 0),
       createdAt: o.createdAt || o.created_at || new Date().toISOString(),
+      shippingAddress: {
+        name: o.shippingAddress?.name || o.shipName || o.ship_name || o.ship?.name || '',
+        phone: o.shippingAddress?.phone || o.shipPhone || o.ship_phone || o.ship?.phone || '',
+        address: o.shippingAddress?.address || o.shipAddress || o.ship_address || o.ship?.address || '',
+        note: o.shippingAddress?.note || o.note || '',
+      },
       items: (o.items || o.order_items || []).map((it: any) => ({
         id: it.id || `oi-${Math.random()}`,
         orderId: it.orderId || it.order_id || o.id,
