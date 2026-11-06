@@ -374,7 +374,7 @@ export class OrderModel {
 
     const { data, error } = await query;
     if (error) throw new Error(error.message);
-    return (data ?? []) as OrderRow[];
+    return this.enrichOrders((data ?? []) as OrderRow[]);
   }
 
   async staffUpdateOrderStatus(orderId: string, toStatus: string, staffId: string, note?: string) {
