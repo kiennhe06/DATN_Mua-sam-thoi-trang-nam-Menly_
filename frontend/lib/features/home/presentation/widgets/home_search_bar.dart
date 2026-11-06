@@ -35,3 +35,4 @@ class HomeSearchBar extends StatelessWidget {
     );
   }
 }
+

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:menly_app/features/address/data/models/address_model.dart';
+import '../../data/vietnam_administrative_data.dart';
 import '../providers/address_provider.dart';
 
 /// Man hinh So dia chi giao hang & Chon dia chi khi dat hang (AP-DC1)
@@ -12,8 +13,26 @@ class AddressPage extends StatelessWidget {
   void _showAddressDialog(BuildContext context, {AddressModel? addressToEdit}) {
     final nameCtrl = TextEditingController(text: addressToEdit?.recipientName ?? '');
     final phoneCtrl = TextEditingController(text: addressToEdit?.phone ?? '');
-    final provinceCtrl = TextEditingController(text: addressToEdit?.province ?? 'Hồ Chí Minh');
-    final districtCtrl = TextEditingController(text: addressToEdit?.district ?? 'Quận 1');
+
+    // Chuẩn hóa Tỉnh / Thành phố từ 63 tỉnh thành Việt Nam
+    String selectedProvince = normalizeProvince(addressToEdit?.province ?? 'Hồ Chí Minh');
+    final provinceList = List<String>.from(kVietnamProvinces);
+    if (!provinceList.contains(selectedProvince)) {
+      provinceList.insert(0, selectedProvince);
+    }
+
+    // Lấy danh sách Quận / Huyện tương ứng với Tỉnh / Thành phố
+    List<String> availableDistricts = getDistrictsForProvince(selectedProvince);
+    String? selectedDistrict = addressToEdit?.district;
+    if (selectedDistrict != null && selectedDistrict.isNotEmpty) {
+      if (!availableDistricts.contains(selectedDistrict)) {
+        availableDistricts = [selectedDistrict, ...availableDistricts];
+      }
+    } else if (availableDistricts.isNotEmpty) {
+      selectedDistrict = availableDistricts.first;
+    }
+
+    final districtCtrl = TextEditingController(text: selectedDistrict ?? 'Quận 1');
     final wardCtrl = TextEditingController(text: addressToEdit?.ward ?? 'Phường Bến Nghé');
     final detailCtrl = TextEditingController(text: addressToEdit?.detailAddress ?? '');
     bool isDefault = addressToEdit?.isDefault ?? false;
@@ -71,26 +90,85 @@ class AddressPage extends StatelessWidget {
                     const SizedBox(height: 10),
                     Row(
                       children: [
+                        // Dropdown Tỉnh / Thành phố với đầy đủ 63 tỉnh thành Việt Nam
                         Expanded(
-                          child: TextField(
-                            controller: provinceCtrl,
+                          child: DropdownButtonFormField<String>(
+                            key: ValueKey('province_$selectedProvince'),
+                            initialValue: selectedProvince,
+                            isExpanded: true,
+                            menuMaxHeight: 350,
                             decoration: const InputDecoration(
                               labelText: 'Tỉnh / Thành phố',
                               border: OutlineInputBorder(),
                               isDense: true,
+                              contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 12),
                             ),
+                            items: provinceList.map((p) => DropdownMenuItem(
+                              value: p,
+                              child: Text(
+                                p,
+                                style: const TextStyle(fontSize: 13),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            )).toList(),
+                            onChanged: (val) {
+                              if (val == null) return;
+                              setState(() {
+                                selectedProvince = val;
+                                availableDistricts = getDistrictsForProvince(val);
+                                if (availableDistricts.isNotEmpty) {
+                                  selectedDistrict = availableDistricts.first;
+                                  districtCtrl.text = selectedDistrict!;
+                                } else {
+                                  selectedDistrict = null;
+                                  districtCtrl.text = '';
+                                }
+                              });
+                            },
                           ),
                         ),
                         const SizedBox(width: 8),
+                        // Dropdown Quận / Huyện tương ứng theo Tỉnh / Thành phố đã chọn
                         Expanded(
-                          child: TextField(
-                            controller: districtCtrl,
-                            decoration: const InputDecoration(
-                              labelText: 'Quận / Huyện',
-                              border: OutlineInputBorder(),
-                              isDense: true,
-                            ),
-                          ),
+                          child: availableDistricts.isNotEmpty
+                              ? DropdownButtonFormField<String>(
+                                  key: ValueKey('district_${selectedProvince}_$selectedDistrict'),
+                                  initialValue: availableDistricts.contains(selectedDistrict)
+                                      ? selectedDistrict
+                                      : (availableDistricts.isNotEmpty ? availableDistricts.first : null),
+                                  isExpanded: true,
+                                  menuMaxHeight: 350,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Quận / Huyện',
+                                    border: OutlineInputBorder(),
+                                    isDense: true,
+                                    contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                                  ),
+                                  items: availableDistricts.map((d) => DropdownMenuItem(
+                                    value: d,
+                                    child: Text(
+                                      d,
+                                      style: const TextStyle(fontSize: 13),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  )).toList(),
+                                  onChanged: (val) {
+                                    if (val == null) return;
+                                    setState(() {
+                                      selectedDistrict = val;
+                                      districtCtrl.text = val;
+                                    });
+                                  },
+                                )
+                              : TextField(
+                                  controller: districtCtrl,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Quận / Huyện',
+                                    border: OutlineInputBorder(),
+                                    isDense: true,
+                                    contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                                  ),
+                                ),
                         ),
                       ],
                     ),
@@ -131,9 +209,14 @@ class AddressPage extends StatelessWidget {
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                         ),
                         onPressed: () {
+                          final finalProvince = selectedProvince;
+                          final finalDistrict = selectedDistrict ?? districtCtrl.text.trim();
+
                           if (nameCtrl.text.trim().isEmpty ||
                               phoneCtrl.text.trim().isEmpty ||
-                              detailCtrl.text.trim().isEmpty) {
+                              detailCtrl.text.trim().isEmpty ||
+                              finalProvince.trim().isEmpty ||
+                              finalDistrict.trim().isEmpty) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(content: Text('Vui lòng điền đầy đủ thông tin địa chỉ')),
                             );
@@ -146,8 +229,8 @@ class AddressPage extends StatelessWidget {
                               id: 'addr-${DateTime.now().millisecondsSinceEpoch}',
                               recipientName: nameCtrl.text.trim(),
                               phone: phoneCtrl.text.trim(),
-                              province: provinceCtrl.text.trim(),
-                              district: districtCtrl.text.trim(),
+                              province: finalProvince,
+                              district: finalDistrict,
                               ward: wardCtrl.text.trim(),
                               detailAddress: detailCtrl.text.trim(),
                               isDefault: isDefault,
@@ -156,8 +239,8 @@ class AddressPage extends StatelessWidget {
                             addrProv.updateAddress(addressToEdit.copyWith(
                               recipientName: nameCtrl.text.trim(),
                               phone: phoneCtrl.text.trim(),
-                              province: provinceCtrl.text.trim(),
-                              district: districtCtrl.text.trim(),
+                              province: finalProvince,
+                              district: finalDistrict,
                               ward: wardCtrl.text.trim(),
                               detailAddress: detailCtrl.text.trim(),
                               isDefault: isDefault,
