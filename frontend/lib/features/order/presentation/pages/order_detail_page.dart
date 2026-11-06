@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_buttons.dart';
 import 'package:menly_app/features/order/data/models/order_model.dart';
+import '../../../review/presentation/widgets/order_review_section.dart';
 import '../providers/order_provider.dart';
 import '../widgets/order_timeline_card.dart';
 import '../widgets/order_recipient_card.dart';
@@ -68,6 +69,11 @@ class OrderDetailPage extends StatelessWidget {
           // 3. Danh sach san pham
           OrderItemsCard(order: o),
           const SizedBox(height: 12),
+
+          if (o.status == OrderStatus.delivered) ...[
+            OrderReviewSection(order: o),
+            const SizedBox(height: 12),
+          ],
 
           // 4. Bang tong ket thanh toan
           OrderPaymentSummaryCard(order: o),
