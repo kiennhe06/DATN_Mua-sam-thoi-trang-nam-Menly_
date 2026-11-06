@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Header } from '../../components/Header';
 import { OrderStatusBadge } from '../../components/Badge';
 import { ChangeOrderStatusModal } from '../../components/ChangeOrderStatusModal';
+import { OrderInvoiceModal } from '../../components/OrderInvoiceModal';
 import { fetchAdminOrders, updateOrderStatus } from '../../lib/api';
 import { Order, OrderStatus } from '../../lib/types';
 import {
@@ -17,6 +18,7 @@ import {
   MapPin,
   Calendar,
   Search,
+  Printer,
 } from 'lucide-react';
 
 const STATUS_TABS: { label: string; value: OrderStatus | 'all' }[] = [
@@ -42,6 +44,7 @@ export default function OrdersPage() {
   const [statusNote, setStatusNote] = useState('');
   const [updating, setUpdating] = useState(false);
   const [feedback, setFeedback] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
+  const [invoiceOrder, setInvoiceOrder] = useState<Order | null>(null);
 
   const loadOrders = useCallback(async () => {
     setLoading(true);
@@ -206,10 +209,18 @@ export default function OrdersPage() {
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-3">
+                    <div className="flex flex-wrap items-center gap-3">
                       <span className="text-base font-extrabold text-white font-mono">
                         {ord.total.toLocaleString('vi-VN')} đ
                       </span>
+                      <button
+                        type="button"
+                        onClick={() => setInvoiceOrder(ord)}
+                        className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-all flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <Printer className="w-3.5 h-3.5" />
+                        Xem / In hóa đơn
+                      </button>
                       {ord.status === 'cancelled' ? (
                         <span className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/30 flex items-center gap-1.5 cursor-not-allowed">
                           <AlertCircle className="w-3.5 h-3.5" />
@@ -347,6 +358,8 @@ export default function OrdersPage() {
         onNoteChange={setStatusNote}
         onSave={handleUpdateStatus}
       />
+
+      <OrderInvoiceModal order={invoiceOrder} onClose={() => setInvoiceOrder(null)} />
     </div>
   );
 }

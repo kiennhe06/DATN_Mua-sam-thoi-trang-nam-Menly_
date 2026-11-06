@@ -11,6 +11,7 @@ import 'features/home/presentation/pages/home_page.dart';
 import 'features/notification/presentation/providers/notification_provider.dart';
 import 'features/order/presentation/providers/order_provider.dart';
 import 'features/product/presentation/providers/product_provider.dart';
+import 'features/review/presentation/providers/review_provider.dart';
 import 'features/voucher/presentation/providers/voucher_provider.dart';
 import 'features/wishlist/presentation/pages/wishlist_page.dart';
 import 'features/wishlist/presentation/providers/wishlist_provider.dart';
@@ -30,6 +31,7 @@ class MenlyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => ThemeController()..load()),
         ChangeNotifierProvider(create: (_) => AuthProvider()..init()),
         ChangeNotifierProvider(create: (_) => ProductProvider()),
+        ChangeNotifierProvider(create: (_) => ReviewProvider()),
         ChangeNotifierProvider(create: (_) => CartProvider()),
         ChangeNotifierProvider(create: (_) => WishlistProvider()),
         ChangeNotifierProvider(create: (_) => AddressProvider()),

@@ -25,6 +25,32 @@ const upload = multer({
   },
 });
 
+export function uploadMultipleImagesMiddleware(fieldName = 'images', maxFiles = 5) {
+  return (req: Request, res: Response, next: NextFunction) => {
+    const uploadHandler = upload.array(fieldName, maxFiles);
+
+    uploadHandler(req, res, (err: unknown) => {
+      if (err) {
+        if (err instanceof multer.MulterError) {
+          if (err.code === 'LIMIT_FILE_SIZE') {
+            return res.status(400).json({ error: 'Kích thước file ảnh vượt quá giới hạn tối đa 5MB' });
+          }
+          if (err.code === 'LIMIT_UNEXPECTED_FILE') {
+            return res.status(400).json({ error: `Chỉ được đính kèm tối đa ${maxFiles} ảnh` });
+          }
+          return res.status(400).json({ error: `Lỗi upload file: ${err.message}` });
+        }
+        if (err instanceof Error) {
+          return res.status(400).json({ error: err.message });
+        }
+        return res.status(400).json({ error: 'Lỗi tải file không xác định' });
+      }
+
+      return next();
+    });
+  };
+}
+
 export function uploadAvatarMiddleware(fieldName = 'avatar') {
   return (req: Request, res: Response, next: NextFunction) => {
     const uploadHandler = upload.fields([

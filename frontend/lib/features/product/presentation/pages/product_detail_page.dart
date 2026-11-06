@@ -8,6 +8,7 @@ import 'package:menly_app/features/cart/presentation/providers/cart_provider.dar
 import 'package:menly_app/features/order/presentation/pages/checkout_page.dart';
 import 'package:menly_app/features/wishlist/presentation/providers/wishlist_provider.dart';
 import 'package:menly_app/features/product/presentation/providers/product_provider.dart';
+import 'package:menly_app/features/review/presentation/widgets/product_reviews_section.dart';
 import '../widgets/product_perk_item.dart';
 import '../widgets/product_related_grid.dart';
 
@@ -973,6 +974,8 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                         color: AppTheme.textSecondary),
                   ),
                   const SizedBox(height: 30),
+                  ProductReviewsSection(productId: p.id),
+                  const SizedBox(height: 26),
                   ProductRelatedGrid(
                     product: _product,
                     relatedProducts: _relatedProducts,

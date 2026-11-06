@@ -36,3 +36,38 @@ textarea {
   outline: 2px solid rgb(251 191 36 / 85%);
   outline-offset: 2px;
 }
+
+@media print {
+  body {
+    background: #fff !important;
+  }
+
+  body * {
+    visibility: hidden;
+  }
+
+  #invoice-print-area,
+  #invoice-print-area * {
+    visibility: visible;
+  }
+
+  #invoice-print-overlay {
+    position: static !important;
+    inset: auto !important;
+    overflow: visible !important;
+    background: #fff !important;
+    padding: 0 !important;
+  }
+
+  #invoice-print-area {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+  }
+
+  .invoice-print-hide {
+    display: none !important;
+  }
+}
