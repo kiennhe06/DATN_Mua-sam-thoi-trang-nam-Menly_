@@ -1,3 +1,5 @@
+import '../widgets/profile_menu_item.dart';
+import '../widgets/profile_stat_item.dart';
 import 'package:menly_app/core/widgets/display_settings.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -6,6 +8,8 @@ import 'package:menly_app/features/address/presentation/pages/address_page.dart'
 import 'package:menly_app/features/auth/presentation/pages/change_password_page.dart';
 import 'package:menly_app/features/auth/presentation/pages/login_page.dart';
 import 'package:menly_app/features/auth/presentation/providers/auth_provider.dart';
+import 'package:menly_app/features/notification/presentation/pages/notifications_page.dart';
+import 'package:menly_app/features/notification/presentation/providers/notification_provider.dart';
 import 'package:menly_app/features/order/presentation/pages/my_orders_page.dart';
 import 'package:menly_app/features/order/presentation/pages/order_track_page.dart';
 import 'package:menly_app/features/order/presentation/pages/staff_order_management_page.dart';
@@ -338,19 +342,19 @@ class ProfilePage extends StatelessWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
-                  _buildStatItem(
+                  ProfileStatItem(
                     label: 'Đơn hàng',
                     value: '${orderProv.allOrders.length}',
                     onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MyOrdersPage())),
                   ),
                   Container(height: 28, width: 1, color: Colors.grey.shade200),
-                  _buildStatItem(
+                  ProfileStatItem(
                     label: 'Yêu thích',
                     value: '${wishlist.count}',
                     onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const WishlistPage())),
                   ),
                   Container(height: 28, width: 1, color: Colors.grey.shade200),
-                  _buildStatItem(
+                  ProfileStatItem(
                     label: 'Voucher',
                     value: '${voucherProv.vouchers.length}',
                     onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const VoucherListPage())),
@@ -371,21 +375,28 @@ class ProfilePage extends StatelessWidget {
               ),
               child: Column(
                 children: [
-                  _buildMenuItem(
+                  ProfileMenuItem(
                     title: 'Đơn hàng của tôi',
                     subtitle: 'Theo dõi tiến trình giao hàng và lịch sử mua sắm',
                     badge: '${orderProv.allOrders.length}',
                     onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MyOrdersPage())),
                   ),
                   const Divider(height: 1),
-                  _buildMenuItem(
+                  ProfileMenuItem(
                     title: 'Tra cứu đơn hàng',
                     subtitle: 'Nhập mã đơn hoặc số điện thoại để xem tình trạng đơn hàng',
                     badge: 'Mới',
                     onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const OrderTrackPage())),
                   ),
                   const Divider(height: 1),
-                  _buildMenuItem(
+                  ProfileMenuItem(
+                    title: 'Thông báo',
+                    subtitle: 'Xem khuyến mãi, tin tức và thông báo từ shop',
+                    badge: '${context.watch<NotificationProvider>().unreadCount}',
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationsPage())),
+                  ),
+                  const Divider(height: 1),
+                  ProfileMenuItem(
                     title: 'Kho Voucher giảm giá',
                     subtitle: 'Xem các mã khuyến mãi áp dụng khi thanh toán',
                     badge: 'Mới',
@@ -407,19 +418,19 @@ class ProfilePage extends StatelessWidget {
               ),
               child: Column(
                 children: [
-                  _buildMenuItem(
+                  ProfileMenuItem(
                     title: 'Địa chỉ của tôi',
                     subtitle: 'Quản lý danh sách địa chỉ nhận hàng',
                     onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AddressPage())),
                   ),
                   const Divider(height: 1),
-                  _buildMenuItem(
+                  ProfileMenuItem(
                     title: 'Đổi mật khẩu',
                     subtitle: 'Cập nhật mật khẩu mới bảo mật tài khoản',
                     onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ChangePasswordPage())),
                   ),
                   const Divider(height: 1),
-                  _buildMenuItem(
+                  ProfileMenuItem(
                     title: 'Giao diện & Hiển thị',
                     subtitle: 'Tùy chỉnh màu chủ đạo và chế độ Sáng / Tối',
                     onTap: () => showDisplaySettings(context),
@@ -440,13 +451,13 @@ class ProfilePage extends StatelessWidget {
               ),
               child: Column(
                 children: [
-                  _buildMenuItem(
+                  ProfileMenuItem(
                     title: 'Quản lý đơn hàng (Admin/Nhân viên)',
                     subtitle: 'Xem danh sách và cập nhật trạng thái giao hàng',
                     onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const StaffOrderManagementPage())),
                   ),
                   const Divider(height: 1),
-                  _buildMenuItem(
+                  ProfileMenuItem(
                     title: 'Trung tâm trợ giúp & CSKH',
                     subtitle: 'Hotline 1900 6868, giải đáp thắc mắc thường gặp',
                     onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const FAQPage())),
@@ -506,68 +517,5 @@ class ProfilePage extends StatelessWidget {
       ),
     );
   }
-
-  Widget _buildStatItem({required String label, required String value, required VoidCallback onTap}) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-        child: Column(
-          children: [
-            Text(
-              value,
-              style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 17, color: AppTheme.primary),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildMenuItem({
-    required String title,
-    required String subtitle,
-    String? badge,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(14),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                  const SizedBox(height: 2),
-                  Text(subtitle, style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
-                ],
-              ),
-            ),
-            if (badge != null) ...[
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: AppTheme.primary,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Text(badge, style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
-              ),
-              const SizedBox(width: 8),
-            ],
-            const Text('>', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold, fontSize: 16)),
-          ],
-        ),
-      ),
-    );
-  }
 }
+

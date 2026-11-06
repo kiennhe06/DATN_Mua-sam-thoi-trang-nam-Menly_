@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/format.dart';
-import '../../../../models/order_model.dart';
+import 'package:menly_app/features/order/data/models/order_model.dart';
 
 class OrderItemsCard extends StatelessWidget {
   final OrderModel order;

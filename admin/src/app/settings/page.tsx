@@ -51,7 +51,7 @@ export default function SettingsPage() {
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [lastCheck, setLastCheck] = useState<Date | null>(null);
   const [services, setServices] = useState<ServiceStatus[]>([
-    { name: 'Backend API', url: '/health', status: 'checking', latency: null, icon: Server, color: 'amber' },
+    { name: 'Backend API', url: '/api/v1/health', status: 'checking', latency: null, icon: Server, color: 'amber' },
     { name: 'Supabase DB', url: 'https://lihnuaymkrwmgdspnkux.supabase.co', status: 'checking', latency: null, icon: Database, color: 'blue' },
     { name: 'VNPay Gateway', url: 'https://sandbox.vnpayment.vn', status: 'checking', latency: null, icon: Globe, color: 'green' },
   ]);

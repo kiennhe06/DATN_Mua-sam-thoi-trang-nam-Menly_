@@ -1,7 +1,7 @@
 import 'package:flutter/services.dart';
 import 'package:menly_app/core/network/api_client.dart';
 import 'package:menly_app/core/utils/format.dart';
-import 'package:menly_app/models/product_model.dart';
+import 'package:menly_app/features/product/data/models/product_model.dart';
 import 'package:share_plus/share_plus.dart';
 
 class ProductShare {

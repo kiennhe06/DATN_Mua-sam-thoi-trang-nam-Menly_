@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:menly_app/core/share/product_share.dart';
 import 'package:menly_app/core/theme/app_theme.dart';
-import 'package:menly_app/models/cart_item_model.dart';
-import 'package:menly_app/models/product_model.dart';
+import 'package:menly_app/features/cart/data/models/cart_item_model.dart';
+import 'package:menly_app/features/product/data/models/product_model.dart';
 import 'package:menly_app/features/cart/presentation/providers/cart_provider.dart';
 import 'package:menly_app/features/order/presentation/pages/checkout_page.dart';
 import 'package:menly_app/features/wishlist/presentation/providers/wishlist_provider.dart';
 import 'package:menly_app/features/product/presentation/providers/product_provider.dart';
+import '../widgets/product_perk_item.dart';
+import '../widgets/product_related_grid.dart';
 
 /// Trang Chi tiet san pham cao cap Menly (Chon Size & Mau theo dang Dropdown tien loi)
 class ProductDetailPage extends StatefulWidget {
@@ -43,35 +45,20 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
     return _product.variants.any((v) => int.tryParse(v.size) != null);
   }
 
-  List<String> get _standardSizes {
-    return _isPants
-        ? const ['29', '30', '31', '32', '33', '34']
-        : const ['S', 'M', 'L', 'XL', '2XL'];
-  }
-
-  List<String> get _standardColors {
-    return _isPants
-        ? const ['Đen', 'Xanh Đậm', 'Xám', 'Xanh Nhạt', 'Be']
-        : const ['Đen', 'Trắng', 'Xám', 'Xanh Navy', 'Be'];
-  }
-
   List<String> _getAvailableSizes() {
-    final fromVariants = _product.variants.map((v) => v.size).toSet().toList();
-    if (fromVariants.length >= 3) {
-      return fromVariants;
-    }
-    final set = {...fromVariants, ..._standardSizes};
-    return _standardSizes.where((s) => set.contains(s)).toList();
+    return _product.variants
+        .where((variant) => variant.stock > 0)
+        .map((variant) => variant.size)
+        .toSet()
+        .toList();
   }
 
   List<String> _getAvailableColors() {
-    final fromVariants =
-        _product.variants.map((v) => v.color).toSet().toList();
-    if (fromVariants.length >= 3) {
-      return fromVariants;
-    }
-    final set = {...fromVariants, ..._standardColors};
-    return set.toList();
+    return _product.variants
+        .where((variant) => variant.stock > 0)
+        .map((variant) => variant.color)
+        .toSet()
+        .toList();
   }
 
   void _initSelection() {
@@ -328,8 +315,8 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                           },
                           children: [
                             TableRow(
-                              decoration: const BoxDecoration(
-                                  color: Color(0xFFF1F5F9)),
+                              decoration:
+                                  const BoxDecoration(color: Color(0xFFF1F5F9)),
                               children: [
                                 const Padding(
                                     padding: EdgeInsets.all(10),
@@ -363,8 +350,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                               return TableRow(
                                 decoration: BoxDecoration(
                                   color: isSelected
-                                      ? AppTheme.primary
-                                          .withValues(alpha: 0.1)
+                                      ? AppTheme.primary.withValues(alpha: 0.1)
                                       : Colors.transparent,
                                 ),
                                 children: [
@@ -377,8 +363,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                                         SnackBar(
                                           content: Text(
                                               'Đã chọn kích cỡ $rowSize theo bảng quy đổi'),
-                                          duration:
-                                              const Duration(seconds: 1),
+                                          duration: const Duration(seconds: 1),
                                         ),
                                       );
                                     },
@@ -405,8 +390,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                                         SnackBar(
                                           content: Text(
                                               'Đã chọn kích cỡ $rowSize theo bảng quy đổi'),
-                                          duration:
-                                              const Duration(seconds: 1),
+                                          duration: const Duration(seconds: 1),
                                         ),
                                       );
                                     },
@@ -414,8 +398,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                                       padding: const EdgeInsets.symmetric(
                                           horizontal: 10, vertical: 12),
                                       child: Text(row[1],
-                                          style:
-                                              const TextStyle(fontSize: 12)),
+                                          style: const TextStyle(fontSize: 12)),
                                     ),
                                   ),
                                   InkWell(
@@ -427,8 +410,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                                         SnackBar(
                                           content: Text(
                                               'Đã chọn kích cỡ $rowSize theo bảng quy đổi'),
-                                          duration:
-                                              const Duration(seconds: 1),
+                                          duration: const Duration(seconds: 1),
                                         ),
                                       );
                                     },
@@ -436,8 +418,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                                       padding: const EdgeInsets.symmetric(
                                           horizontal: 10, vertical: 12),
                                       child: Text(row[2],
-                                          style:
-                                              const TextStyle(fontSize: 12)),
+                                          style: const TextStyle(fontSize: 12)),
                                     ),
                                   ),
                                   InkWell(
@@ -449,8 +430,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                                         SnackBar(
                                           content: Text(
                                               'Đã chọn kích cỡ $rowSize theo bảng quy đổi'),
-                                          duration:
-                                              const Duration(seconds: 1),
+                                          duration: const Duration(seconds: 1),
                                         ),
                                       );
                                     },
@@ -458,8 +438,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                                       padding: const EdgeInsets.symmetric(
                                           horizontal: 10, vertical: 12),
                                       child: Text(row[3],
-                                          style:
-                                              const TextStyle(fontSize: 12)),
+                                          style: const TextStyle(fontSize: 12)),
                                     ),
                                   ),
                                 ],
@@ -510,26 +489,14 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
   }
 
   String _resolveVariantId(ProductModel p) {
-    if (p.variants.isNotEmpty) {
-      try {
-        final match = p.variants.firstWhere(
-          (v) =>
-              v.size.toLowerCase() == _selectedSize.toLowerCase() &&
-              v.color.toLowerCase() == _selectedColor.toLowerCase(),
-        );
-        return match.id;
-      } catch (_) {
-        try {
-          final sizeMatch = p.variants.firstWhere(
-            (v) => v.size.toLowerCase() == _selectedSize.toLowerCase(),
-          );
-          return sizeMatch.id;
-        } catch (_) {
-          return p.variants.first.id;
-        }
+    for (final variant in p.variants) {
+      if (variant.size.toLowerCase() == _selectedSize.toLowerCase() &&
+          variant.color.toLowerCase() == _selectedColor.toLowerCase() &&
+          variant.stock >= _quantity) {
+        return variant.id;
       }
     }
-    return '${p.id}-${_selectedSize.toLowerCase()}-${_selectedColor.toLowerCase()}';
+    return '';
   }
 
   void _showShareSheet() {
@@ -604,6 +571,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
 
     final availableSizes = _getAvailableSizes();
     final availableColors = _getAvailableColors();
+    final canPurchase = _resolveVariantId(p).isNotEmpty;
 
     if (!availableSizes.contains(_selectedSize) && availableSizes.isNotEmpty) {
       _selectedSize = availableSizes.first;
@@ -705,8 +673,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                                   fontWeight: FontWeight.bold, fontSize: 14)),
                           Text(' (${p.ratingCount} đánh giá)',
                               style: const TextStyle(
-                                  color: AppTheme.textSecondary,
-                                  fontSize: 13)),
+                                  color: AppTheme.textSecondary, fontSize: 13)),
                         ],
                       ),
                     ],
@@ -779,8 +746,8 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                   // DROPDOWN KICH CO
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 2),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(10),
@@ -837,10 +804,20 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                   const SizedBox(height: 12),
 
                   // DROPDOWN MAU SAC
+                  if (p.variants.isEmpty || availableSizes.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Text(
+                        p.variants.isEmpty
+                            ? 'Sản phẩm chưa có biến thể hàng hóa.'
+                            : 'Sản phẩm hiện đã hết hàng.',
+                        style: const TextStyle(color: Colors.red),
+                      ),
+                    ),
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 2),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(10),
@@ -966,15 +943,15 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                     child: const Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _DetailPerk(
+                        ProductPerkItem(
                             title: 'Đổi trả 30 ngày',
                             subtitle: 'Miễn phí đổi size/màu tận nhà'),
                         Divider(height: 16),
-                        _DetailPerk(
+                        ProductPerkItem(
                             title: 'Giao nhanh 24h',
                             subtitle: 'Nội thành nhận ngay trong ngày'),
                         Divider(height: 16),
-                        _DetailPerk(
+                        ProductPerkItem(
                             title: 'Chất lượng cam kết',
                             subtitle:
                                 '100% Cotton chải kỹ, thoáng mát, bền form'),
@@ -985,8 +962,8 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
 
                   // 5. MO TA CHI TIET
                   const Text('Mô tả sản phẩm',
-                      style: TextStyle(
-                          fontWeight: FontWeight.bold, fontSize: 17)),
+                      style:
+                          TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
                   const SizedBox(height: 8),
                   Text(
                     p.description,
@@ -996,7 +973,11 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                         color: AppTheme.textSecondary),
                   ),
                   const SizedBox(height: 30),
-                  _buildRelatedProducts(),
+                  ProductRelatedGrid(
+                    product: _product,
+                    relatedProducts: _relatedProducts,
+                    wishlist: wishlist,
+                  ),
                   const SizedBox(height: 16),
                 ],
               ),
@@ -1030,26 +1011,32 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12)),
                   ),
-                  onPressed: () {
-                    cart.addToCart(
-                      p,
-                      size: _selectedSize,
-                      color: _selectedColor,
-                      quantity: _quantity,
-                    );
+                  onPressed: canPurchase
+                      ? () async {
+                          final added = await cart.addToCart(
+                            p,
+                            size: _selectedSize,
+                            color: _selectedColor,
+                            quantity: _quantity,
+                          );
+                          if (!context.mounted) return;
 
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                            'Đã thêm $_quantity x "${p.name}" (Size: $_selectedSize, Màu: $_selectedColor) vào giỏ hàng'),
-                        backgroundColor: AppTheme.primary,
-                        duration: const Duration(seconds: 2),
-                      ),
-                    );
-                  },
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(added
+                                  ? 'Đã thêm $_quantity x "${p.name}" (Size: $_selectedSize, Màu: $_selectedColor) vào giỏ hàng'
+                                  : cart.errorMessage ??
+                                      'Không thể thêm sản phẩm vào giỏ'),
+                              backgroundColor:
+                                  added ? AppTheme.primary : Colors.red,
+                              duration: const Duration(seconds: 2),
+                            ),
+                          );
+                        }
+                      : null,
                   child: const Text('Thêm vào giỏ',
-                      style: TextStyle(
-                          fontWeight: FontWeight.bold, fontSize: 14)),
+                      style:
+                          TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                 ),
               ),
               const SizedBox(width: 10),
@@ -1062,194 +1049,37 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12)),
                   ),
-                  onPressed: () {
-                    final variantId = _resolveVariantId(p);
-                    final directItem = CartItemModel(
-                      id: 'buy-now-${DateTime.now().millisecondsSinceEpoch}',
-                      product: p,
-                      variantId: variantId,
-                      size: _selectedSize,
-                      color: _selectedColor,
-                      quantity: _quantity,
-                      isSelected: true,
-                    );
+                  onPressed: canPurchase
+                      ? () {
+                          final variantId = _resolveVariantId(p);
+                          final directItem = CartItemModel(
+                            id: 'buy-now-${DateTime.now().millisecondsSinceEpoch}',
+                            product: p,
+                            variantId: variantId,
+                            size: _selectedSize,
+                            color: _selectedColor,
+                            quantity: _quantity,
+                            isSelected: true,
+                          );
 
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => CheckoutPage(customItems: [directItem]),
-                      ),
-                    );
-                  },
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  CheckoutPage(customItems: [directItem]),
+                            ),
+                          );
+                        }
+                      : null,
                   child: const Text('Mua ngay',
-                      style: TextStyle(
-                          fontWeight: FontWeight.bold, fontSize: 14)),
+                      style:
+                          TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                 ),
               ),
             ],
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildRelatedProducts() {
-    if (_relatedProducts.isEmpty) return const SizedBox.shrink();
-
-    final wishlist = context.watch<WishlistProvider>();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text('Sản phẩm liên quan',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
-        const SizedBox(height: 4),
-        Text(
-          'Gợi ý cùng danh mục với ${_product.categoryName.isNotEmpty ? _product.categoryName : 'sản phẩm này'}',
-          style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-        ),
-        const SizedBox(height: 14),
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: _relatedProducts.length,
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            childAspectRatio: 0.65,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-          ),
-          itemBuilder: (ctx, i) {
-            final related = _relatedProducts[i];
-            final isFav = wishlist.isFavorite(related.id);
-
-            return InkWell(
-              onTap: () {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(
-                      builder: (_) => ProductDetailPage(product: related)),
-                );
-              },
-              borderRadius: BorderRadius.circular(12),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.grey.shade200),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.03),
-                      blurRadius: 6,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Stack(
-                      children: [
-                        ClipRRect(
-                          borderRadius: const BorderRadius.vertical(
-                              top: Radius.circular(12)),
-                          child: Image.network(
-                            related.thumbnailUrl,
-                            width: double.infinity,
-                            height: 180,
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => Container(
-                              width: double.infinity,
-                              height: 180,
-                              color: Colors.grey.shade200,
-                              child: const Center(
-                                child: Text('Menly',
-                                    style: TextStyle(
-                                        color: Colors.grey,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 13)),
-                              ),
-                            ),
-                          ),
-                        ),
-                        Positioned(
-                          top: 8,
-                          right: 8,
-                          child: CircleAvatar(
-                            radius: 14,
-                            backgroundColor:
-                                Colors.white.withValues(alpha: 0.9),
-                            child: IconButton(
-                              padding: EdgeInsets.zero,
-                              icon: Icon(
-                                isFav ? Icons.favorite : Icons.favorite_border,
-                                color: isFav
-                                    ? AppTheme.accentRed
-                                    : AppTheme.textPrimary,
-                                size: 16,
-                              ),
-                              onPressed: () => wishlist.toggleFavorite(related),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.all(10),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            related.name,
-                            style: const TextStyle(
-                                fontWeight: FontWeight.bold, fontSize: 13),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            '${related.price} đ',
-                            style: const TextStyle(
-                              color: AppTheme.accentRed,
-                              fontWeight: FontWeight.w900,
-                              fontSize: 14,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        ),
-      ],
-    );
-  }
-}
-
-class _DetailPerk extends StatelessWidget {
-  final String title;
-  final String subtitle;
-
-  const _DetailPerk({required this.title, required this.subtitle});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(title,
-            style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 13,
-                color: AppTheme.textPrimary)),
-        const SizedBox(height: 2),
-        Text(subtitle,
-            style:
-                const TextStyle(fontSize: 11, color: AppTheme.textSecondary)),
-      ],
     );
   }
 }

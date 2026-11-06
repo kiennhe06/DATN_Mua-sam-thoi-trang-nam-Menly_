@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../../../models/order_model.dart';
+import 'package:menly_app/features/order/data/models/order_model.dart';
 
 class OrderStatusTabs extends StatelessWidget {
   final String selectedFilter;
@@ -27,10 +27,13 @@ class OrderStatusTabs extends StatelessWidget {
     final tabs = [
       {'key': 'all', 'label': 'Tất cả'},
       {'key': 'pending_payment', 'label': 'Chờ thanh toán'},
+      {'key': 'paid', 'label': 'Đã thanh toán'},
       {'key': 'processing', 'label': 'Đang xử lý'},
       {'key': 'shipping', 'label': 'Đang giao'},
       {'key': 'delivered', 'label': 'Đã giao'},
-      {'key': 'canceled', 'label': 'Đã hủy'},
+      {'key': 'completed', 'label': 'Hoàn tất'},
+      {'key': 'cancelled', 'label': 'Đã hủy'},
+      {'key': 'expired', 'label': 'Hết hạn'},
     ];
 
     return SizedBox(
@@ -62,17 +65,20 @@ class OrderStatusTabs extends StatelessWidget {
                     t['label']!,
                     style: TextStyle(
                       color: isSelected ? c.onPrimary : c.textSecondary,
-                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                      fontWeight:
+                          isSelected ? FontWeight.w700 : FontWeight.w600,
                       fontSize: 13,
                     ),
                   ),
                   if (count > 0) ...[
                     const SizedBox(width: 6),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
                         color: isSelected ? c.secondary : c.border,
-                        borderRadius: BorderRadius.circular(AppTheme.radiusPill),
+                        borderRadius:
+                            BorderRadius.circular(AppTheme.radiusPill),
                       ),
                       child: Text(
                         '$count',

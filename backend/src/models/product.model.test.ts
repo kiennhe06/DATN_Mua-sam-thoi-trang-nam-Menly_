@@ -33,6 +33,10 @@ const supabaseServer = createServer(async (request, response) => {
     response.end(JSON.stringify({ name: product.name, description: product.description }));
     return;
   }
+  if (request.method === 'GET' && url.searchParams.has('id') && product) {
+    response.end(JSON.stringify(product));
+    return;
+  }
   response.end(JSON.stringify([]));
 });
 
@@ -69,8 +73,9 @@ test('sản phẩm mới chờ duyệt không được kích hoạt trước khi
   assert.equal(requests[0].body.is_active, false);
 
   await model.approveAdminProduct('00000000-0000-4000-8000-000000000002');
-  assert.equal(requests[1].body.approval_status, 'approved');
-  assert.equal(requests[1].body.is_active, true);
+  const approvalUpdate = requests.find((request) => request.method === 'PATCH');
+  assert.equal(approvalUpdate?.body.approval_status, 'approved');
+  assert.equal(approvalUpdate?.body.is_active, true);
 });
 
 test('tìm kiếm sản phẩm công khai chỉ lấy sản phẩm đang bán đã duyệt', async () => {
@@ -78,6 +83,23 @@ test('tìm kiếm sản phẩm công khai chỉ lấy sản phẩm đang bán đ
   await model.findAll();
   assert.match(requests[0].url, /is_active=eq\.true/);
   assert.match(requests[0].url, /approval_status=eq\.approved/);
+});
+
+test('chi tiết sản phẩm quản trị gồm sản phẩm, biến thể và ảnh kể cả khi chưa duyệt', async () => {
+  product = {
+    id: '00000000-0000-4000-8000-000000000002',
+    approval_status: 'pending',
+    is_active: false,
+  };
+  requests.length = 0;
+
+  const result = await model.findAdminById('00000000-0000-4000-8000-000000000002');
+
+  assert.equal(result?.approval_status, 'pending');
+  assert.equal(result?.is_active, false);
+  const requestUrl = new URL(requests[0].url, 'http://localhost');
+  assert.equal(requestUrl.searchParams.get('select'), '*,product_variants(*),product_images(*)');
+  assert.match(requests[0].url, /id=eq\.00000000-0000-4000-8000-000000000002/);
 });
 
 test('cập nhật tên đồng bộ chỉ mục tìm kiếm và giữ mô tả cũ', async () => {

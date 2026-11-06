@@ -10,6 +10,7 @@
 ### 1. Chuẩn bị cơ sở dữ liệu
 
 Tạo project Supabase dùng cho phát triển nhóm, sau đó chạy các file SQL theo thứ tự trong [database/README.md](database/README.md).
+Nếu database đã được tạo, chạy lại `database/03_functions.sql` trong Supabase SQL Editor để cập nhật các hàm đặt và hủy đơn hàng.
 
 Tạo tài khoản quản trị một lần trong Supabase:
 
@@ -66,8 +67,12 @@ flutter pub get
 flutter run
 ```
 
-Android Emulator mặc định gọi backend qua `10.0.2.2:5000`. Máy thật cần dùng IP LAN của máy chạy backend, cùng mạng Wi-Fi và được phép truy cập cổng 5000.
+Android Emulator mặc định gọi backend qua `10.0.2.2:5000`. Máy thật cần dùng IP LAN của máy chạy backend, cùng mạng Wi-Fi và được phép truy cập cổng 5000. Có thể cấu hình địa chỉ khi chạy app:
+
+```powershell
+flutter run --dart-define=API_BASE_URL=http://<IP-LAN>:5000/api/v1
+```
 
 ## Lưu ý về phạm vi chức năng
 
-Backend hiện đọc dữ liệu thật cho các API đã triển khai, bao gồm danh mục và sản phẩm. Một số API quản trị/đơn hàng vẫn chưa được cài đặt và có thể trả HTTP 501; kết nối Supabase không tự hoàn thiện các nghiệp vụ này. Kiểm tra từng màn/API trước khi dùng như hệ thống vận hành thật.
+Admin và app lấy dữ liệu sản phẩm, voucher, banner, người dùng, kho và đơn hàng từ backend/Supabase. Tài khoản Supabase, cấu hình `.env` và cập nhật SQL vẫn cần được chuẩn bị riêng trên máy hoặc project của nhóm.

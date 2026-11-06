@@ -4,7 +4,7 @@ import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:provider/provider.dart';
 import 'package:menly_app/core/network/api_client.dart';
 import 'package:menly_app/core/utils/format.dart';
-import 'package:menly_app/models/order_model.dart';
+import 'package:menly_app/features/order/data/models/order_model.dart';
 import 'package:menly_app/features/order/presentation/providers/order_provider.dart';
 
 /// Man hinh thanh toan online VNPay su dung flutter_inappwebview (AP-TT1)
@@ -196,7 +196,7 @@ class _VNPayPaymentPageState extends State<VNPayPaymentPage> {
     });
 
     if (isSuccess) {
-      _handleSuccess(
+      await _handleSuccess(
         bankCode: bankCode,
         transactionNo: transactionNo,
         txnRef: txnRef,
@@ -206,11 +206,11 @@ class _VNPayPaymentPageState extends State<VNPayPaymentPage> {
     }
   }
 
-  void _handleSuccess(
-      {String? bankCode, String? transactionNo, String? txnRef}) {
+  Future<void> _handleSuccess(
+      {String? bankCode, String? transactionNo, String? txnRef}) async {
     final orderProv = context.read<OrderProvider>();
-    orderProv.markAsPaidVNPay(widget.order.id);
-    orderProv.loadOrders();
+    await orderProv.refreshOrderAfterPayment(widget.order.id);
+    if (!mounted) return;
 
     showDialog(
       context: context,

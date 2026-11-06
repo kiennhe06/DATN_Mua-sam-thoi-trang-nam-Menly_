@@ -4,6 +4,7 @@ import { ProductModel } from '../../models/product.model.js';
 import { OrderModel } from '../../models/order.model.js';
 import { VoucherModel } from '../../models/voucher.model.js';
 import { AdminModel } from '../../models/admin.model.js';
+import { ReviewModel } from '../../models/review.model.js';
 import {
   adminProductListSchema,
   adminProductSchema,
@@ -15,6 +16,11 @@ import {
   updateAdminVoucherSchema,
   voucherIdSchema,
 } from '../../validators/admin-voucher.validator.js';
+import {
+  adminBannerSchema,
+  adminNotificationSchema,
+  inventoryAdjustmentSchema,
+} from '../../validators/admin.validator.js';
 import {
   adminCreateUserSchema,
   adminUpdateUserSchema,
@@ -29,6 +35,7 @@ const productModel = new ProductModel();
 const orderModel = new OrderModel();
 const voucherModel = new VoucherModel();
 const adminModel = new AdminModel();
+const reviewModel = new ReviewModel();
 
 // Cac trang thai don hang hop le (khop enum order_status trong DB)
 const ORDER_STATUSES = [
@@ -69,6 +76,20 @@ router.get('/products', async (req, res, next) => {
   }
 });
 
+// GET /api/v1/admin/products/:id - chi tiet san pham
+router.get('/products/:id', async (req, res, next) => {
+  const id = parseProductId(req.params.id, res);
+  if (!id) return;
+
+  try {
+    const data = await productModel.findAdminById(id);
+    if (!data) return res.status(404).json({ error: 'Không tìm thấy sản phẩm' });
+    return res.json({ data });
+  } catch (error) {
+    return next(error);
+  }
+});
+
 // POST /api/v1/admin/products - them SP
 router.post('/products', async (req, res, next) => {
   const parsed = adminProductSchema.safeParse(req.body);
@@ -80,7 +101,7 @@ router.post('/products', async (req, res, next) => {
   }
 
   try {
-    const data = await productModel.createAdminProduct(parsed.data);
+    const data = await productModel.createAdminProduct(parsed.data, req.user?.id);
     return res.status(201).json({ data });
   } catch (error) {
     return next(error);
@@ -186,20 +207,49 @@ router.put('/orders/:id/status', async (req, res, next) => {
     if (!data) return res.status(404).json({ error: 'Không tìm thấy đơn hàng' });
     return res.json({ data, message: 'Đã cập nhật trạng thái đơn hàng' });
   } catch (error) {
+    if (error instanceof Error && error.message.includes('không thể hủy')) {
+      return res.status(409).json({ error: error.message });
+    }
     return next(error);
   }
 });
 
-// POST /api/v1/admin/inventory/adjust - dieu chinh kho
-router.post('/inventory/adjust', (_req, res) => {
-  // TODO: implement
-  res.status(501).json({ message: 'Chua duoc cai dat' });
+// POST /api/v1/admin/inventory/adjust - điều chỉnh tồn kho
+router.post('/inventory/adjust', async (req, res, next) => {
+  const parsed = inventoryAdjustmentSchema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: 'Thông tin điều chỉnh kho không hợp lệ', details: parsed.error.flatten().fieldErrors });
+  try {
+    const data = await adminModel.adjustInventory(parsed.data, req.user!.id);
+    if (!data) return res.status(404).json({ error: 'Không tìm thấy biến thể sản phẩm' });
+    return res.json({ data });
+  } catch (error) {
+    if (error instanceof Error && (error.message.includes('Tồn kho') || error.message.includes('được cập nhật'))) {
+      return res.status(409).json({ error: error.message });
+    }
+    return next(error);
+  }
 });
 
-// GET /api/v1/admin/inventory/movements - lich su kho
-router.get('/inventory/movements', (_req, res) => {
-  // TODO: implement
-  res.status(501).json({ message: 'Chua duoc cai dat' });
+// GET /api/v1/admin/inventory/movements - lịch sử kho
+router.get('/inventory/movements', async (req, res, next) => {
+  try {
+    return res.json({ data: await adminModel.listInventoryMovements() });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+router.get('/audit-log', async (req, res, next) => {
+  const limitRaw = typeof req.query.limit === 'string' ? Number.parseInt(req.query.limit, 10) : 200;
+  if (!Number.isInteger(limitRaw) || limitRaw < 1 || limitRaw > 500) {
+    return res.status(400).json({ error: 'Giới hạn nhật ký không hợp lệ' });
+  }
+
+  try {
+    return res.json({ data: await adminModel.listAuditLogs(limitRaw) });
+  } catch (error) {
+    return next(error);
+  }
 });
 
 // GET /api/v1/admin/users - DS nguoi dung
@@ -275,6 +325,9 @@ router.patch('/users/:id/lock', async (req, res, next) => {
   if (!parsed.success) {
     return res.status(400).json({ error: 'Giá trị khóa không hợp lệ' });
   }
+  if (id.data === req.user?.id && parsed.data.isLocked) {
+    return res.status(400).json({ error: 'Không thể tự khóa tài khoản đang đăng nhập' });
+  }
 
   try {
     const user = await adminModel.setLock(id.data, parsed.data.isLocked);
@@ -285,70 +338,130 @@ router.patch('/users/:id/lock', async (req, res, next) => {
   }
 });
 
-// GET /api/v1/admin/stats - thong ke tong quan
-router.get('/stats', (_req, res) => {
-  // TODO: implement
-  res.status(501).json({ message: 'Chua duoc cai dat' });
+// GET /api/v1/admin/stats - thống kê tổng quan
+router.get('/stats', async (_req, res, next) => {
+  try {
+    const [orders, products, users] = await Promise.all([
+      orderModel.adminListOrders({ limit: 500 }),
+      productModel.findAdminAll({ search: undefined, limit: 500 }),
+      adminModel.listUsers(),
+    ]);
+    const activeOrders = orders.filter((order) => !['cancelled', 'expired'].includes(order.status));
+    return res.json({ data: {
+      ordersCount: orders.length,
+      productsCount: products.length,
+      usersCount: users.length,
+      revenue: activeOrders.reduce((sum, order) => sum + Number(order.total), 0),
+    } });
+  } catch (error) {
+    return next(error);
+  }
 });
 
-// GET /api/v1/admin/audit-log - nhat ky
-router.get('/audit-log', (_req, res) => {
-  // TODO: implement
-  res.status(501).json({ message: 'Chua duoc cai dat' });
+// POST /api/v1/admin/notifications - gửi thông báo
+router.post('/notifications', async (req, res, next) => {
+  const parsed = adminNotificationSchema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: 'Thông tin thông báo không hợp lệ', details: parsed.error.flatten().fieldErrors });
+  try {
+    return res.status(201).json({ data: await adminModel.createNotification(parsed.data, req.user!.id) });
+  } catch (error) {
+    return next(error);
+  }
 });
 
-// POST /api/v1/admin/notifications - gui thong bao
-router.post('/notifications', (_req, res) => {
-  // TODO: implement
-  res.status(501).json({ message: 'Chua duoc cai dat' });
+// GET /api/v1/admin/banners - danh sách banner quản trị
+router.get('/banners', async (_req, res, next) => {
+  try {
+    return res.json({ data: await adminModel.listBanners() });
+  } catch (error) {
+    return next(error);
+  }
 });
 
-// POST /api/v1/admin/banners - them banner
-router.post('/banners', (_req, res) => {
-  // TODO: implement
-  res.status(501).json({ message: 'Chua duoc cai dat' });
-});
-
-// PUT /api/v1/admin/banners/:id - sua banner
-router.put('/banners/:id', (_req, res) => {
-  // TODO: implement
-  res.status(501).json({ message: 'Chua duoc cai dat' });
-});
-
-// DELETE /api/v1/admin/banners/:id - xoa banner
-router.delete('/banners/:id', (_req, res) => {
-  // TODO: implement
-  res.status(501).json({ message: 'Chua duoc cai dat' });
+// POST /api/v1/admin/banners - tạo banner
+router.post('/banners', async (req, res, next) => {
+  const parsed = adminBannerSchema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: 'Thông tin banner không hợp lệ', details: parsed.error.flatten().fieldErrors });
+  try {
+    return res.status(201).json({ data: await adminModel.createBanner(parsed.data) });
+  } catch (error) {
+    return next(error);
+  }
 });
 
 // GET /api/v1/admin/returns - DS tra hang
-router.get('/returns', (_req, res) => {
-  // TODO: implement
-  res.status(501).json({ message: 'Chua duoc cai dat' });
+router.get('/returns', async (_req, res) => {
+  try {
+    const { OrderReturnViewModel } = await import('../../viewmodels/order-return.viewmodel.js');
+    const data = await new OrderReturnViewModel().listAll();
+    return res.json({ data });
+  } catch (e) {
+    return res.status(500).json({ error: e instanceof Error ? e.message : 'Lỗi khi tải danh sách trả hàng' });
+  }
 });
 
 // PATCH /api/v1/admin/returns/:id - duyet tra hang
-router.patch('/returns/:id', (_req, res) => {
-  // TODO: implement
-  res.status(501).json({ message: 'Chua duoc cai dat' });
+router.patch('/returns/:id', async (req, res) => {
+  try {
+    const status = String(req.body?.status ?? '').trim();
+    if (!status) {
+      return res.status(400).json({ error: 'Vui lòng chọn trạng thái mới cho yêu cầu trả hàng' });
+    }
+
+    const { OrderReturnViewModel } = await import('../../viewmodels/order-return.viewmodel.js');
+    const data = await new OrderReturnViewModel().updateStatus(req.params.id, {
+      status,
+      rejectionReason: req.body?.rejectionReason ?? req.body?.rejection_reason ?? null,
+      adminResolutionNote: req.body?.adminResolutionNote ?? req.body?.admin_resolution_note ?? null,
+    });
+
+    if (!data) {
+      return res.status(404).json({ error: 'Không tìm thấy yêu cầu trả hàng' });
+    }
+
+    return res.json({ data });
+  } catch (e) {
+    return res.status(400).json({ error: e instanceof Error ? e.message : 'Lỗi khi cập nhật yêu cầu trả hàng' });
+  }
 });
 
 // GET /api/v1/admin/reviews - DS danh gia
-router.get('/reviews', (_req, res) => {
-  // TODO: implement
-  res.status(501).json({ message: 'Chua duoc cai dat' });
+router.get('/reviews', async (req, res, next) => {
+  const limitRaw = typeof req.query.limit === 'string' ? Number.parseInt(req.query.limit, 10) : NaN;
+  const limit = Number.isInteger(limitRaw) && limitRaw > 0 ? limitRaw : undefined;
+
+  try {
+    const items = await reviewModel.adminList({ limit });
+    return res.json({ data: { items } });
+  } catch (error) {
+    return next(error);
+  }
 });
 
 // DELETE /api/v1/admin/reviews/:id - xoa danh gia
-router.delete('/reviews/:id', (_req, res) => {
-  // TODO: implement
-  res.status(501).json({ message: 'Chua duoc cai dat' });
+router.delete('/reviews/:id', async (req, res, next) => {
+  try {
+    await reviewModel.adminDelete(req.params.id);
+    return res.json({ message: 'Đã xóa đánh giá' });
+  } catch (error) {
+    return next(error);
+  }
 });
 
 // POST /api/v1/admin/reviews/:id/reply - tra loi danh gia
-router.post('/reviews/:id/reply', (_req, res) => {
-  // TODO: implement
-  res.status(501).json({ message: 'Chua duoc cai dat' });
+router.post('/reviews/:id/reply', async (req, res, next) => {
+  const { reply } = (req.body ?? {}) as { reply?: unknown };
+  if (typeof reply !== 'string' || reply.trim().length === 0) {
+    return res.status(400).json({ error: 'Nội dung trả lời không được để trống' });
+  }
+
+  try {
+    const data = await reviewModel.adminReply(req.params.id, reply.trim());
+    if (!data) return res.status(404).json({ error: 'Không tìm thấy đánh giá' });
+    return res.json({ data, message: 'Đã trả lời đánh giá' });
+  } catch (error) {
+    return next(error);
+  }
 });
 
 // =========== QUAN LY MA GIAM GIA (VOUCHER) ===========

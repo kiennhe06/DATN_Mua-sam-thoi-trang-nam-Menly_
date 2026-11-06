@@ -277,18 +277,24 @@ class ProductListPage extends StatelessWidget {
                               },
                               onToggleFavorite: () =>
                                   wishlistProv.toggleFavorite(p),
-                              onAdd: () {
+                              onAdd: () async {
                                 final cart = context.read<CartProvider>();
-                                final s = p.variants.isNotEmpty
-                                    ? p.variants.first.size
-                                    : 'M';
-                                final col = p.variants.isNotEmpty
-                                    ? p.variants.first.color
-                                    : 'Đen';
-                                cart.addToCart(p,
-                                    size: s, color: col, quantity: 1);
+                                final availableVariants = p.variants
+                                    .where((variant) => variant.stock > 0);
+                                if (availableVariants.isEmpty) {
+                                  AppSnackBar.show(context,
+                                      message: 'Sản phẩm hiện không có hàng');
+                                  return;
+                                }
+                                final variant = availableVariants.first;
+                                final added = await cart.addToCart(p,
+                                    size: variant.size, color: variant.color);
+                                if (!context.mounted) return;
                                 AppSnackBar.show(context,
-                                    message: 'Đã thêm "${p.name}" vào giỏ');
+                                    message: added
+                                        ? 'Đã thêm "${p.name}" vào giỏ'
+                                        : cart.errorMessage ??
+                                            'Không thể thêm sản phẩm vào giỏ');
                               },
                             );
                           },

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../../../models/order_model.dart';
+import 'package:menly_app/features/order/data/models/order_model.dart';
 
 class OrderTimelineCard extends StatelessWidget {
   final OrderModel order;
@@ -13,6 +13,8 @@ class OrderTimelineCard extends StatelessWidget {
     switch (status) {
       case OrderStatus.pendingPayment:
         return 0; // Chờ thanh toán
+      case OrderStatus.paid:
+        return 1; // Đã thanh toán
       case OrderStatus.processing:
         return 2; // Đang xử lý / đóng gói
       case OrderStatus.shipping:
@@ -21,7 +23,10 @@ class OrderTimelineCard extends StatelessWidget {
         return 4; // Đã giao hàng
       case OrderStatus.canceled:
       case OrderStatus.returned:
+      case OrderStatus.expired:
         return -1; // Đã hủy / trả
+      case OrderStatus.completed:
+        return 4; // Hoàn tất
     }
   }
 
@@ -51,7 +56,8 @@ class OrderTimelineCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: (isCancelled ? c.danger : c.secondary).withValues(alpha: 0.15),
+                  color: (isCancelled ? c.danger : c.secondary)
+                      .withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
@@ -102,7 +108,11 @@ class OrderTimelineCard extends StatelessWidget {
                       shape: BoxShape.circle,
                     ),
                     child: const Center(
-                      child: Text('✕', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
+                      child: Text('✕',
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold)),
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -112,12 +122,17 @@ class OrderTimelineCard extends StatelessWidget {
                       children: [
                         Text(
                           'Đơn hàng đã hủy',
-                          style: TextStyle(color: c.danger, fontWeight: FontWeight.bold, fontSize: 13),
+                          style: TextStyle(
+                              color: c.danger,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13),
                         ),
-                        if (order.cancelReason != null && order.cancelReason!.isNotEmpty)
+                        if (order.cancelReason != null &&
+                            order.cancelReason!.isNotEmpty)
                           Text(
                             'Lý do: ${order.cancelReason}',
-                            style: TextStyle(color: c.textSecondary, fontSize: 12),
+                            style:
+                                TextStyle(color: c.textSecondary, fontSize: 12),
                           ),
                       ],
                     ),
@@ -170,7 +185,8 @@ class OrderTimelineCard extends StatelessWidget {
     required bool isLast,
     required AppColors c,
   }) {
-    final activeColor = isCurrent ? c.secondary : (isDone ? c.success : c.border);
+    final activeColor =
+        isCurrent ? c.secondary : (isDone ? c.success : c.border);
     return IntrinsicHeight(
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -213,7 +229,8 @@ class OrderTimelineCard extends StatelessWidget {
                 Expanded(
                   child: Container(
                     width: 2,
-                    color: isDone ? activeColor.withValues(alpha: 0.5) : c.border,
+                    color:
+                        isDone ? activeColor.withValues(alpha: 0.5) : c.border,
                     margin: const EdgeInsets.symmetric(vertical: 4),
                   ),
                 ),
@@ -231,7 +248,9 @@ class OrderTimelineCard extends StatelessWidget {
                     title,
                     style: TextStyle(
                       color: isDone ? c.textPrimary : c.textMuted,
-                      fontWeight: isCurrent ? FontWeight.w800 : (isDone ? FontWeight.w600 : FontWeight.normal),
+                      fontWeight: isCurrent
+                          ? FontWeight.w800
+                          : (isDone ? FontWeight.w600 : FontWeight.normal),
                       fontSize: 13.5,
                     ),
                   ),

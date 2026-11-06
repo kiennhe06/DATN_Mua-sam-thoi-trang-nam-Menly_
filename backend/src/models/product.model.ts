@@ -5,6 +5,11 @@ import type {
   AdminProductUpdate,
 } from '../validators/admin-product.validator.js';
 
+function slugify(value: string) {
+  return value.toLowerCase().replace(/đ/g, 'd').normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+}
+
 // Lop truy cap du lieu cho: San pham
 export class ProductModel {
   protected db = supabase;
@@ -53,7 +58,8 @@ export class ProductModel {
   }
 
   async findAdminAll(opts: AdminProductListOptions) {
-    let query = this.db.from('products').select('*');
+    // Kem bien the (product_variants) de trang quan tri tinh dung ton kho tung san pham
+    let query = this.db.from('products').select('*, product_variants(*)');
     if (opts.categoryId) query = query.eq('category_id', opts.categoryId);
     if (opts.search) query = query.ilike('name', `%${opts.search}%`);
     if (opts.approvalStatus) query = query.eq('approval_status', opts.approvalStatus);
@@ -66,13 +72,24 @@ export class ProductModel {
     return data;
   }
 
-  async createAdminProduct(input: AdminProductInput) {
+  async findAdminById(id: string) {
+    const { data, error } = await this.db
+      .from('products')
+      .select('*, product_variants(*), product_images(*)')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (error) throw new Error(error.message);
+    return data;
+  }
+
+  async createAdminProduct(input: AdminProductInput, actorId?: string) {
     const { data, error } = await this.db
       .from('products')
       .insert({
         category_id: input.categoryId,
         name: input.name,
-        slug: input.slug,
+        slug: input.slug || slugify(input.name),
         description: input.description || null,
         price: input.price,
         thumbnail_url: input.thumbnailUrl || null,
@@ -84,17 +101,61 @@ export class ProductModel {
       .single();
 
     if (error) throw new Error(error.message);
-    return data;
+
+    try {
+      if (input.variants?.length) {
+        const { error: variantsError } = await this.db.from('product_variants').insert(
+          input.variants.map((variant) => ({
+            product_id: data.id,
+            size: variant.size,
+            color: variant.color,
+            sku: variant.sku,
+            stock: variant.stock,
+          })),
+        );
+        if (variantsError) throw new Error(variantsError.message);
+        if (input.variants.some((variant) => variant.stock > 0)) {
+          const { data: insertedVariants, error: variantsFetchError } = await this.db
+            .from('product_variants').select('id, sku').eq('product_id', data.id);
+          if (variantsFetchError) throw new Error(variantsFetchError.message);
+          const variantIdBySku = new Map((insertedVariants ?? []).map((variant) => [variant.sku, variant.id]));
+          const movements = input.variants.filter((variant) => variant.stock > 0).map((variant) => ({
+            variant_id: variantIdBySku.get(variant.sku),
+            change: variant.stock,
+            reason: 'restock' as const,
+            created_by: actorId || null,
+            note: 'Tồn kho ban đầu khi tạo sản phẩm',
+          }));
+          const { error: movementError } = await this.db.from('inventory_movements').insert(movements);
+          if (movementError) throw new Error(movementError.message);
+        }
+      }
+
+      const imageUrls = [...new Set([input.thumbnailUrl, ...(input.images ?? [])].filter((url): url is string => Boolean(url)))];
+      if (imageUrls.length) {
+        const { error: imageError } = await this.db.from('product_images').insert(
+          imageUrls.map((url, sortOrder) => ({ product_id: data.id, url, sort_order: sortOrder })),
+        );
+        if (imageError) throw new Error(imageError.message);
+      }
+    } catch (createError) {
+      const { error: rollbackError } = await this.db.from('products').delete().eq('id', data.id);
+      if (rollbackError) throw new Error(`Tạo sản phẩm thất bại và không thể hoàn tác: ${createError instanceof Error ? createError.message : String(createError)}; ${rollbackError.message}`);
+      throw createError;
+    }
+
+    return this.findAdminById(data.id);
   }
 
   async updateAdminProduct(id: string, input: AdminProductUpdate) {
-    const updates: Record<string, string | number | null> = {};
+    const updates: Record<string, string | number | boolean | null> = {};
     if (input.categoryId !== undefined) updates.category_id = input.categoryId;
     if (input.name !== undefined) updates.name = input.name;
     if (input.slug !== undefined) updates.slug = input.slug;
     if (input.description !== undefined) updates.description = input.description || null;
     if (input.price !== undefined) updates.price = input.price;
     if (input.thumbnailUrl !== undefined) updates.thumbnail_url = input.thumbnailUrl || null;
+    if (input.isActive !== undefined) updates.is_active = input.isActive;
 
     if (input.name !== undefined || input.description !== undefined) {
       const { data: current, error: currentError } = await this.db

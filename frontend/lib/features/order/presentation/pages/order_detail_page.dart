@@ -3,13 +3,14 @@ import 'package:provider/provider.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_buttons.dart';
-import '../../../../models/order_model.dart';
+import 'package:menly_app/features/order/data/models/order_model.dart';
 import '../providers/order_provider.dart';
 import '../widgets/order_timeline_card.dart';
 import '../widgets/order_recipient_card.dart';
 import '../widgets/order_items_card.dart';
 import '../widgets/order_payment_summary_card.dart';
 import '../widgets/order_cancel_dialog.dart';
+import '../widgets/order_return_request_dialog.dart';
 import 'vnpay_payment_page.dart';
 
 /// Man hinh Chi tiet don hang & Theo doi hanh trinh (AP-DH2)
@@ -82,6 +83,21 @@ class OrderDetailPage extends StatelessWidget {
                   MaterialPageRoute(
                     builder: (_) => VNPayPaymentPage(order: o),
                   ),
+                );
+              },
+            ),
+            const SizedBox(height: 12),
+          ],
+
+          if (o.status == OrderStatus.delivered) ...[
+            SecondaryButton(
+              label: 'Yêu cầu trả hàng',
+              icon: Icons.assignment_return_rounded,
+              foreground: c.primary,
+              onPressed: () {
+                OrderReturnRequestDialog.show(
+                  context: context,
+                  order: o,
                 );
               },
             ),

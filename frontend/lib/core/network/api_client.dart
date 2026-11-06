@@ -27,8 +27,11 @@ class ApiClient {
     var url = _envBaseUrl.trim();
     if (url.isEmpty) {
       url = 'http://10.0.2.2:5000/api/v1';
-      if (!kIsWeb &&
-          (Platform.isWindows || Platform.isLinux || Platform.isMacOS)) {
+      if (kIsWeb ||
+          (!kIsWeb &&
+              (Platform.isWindows ||
+                  Platform.isLinux ||
+                  Platform.isMacOS))) {
         url = 'http://localhost:5000/api/v1';
       }
     }
@@ -50,7 +53,8 @@ class ApiClient {
         onRequest: (options, handler) async {
           try {
             final prefs = await SharedPreferences.getInstance();
-            final token = prefs.getString('access_token') ?? prefs.getString('token');
+            final token =
+                prefs.getString('access_token') ?? prefs.getString('token');
             if (token != null && token.isNotEmpty) {
               options.headers['Authorization'] = 'Bearer $token';
             }

@@ -5,7 +5,7 @@ import 'package:menly_app/core/theme/app_theme.dart';
 import 'package:menly_app/core/utils/app_snackbar.dart';
 import 'package:menly_app/core/widgets/category_pill.dart';
 import 'package:menly_app/core/widgets/product_card.dart';
-import 'package:menly_app/models/product_model.dart';
+import 'package:menly_app/features/product/data/models/product_model.dart';
 import 'package:menly_app/features/auth/presentation/pages/login_page.dart';
 import 'package:menly_app/features/auth/presentation/pages/profile_page.dart';
 import 'package:menly_app/features/auth/presentation/providers/auth_provider.dart';
@@ -14,14 +14,14 @@ import 'package:menly_app/features/notification/presentation/providers/notificat
 import 'package:menly_app/features/cart/presentation/providers/cart_provider.dart';
 import 'package:menly_app/features/product/presentation/pages/product_detail_page.dart';
 import 'package:menly_app/features/product/presentation/pages/product_list_page.dart';
-import 'package:menly_app/features/product/presentation/pages/search_page.dart';
 import 'package:menly_app/features/product/presentation/providers/product_provider.dart';
-import 'package:menly_app/features/support/presentation/pages/about_page.dart';
-import 'package:menly_app/features/support/presentation/pages/contact_page.dart';
-import 'package:menly_app/features/support/presentation/pages/faq_page.dart';
-import 'package:menly_app/features/support/presentation/pages/policy_page.dart';
 import 'package:menly_app/features/voucher/presentation/pages/voucher_list_page.dart';
 import 'package:menly_app/features/wishlist/presentation/providers/wishlist_provider.dart';
+import '../widgets/home_banner_slider.dart';
+import '../widgets/home_search_bar.dart';
+import '../widgets/home_filter_tab.dart';
+import '../widgets/home_info_footer.dart';
+import '../widgets/home_recently_viewed.dart';
 
 enum _HomeTabFilter { newest, bestSeller }
 
@@ -241,135 +241,16 @@ class _HomePageState extends State<HomePage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // 1. THANH TIM KIEM TINH GON
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
-                child: InkWell(
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const SearchPage()),
-                  ),
-                  borderRadius: BorderRadius.circular(10),
-                  child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: AppTheme.border),
-                    ),
-                    child: const Row(
-                      children: [
-                        Text(
-                          'Tìm kiếm sơ mi, polo, quần jeans, phụ kiện...',
-                          style:
-                              TextStyle(color: AppTheme.textMuted, fontSize: 13),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
+              const HomeSearchBar(),
 
               // 2. HERO BANNER THIET KE NHO GON
-              if (productProv.banners.isNotEmpty) ...[
-                SizedBox(
-                  height: 145,
-                  child: PageView.builder(
-                    controller: _bannerController,
-                    itemCount: productProv.banners.length,
-                    onPageChanged: (idx) =>
-                        setState(() => _currentBannerIndex = idx),
-                    itemBuilder: (ctx, i) {
-                      final b = productProv.banners[i];
-                      return Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 16),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(12),
-                          image: DecorationImage(
-                            image: NetworkImage(b.imageUrl),
-                            fit: BoxFit.cover,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.08),
-                              blurRadius: 8,
-                              offset: const Offset(0, 3),
-                            ),
-                          ],
-                        ),
-                        child: Container(
-                          padding: const EdgeInsets.all(14),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(12),
-                            gradient: LinearGradient(
-                              colors: [
-                                Colors.black.withValues(alpha: 0.75),
-                                Colors.transparent,
-                              ],
-                              begin: Alignment.bottomLeft,
-                              end: Alignment.topRight,
-                            ),
-                          ),
-                          alignment: Alignment.bottomLeft,
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 7, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: AppTheme.accentRed,
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: const Text(
-                                  'BỘ SƯU TẬP MỚI',
-                                  style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 9,
-                                      fontWeight: FontWeight.bold),
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                b.title,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 15,
-                                  shadows: [
-                                    Shadow(color: Colors.black54, blurRadius: 4)
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                // Indicator dots tinh gon
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(
-                    productProv.banners.length,
-                    (idx) => AnimatedContainer(
-                      duration: const Duration(milliseconds: 300),
-                      width: _currentBannerIndex == idx ? 16 : 5,
-                      height: 4,
-                      margin: const EdgeInsets.symmetric(
-                          horizontal: 2, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: _currentBannerIndex == idx
-                            ? AppTheme.primary
-                            : Colors.grey.shade300,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+              HomeBannerSlider(
+                controller: _bannerController,
+                banners: productProv.banners,
+                currentIndex: _currentBannerIndex,
+                onPageChanged: (idx) =>
+                    setState(() => _currentBannerIndex = idx),
+              ),
 
               // 3. DANH MUC CUON NGANG (Category Pills)
               Padding(
@@ -443,14 +324,14 @@ class _HomePageState extends State<HomePage> {
                     // Bo loc tab hang ngang o ben duoi: Chi giu san pham moi va ban chay
                     Row(
                       children: [
-                        _buildFilterTab(
+                        HomeFilterTab(
                           label: 'Mới',
                           active: _tabFilter == _HomeTabFilter.newest,
                           onTap: () => setState(
                               () => _tabFilter = _HomeTabFilter.newest),
                         ),
                         const SizedBox(width: 20),
-                        _buildFilterTab(
+                        HomeFilterTab(
                           label: 'Bán chạy',
                           active: _tabFilter == _HomeTabFilter.bestSeller,
                           onTap: () => setState(
@@ -462,145 +343,22 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
 
-              // 5. LUOI 2 COT TOAN BO SAN PHAM (GIOI HAN & RANDOM)
+              // 5. LUOI 2 COT TOAN BO SAN PHAM
               _buildProductGrid(displayedProducts, wishlistProv),
 
-
-
               // 6. SAN PHAM DA XEM GAN DAY (Neu co)
-              if (productProv.recentlyViewed.isNotEmpty) ...[
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Đã xem gần đây',
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 15,
-                            color: AppTheme.textPrimary),
-                      ),
-                      TextButton(
-                        style: TextButton.styleFrom(
-                            padding: EdgeInsets.zero,
-                            visualDensity: VisualDensity.compact),
-                        onPressed: () => productProv.clearRecentlyViewed(),
-                        child: const Text('Xóa',
-                            style: TextStyle(
-                                color: AppTheme.accentRed, fontSize: 12)),
-                      ),
-                    ],
-                  ),
-                ),
-                SizedBox(
-                  height: 100,
-                  child: ListView.separated(
-                    scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: productProv.recentlyViewed.length,
-                    separatorBuilder: (_, __) => const SizedBox(width: 10),
-                    itemBuilder: (ctx, i) {
-                      final item = productProv.recentlyViewed[i];
-                      return InkWell(
-                        onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (_) =>
-                                  ProductDetailPage(product: item)),
-                        ),
-                        child: Container(
-                          width: 80,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: AppTheme.border),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              ClipRRect(
-                                borderRadius: const BorderRadius.vertical(
-                                    top: Radius.circular(8)),
-                                child: Image.network(
-                                  item.thumbnailUrl,
-                                  width: 80,
-                                  height: 60,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (_, __, ___) => Container(
-                                    width: 80,
-                                    height: 60,
-                                    color: Colors.grey.shade100,
-                                  ),
-                                ),
-                              ),
-                              Padding(
-                                padding: const EdgeInsets.all(4),
-                                child: Text(
-                                  item.name,
-                                  style: const TextStyle(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w600),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                const SizedBox(height: 16),
-              ],
+              HomeRecentlyViewed(
+                items: productProv.recentlyViewed,
+                onClear: () => productProv.clearRecentlyViewed(),
+              ),
 
               // 7. FOOTER THONG TIN MENLY
-              _buildInfoFooter(),
+              const HomeInfoFooter(),
 
               // Khoang cach duoi tranh bi che boi AppPillNav noi
               const SizedBox(height: 24),
             ],
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFilterTab({
-    required String label,
-    required bool active,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      splashColor: Colors.transparent,
-      highlightColor: Colors.transparent,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: active ? FontWeight.w800 : FontWeight.w600,
-                color: active ? AppTheme.textPrimary : AppTheme.textMuted,
-              ),
-            ),
-            const SizedBox(height: 4),
-            // Thanh gach ngang o ben duoi moi phan
-            Container(
-              height: 2.5,
-              width: 28,
-              decoration: BoxDecoration(
-                color: active ? AppTheme.primary : Colors.transparent,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          ],
         ),
       ),
     );
@@ -663,68 +421,27 @@ class _HomePageState extends State<HomePage> {
               );
             },
             onToggleFavorite: () => wishlistProv.toggleFavorite(p),
-            onAdd: () {
+            onAdd: () async {
               final cart = context.read<CartProvider>();
-              final s = p.variants.isNotEmpty ? p.variants.first.size : 'M';
-              final col =
-                  p.variants.isNotEmpty ? p.variants.first.color : 'Đen';
-              cart.addToCart(p, size: s, color: col, quantity: 1);
-              AppSnackBar.show(context, message: 'Đã thêm "${p.name}" vào giỏ');
+              final messenger = ScaffoldMessenger.of(context);
+              final availableVariants =
+                  p.variants.where((variant) => variant.stock > 0);
+              if (availableVariants.isEmpty) {
+                AppSnackBar.show(context,
+                    message: 'Sản phẩm hiện không có hàng');
+                return;
+              }
+              final variant = availableVariants.first;
+              final added = await cart.addToCart(p,
+                  size: variant.size, color: variant.color);
+              messenger.showSnackBar(SnackBar(
+                content: Text(added
+                    ? 'Đã thêm "${p.name}" vào giỏ'
+                    : cart.errorMessage ?? 'Không thể thêm sản phẩm vào giỏ'),
+              ));
             },
           );
         },
-      ),
-    );
-  }
-
-  Widget _buildInfoFooter() {
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-      padding: const EdgeInsets.fromLTRB(12, 14, 12, 10),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
-      child: Column(
-        children: [
-          const Text('MENLY FASHION',
-              style: TextStyle(
-                  fontWeight: FontWeight.w900,
-                  fontSize: 13,
-                  letterSpacing: 1.5)),
-          const SizedBox(height: 2),
-          Text('Thương hiệu thời trang nam cao cấp',
-              style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
-          const SizedBox(height: 6),
-          Wrap(
-            alignment: WrapAlignment.center,
-            spacing: 2,
-            children: [
-              TextButton(
-                onPressed: () => Navigator.push(context,
-                    MaterialPageRoute(builder: (_) => const AboutPage())),
-                child: const Text('Giới thiệu', style: TextStyle(fontSize: 12)),
-              ),
-              TextButton(
-                onPressed: () => Navigator.push(context,
-                    MaterialPageRoute(builder: (_) => const ContactPage())),
-                child: const Text('Liên hệ', style: TextStyle(fontSize: 12)),
-              ),
-              TextButton(
-                onPressed: () => Navigator.push(context,
-                    MaterialPageRoute(builder: (_) => const PolicyPage())),
-                child: const Text('Chính sách', style: TextStyle(fontSize: 12)),
-              ),
-              TextButton(
-                onPressed: () => Navigator.push(context,
-                    MaterialPageRoute(builder: (_) => const FAQPage())),
-                child: const Text('Hỏi đáp', style: TextStyle(fontSize: 12)),
-              ),
-            ],
-          ),
-        ],
       ),
     );
   }

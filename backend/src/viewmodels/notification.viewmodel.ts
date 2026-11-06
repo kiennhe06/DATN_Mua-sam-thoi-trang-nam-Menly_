@@ -1,8 +1,16 @@
-import { NotificationModel, type NotificationRow } from '../models/notification.model.js';
+import {
+  NotificationModel,
+  type CreateNotificationInput,
+  type NotificationRow,
+} from '../models/notification.model.js';
 
 // Lop xu ly nghiep vu cho: Thong bao
 export class NotificationViewModel {
   private model = new NotificationModel();
+
+  async create(input: CreateNotificationInput): Promise<NotificationRow[]> {
+    return this.model.createNotification(input);
+  }
 
   async list(userId: string): Promise<NotificationRow[]> {
     return this.model.findByUser(userId);
