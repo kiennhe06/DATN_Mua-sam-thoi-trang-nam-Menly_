@@ -15,8 +15,8 @@ class AddressPage extends StatelessWidget {
     final nameCtrl = TextEditingController(text: addressToEdit?.recipientName ?? '');
     final phoneCtrl = TextEditingController(text: addressToEdit?.phone ?? '');
 
-    // Chuẩn hóa Tỉnh / Thành phố từ 63 tỉnh thành Việt Nam
-    String selectedProvince = normalizeProvince(addressToEdit?.province ?? 'Hồ Chí Minh');
+    // Chuẩn hóa Tỉnh / Thành phố từ 34 tỉnh thành Việt Nam theo Nghị quyết 202/2025/QH15
+    String selectedProvince = normalizeProvince(addressToEdit?.province ?? 'Thành phố Hồ Chí Minh');
     final provinceList = List<String>.from(kVietnamProvinces);
     if (!provinceList.contains(selectedProvince)) {
       provinceList.insert(0, selectedProvince);
@@ -91,7 +91,7 @@ class AddressPage extends StatelessWidget {
                     const SizedBox(height: 10),
                     Row(
                       children: [
-                        // Dropdown Tỉnh / Thành phố với đầy đủ 63 tỉnh thành Việt Nam
+                        // Dropdown Tỉnh / Thành phố với 34 tỉnh thành Việt Nam theo Nghị quyết 202/2025/QH15
                         Expanded(
                           child: DropdownButtonFormField<String>(
                             key: ValueKey('province_$selectedProvince'),
