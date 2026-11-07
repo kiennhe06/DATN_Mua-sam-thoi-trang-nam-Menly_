@@ -35,7 +35,6 @@ class OrderTimelineCard extends StatelessWidget {
     final c = AppColors.of(context);
     final currentStep = getTimelineStep(order.status);
     final isCancelled = order.status == OrderStatus.canceled;
-    final trackingCode = 'MENLY-${order.code.replaceAll('#', '')}';
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -70,21 +69,29 @@ class OrderTimelineCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              Text(
-                'Hành trình giao hàng',
-                style: TextStyle(
-                  color: c.textPrimary,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
+              Expanded(
+                child: Text(
+                  'Hành trình giao hàng',
+                  style: TextStyle(
+                    color: c.textPrimary,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
-              const Spacer(),
-              Text(
-                trackingCode,
-                style: TextStyle(
-                  color: c.textMuted,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  order.code,
+                  style: TextStyle(
+                    color: c.textMuted,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.end,
                 ),
               ),
             ],

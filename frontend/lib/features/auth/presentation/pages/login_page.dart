@@ -5,6 +5,8 @@ import 'package:menly_app/core/network/api_client.dart';
 import 'package:menly_app/features/auth/presentation/pages/forgot_password_page.dart';
 import 'package:menly_app/features/auth/presentation/pages/register_page.dart';
 import 'package:menly_app/features/auth/presentation/providers/auth_provider.dart';
+import 'package:menly_app/features/cart/presentation/providers/cart_provider.dart';
+import 'package:menly_app/features/order/presentation/providers/order_provider.dart';
 import 'package:menly_app/main.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -61,6 +63,8 @@ class _LoginPageState extends State<LoginPage> {
             );
         if (!mounted) return;
       }
+      context.read<CartProvider>().loadCartFromApi();
+      context.read<OrderProvider>().loadOrders();
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Đăng nhập thành công.'),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:menly_app/core/utils/format.dart';
 import 'package:menly_app/core/theme/app_theme.dart';
 import 'package:menly_app/core/utils/app_snackbar.dart';
 import 'package:menly_app/core/widgets/category_pill.dart';
@@ -92,7 +93,7 @@ class ProductListPage extends StatelessWidget {
                           style: TextStyle(
                               fontWeight: FontWeight.bold, fontSize: 14)),
                       Text(
-                        '${currentRange.start.toInt()} đ - ${currentRange.end.toInt()} đ',
+                        '${formatPrice(currentRange.start)} - ${formatPrice(currentRange.end)}',
                         style: const TextStyle(
                             color: AppTheme.accentRed,
                             fontWeight: FontWeight.bold,

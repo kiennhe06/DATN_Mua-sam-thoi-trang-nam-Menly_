@@ -21,7 +21,7 @@ export const registerSchema = z.object({
     .regex(/^(0|\+84)[3|5|7|8|9][0-9]{8}$/, 'Số điện thoại không hợp lệ (đầu số 03, 05, 07, 08, 09 và 10 số)')
     .optional()
     .or(z.literal('')),
-  role: z.enum(['customer', 'seller']).default('customer'),
+  role: z.enum(['customer', 'seller', 'staff', 'admin']).default('customer'),
 });
 
 export const loginSchema = z.object({

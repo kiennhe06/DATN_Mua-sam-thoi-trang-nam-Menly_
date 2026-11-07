@@ -71,6 +71,15 @@ class MainNavigationShell extends StatefulWidget {
 class _MainNavigationShellState extends State<MainNavigationShell> {
   int _currentIndex = 0;
 
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<CartProvider>().loadCartFromApi();
+      context.read<OrderProvider>().loadOrders();
+    });
+  }
+
   final List<Widget> _pages = const [
     HomePage(),
     WishlistPage(),
@@ -94,7 +103,14 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
         ),
         bottomNavigationBar: AppPillNav(
           currentIndex: _currentIndex,
-          onTap: (idx) => setState(() => _currentIndex = idx),
+          onTap: (idx) {
+            if (idx == 2) {
+              context.read<CartProvider>().loadCartFromApi();
+            } else if (idx == 3) {
+              context.read<OrderProvider>().loadOrders();
+            }
+            setState(() => _currentIndex = idx);
+          },
           items: [
             const PillNavItem(
               Icons.home_outlined,

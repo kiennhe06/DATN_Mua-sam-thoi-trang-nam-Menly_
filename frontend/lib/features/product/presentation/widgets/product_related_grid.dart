@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/utils/format.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../wishlist/presentation/providers/wishlist_provider.dart';
 import '../../data/models/product_model.dart';
@@ -139,7 +140,7 @@ class ProductRelatedGrid extends StatelessWidget {
                           ),
                           const SizedBox(height: 6),
                           Text(
-                            '${related.price} đ',
+                            formatPrice(related.price),
                             style: const TextStyle(
                               color: AppTheme.accentRed,
                               fontWeight: FontWeight.w900,

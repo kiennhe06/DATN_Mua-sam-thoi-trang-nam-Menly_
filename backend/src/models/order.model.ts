@@ -289,7 +289,11 @@ export class OrderModel {
       throw new Error('Sản phẩm hoặc số lượng đặt hàng không hợp lệ');
     }
 
-    const { data: created, error } = await this.db.rpc('create_order', {
+    let created: any;
+    let error: any;
+
+    // Thử gọi hàm create_order có hỗ trợ p_shipping_fee (9 tham số)
+    const rpc9 = await this.db.rpc('create_order', {
       p_user_id: input.userId,
       p_payment_method: input.payment_method,
       p_ship_name: input.ship_name,
@@ -300,6 +304,42 @@ export class OrderModel {
       p_idempotency_key: input.idempotency_key ?? null,
       p_shipping_fee: input.shipping_fee ?? 0,
     });
+
+    const errMsg = (rpc9.error?.message ?? '').toLowerCase();
+    const errCode = rpc9.error?.code ?? '';
+    if (rpc9.error && (errMsg.includes('schema cache') || errMsg.includes('create_order') || errMsg.includes('function') || errCode === 'PGRST202' || errCode === '42883')) {
+      // Fallback cho Supabase instance chưa cập nhật tham số p_shipping_fee (hàm 8 tham số)
+      const rpc8 = await this.db.rpc('create_order', {
+        p_user_id: input.userId,
+        p_payment_method: input.payment_method,
+        p_ship_name: input.ship_name,
+        p_ship_phone: input.ship_phone,
+        p_ship_address: input.ship_address,
+        p_items: input.items.map((item) => ({ variant_id: item.variant_id, quantity: item.quantity })),
+        p_voucher_code: input.voucher_code ?? null,
+        p_idempotency_key: input.idempotency_key ?? null,
+      });
+      created = rpc8.data;
+      error = rpc8.error;
+
+      // Cập nhật phí vận chuyển và tổng tiền vào đơn hàng nếu có phí vận chuyển
+      if (!error && created) {
+        const rpcOrder = Array.isArray(created) ? created[0] : created;
+        if (rpcOrder?.id && input.shipping_fee && input.shipping_fee > 0) {
+          const { data: cur } = await this.db.from('orders').select('subtotal, total').eq('id', rpcOrder.id).single();
+          if (cur) {
+            await this.db.from('orders').update({
+              shipping_fee: input.shipping_fee,
+              total: cur.total + input.shipping_fee,
+            }).eq('id', rpcOrder.id);
+          }
+        }
+      }
+    } else {
+      created = rpc9.data;
+      error = rpc9.error;
+    }
+
     if (error) throw new Error(error.message);
 
     const rpcOrder = Array.isArray(created) ? created[0] : created;

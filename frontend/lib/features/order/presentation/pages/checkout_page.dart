@@ -1,3 +1,5 @@
+import 'package:dio/dio.dart';
+import 'package:menly_app/core/utils/format.dart';
 import 'package:menly_app/features/order/data/models/order_model.dart';
 import '../widgets/checkout_payment_cancelled_dialog.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -207,10 +209,8 @@ class _CheckoutPageState extends State<CheckoutPage> {
         voucherCode: cart.appliedVoucher?.code,
       );
 
-      // Xoa cac mon da mua khoi gio hang neu dat tu gio
-      if (widget.customItems == null) {
-        await cart.clearSelectedItems();
-      }
+      // Xóa các món vừa đặt hàng khỏi giỏ hàng
+      await cart.removePurchasedItems(items);
 
       if (!mounted) return;
       setState(() => _isSubmitting = false);
@@ -227,7 +227,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
         if (paymentSuccess == true) {
           context.read<NotificationProvider>().addNotification(
             title: 'Thanh toán VNPay thành công #${createdOrder.code}',
-            body: 'Giao dịch thanh toán trực tuyến ${createdOrder.total}đ cho đơn hàng #${createdOrder.code} qua VNPay đã thành công.',
+            body: 'Giao dịch thanh toán trực tuyến ${formatPrice(createdOrder.total)} cho đơn hàng #${createdOrder.code} qua VNPay đã thành công.',
             type: 'order',
             data: {'orderId': createdOrder.id, 'orderCode': createdOrder.code},
           );
@@ -251,7 +251,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
       } else {
         context.read<NotificationProvider>().addNotification(
           title: 'Đặt hàng thành công #${createdOrder.code}',
-          body: 'Đơn hàng gồm ${createdOrder.items.length} sản phẩm trị giá ${createdOrder.total}đ đã được ghi nhận. Menly đang chuẩn bị đơn cho bạn.',
+          body: 'Đơn hàng gồm ${createdOrder.items.length} sản phẩm trị giá ${formatPrice(createdOrder.total)} đã được ghi nhận. Menly đang chuẩn bị đơn cho bạn.',
           type: 'order',
           data: {'orderId': createdOrder.id, 'orderCode': createdOrder.code},
         );
@@ -265,9 +265,25 @@ class _CheckoutPageState extends State<CheckoutPage> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _isSubmitting = false);
+      String errorMessage = 'Không thể đặt hàng, vui lòng thử lại sau.';
+      if (e is DioException) {
+        final serverMsg = e.response?.data is Map ? e.response?.data['error']?.toString() : null;
+        if (serverMsg != null && serverMsg.isNotEmpty) {
+          errorMessage = serverMsg;
+        } else if (e.response?.statusCode == 401) {
+          errorMessage = 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.';
+        } else if (e.response?.statusCode == 400) {
+          errorMessage = 'Thông tin đặt hàng không hợp lệ. Vui lòng kiểm tra lại.';
+        }
+      } else {
+        errorMessage = e.toString();
+      }
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-            content: Text('Lỗi đặt hàng: $e'), backgroundColor: Colors.red),
+          content: Text('Lỗi đặt hàng: $errorMessage'),
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }
@@ -411,7 +427,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                         const Text('Tổng thanh toán:',
                             style: TextStyle(fontSize: 12, color: Colors.grey)),
                         Text(
-                          '$totalAmount đ',
+                          formatPrice(totalAmount),
                           style: const TextStyle(
                             fontSize: 19,
                             fontWeight: FontWeight.bold,
@@ -593,7 +609,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          '${item.product.price} đ',
+                          formatPrice(item.product.price),
                           style: const TextStyle(
                               fontWeight: FontWeight.bold, fontSize: 13),
                         ),
@@ -773,7 +789,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
-                          '-$discount đ',
+                          '-${formatPrice(discount)}',
                           style: const TextStyle(
                               color: Colors.white,
                               fontSize: 11,
@@ -974,7 +990,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
             children: [
               Text('Tổng tiền hàng:',
                   style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
-              Text('$subtotal đ',
+              Text(formatPrice(subtotal),
                   style: const TextStyle(
                       fontWeight: FontWeight.w600, fontSize: 13)),
             ],
@@ -986,7 +1002,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
               Text('Phí vận chuyển:',
                   style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
               Text(
-                shippingFee == 0 ? 'Miễn phí' : '$shippingFee đ',
+                shippingFee == 0 ? 'Miễn phí' : formatPrice(shippingFee),
                 style: TextStyle(
                   color: shippingFee == 0 ? Colors.green : Colors.black87,
                   fontWeight: FontWeight.w600,
@@ -1003,7 +1019,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                 Text('Giảm giá voucher (${cart.appliedVoucher!.code}):',
                     style: TextStyle(
                         color: Colors.deepOrange.shade600, fontSize: 13)),
-                Text('-$discount đ',
+                Text('-${formatPrice(discount)}',
                     style: TextStyle(
                         color: Colors.deepOrange.shade600,
                         fontWeight: FontWeight.bold,
@@ -1018,7 +1034,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
               const Text('Tổng thanh toán:',
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
               Text(
-                '$total đ',
+                formatPrice(total),
                 style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 18,

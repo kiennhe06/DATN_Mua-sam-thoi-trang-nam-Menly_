@@ -41,8 +41,8 @@ export function DashboardCircularSection({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           <CircularProgressRing
             value={orderFulfillmentRate}
-            size={140}
-            strokeWidth={12}
+            size={148}
+            strokeWidth={11}
             title="Tỷ lệ Xử lý Đơn"
             subtitle={
               totalOrdersCount > 0
@@ -55,8 +55,8 @@ export function DashboardCircularSection({
 
           <CircularProgressRing
             value={totalRevenue > 0 ? 100 : 0}
-            size={140}
-            strokeWidth={12}
+            size={148}
+            strokeWidth={11}
             title={dateLabel ? `Doanh thu (${dateLabel})` : 'Doanh thu Ngày'}
             subtitle={`Tổng thực thu: ${fullRevenueVnd}`}
             valueDisplay={fullRevenueVnd}

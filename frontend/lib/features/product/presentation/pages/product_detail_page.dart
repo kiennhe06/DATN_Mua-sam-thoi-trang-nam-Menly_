@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:menly_app/core/utils/format.dart';
 import 'package:menly_app/core/share/product_share.dart';
 import 'package:menly_app/core/theme/app_theme.dart';
 import 'package:menly_app/features/cart/data/models/cart_item_model.dart';
@@ -698,7 +699,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                     textBaseline: TextBaseline.alphabetic,
                     children: [
                       Text(
-                        '${p.price} đ',
+                        formatPrice(p.price),
                         style: const TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.w900,
@@ -707,7 +708,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                       ),
                       const SizedBox(width: 10),
                       Text(
-                        '${(p.price * 1.25).toInt()} đ',
+                        formatPrice((p.price * 1.25).toInt()),
                         style: const TextStyle(
                           fontSize: 14,
                           color: AppTheme.textMuted,
