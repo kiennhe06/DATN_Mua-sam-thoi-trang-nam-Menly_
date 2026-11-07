@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:menly_app/features/auth/presentation/pages/login_page.dart';
+import 'package:menly_app/features/auth/presentation/providers/auth_provider.dart';
 import 'package:menly_app/features/support/presentation/pages/contact_page.dart';
 import 'package:menly_app/features/support/presentation/pages/policy_page.dart';
+import 'support_chat_page.dart';
 
 /// Trang Cau hoi thuong gap (FAQ) (TM05)
 class FAQPage extends StatefulWidget {
@@ -184,6 +188,40 @@ class _FAQPageState extends State<FAQPage> {
                   Text('Đội ngũ chăm sóc khách hàng Menly luôn sẵn sàng 24/7',
                       style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
                   const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.black87,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      icon: const Icon(Icons.chat_bubble_outline_rounded),
+                      label: const Text('Chat trực tiếp với CSKH'),
+                      onPressed: () {
+                        if (!context.read<AuthProvider>().isLoggedIn) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Vui lòng đăng nhập để chat với CSKH'),
+                            ),
+                          );
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const LoginPage()),
+                          );
+                          return;
+                        }
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const SupportChatPage()),
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 8),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -216,4 +254,3 @@ class _FAQPageState extends State<FAQPage> {
     );
   }
 }
-

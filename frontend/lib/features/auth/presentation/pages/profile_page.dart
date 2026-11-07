@@ -16,6 +16,7 @@ import 'package:menly_app/features/order/presentation/pages/order_track_page.dar
 import 'package:menly_app/features/order/presentation/pages/staff_order_management_page.dart';
 import 'package:menly_app/features/order/presentation/providers/order_provider.dart';
 import 'package:menly_app/features/support/presentation/pages/faq_page.dart';
+import 'package:menly_app/features/support/presentation/pages/staff_support_inbox_page.dart';
 import 'package:menly_app/features/voucher/presentation/pages/voucher_list_page.dart';
 import 'package:menly_app/features/voucher/presentation/providers/voucher_provider.dart';
 import 'package:menly_app/features/wishlist/presentation/pages/wishlist_page.dart';
@@ -475,6 +476,17 @@ class ProfilePage extends StatelessWidget {
                     subtitle: 'Xem danh sách và cập nhật trạng thái giao hàng',
                     onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const StaffOrderManagementPage())),
                   ),
+                  if (user?.role == 'staff' || user?.role == 'admin') ...[
+                    const Divider(height: 1),
+                    ProfileMenuItem(
+                      title: 'Hội thoại CSKH',
+                      subtitle: 'Trả lời tin nhắn từ khách hàng',
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const StaffSupportInboxPage()),
+                      ),
+                    ),
+                  ],
                   const Divider(height: 1),
                   ProfileMenuItem(
                     title: 'Trung tâm trợ giúp & CSKH',
