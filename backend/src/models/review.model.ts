@@ -122,6 +122,26 @@ export class ReviewModel {
     };
   }
 
+  async findReviewableOrderItemForProduct(userId: string, productId: string) {
+    const { data: items, error } = await this.db
+      .from('order_items')
+      .select('id, orders!inner(user_id, status), product_variants!inner(product_id)')
+      .eq('orders.user_id', userId)
+      .eq('product_variants.product_id', productId)
+      .in('orders.status', ['delivered', 'completed', 'paid', 'processing']);
+
+    if (error || !items || !items.length) return null;
+
+    const { data: reviewed } = await this.db
+      .from('product_reviews')
+      .select('order_item_id')
+      .eq('user_id', userId);
+
+    const reviewedIds = new Set((reviewed ?? []).map((r: any) => r.order_item_id));
+    const unreviewedItem = items.find((it: any) => !reviewedIds.has(it.id));
+    return unreviewedItem ?? null;
+  }
+
   async uploadImages(userId: string, files: Express.Multer.File[]) {
     if (!files.length) return [] as string[];
 

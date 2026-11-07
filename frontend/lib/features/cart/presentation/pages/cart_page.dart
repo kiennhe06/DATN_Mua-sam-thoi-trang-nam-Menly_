@@ -13,8 +13,21 @@ import 'package:menly_app/features/voucher/presentation/widgets/voucher_select_s
 import 'package:menly_app/features/order/presentation/pages/checkout_page.dart';
 
 /// Trang Gio hang Menly cao cap theo phong cach UI/UX toi gian
-class CartPage extends StatelessWidget {
+class CartPage extends StatefulWidget {
   const CartPage({super.key});
+
+  @override
+  State<CartPage> createState() => _CartPageState();
+}
+
+class _CartPageState extends State<CartPage> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<CartProvider>().loadCartFromApi();
+    });
+  }
 
   void _proceedToCheckout(BuildContext context, CartProvider cart) {
     final selectedItems = cart.selectedItems;
@@ -61,15 +74,28 @@ class CartPage extends StatelessWidget {
             ),
         ],
       ),
-      body: cart.items.isEmpty
-          ? CartEmptyView(
-              onShopNow: () {
-                const TabSwitchNotification(0).dispatch(context);
-              },
-            )
-          : ListView(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-              children: [
+      body: RefreshIndicator(
+        onRefresh: () => cart.loadCartFromApi(),
+        child: cart.isLoading && cart.items.isEmpty
+            ? const Center(child: CircularProgressIndicator())
+            : cart.items.isEmpty
+                ? ListView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    children: [
+                      SizedBox(
+                        height: MediaQuery.of(context).size.height * 0.65,
+                        child: CartEmptyView(
+                          onShopNow: () {
+                            const TabSwitchNotification(0).dispatch(context);
+                          },
+                        ),
+                      ),
+                    ],
+                  )
+                : ListView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+                    children: [
                 // Thanh chon tat ca & Ma giam gia
                 Container(
                   margin: const EdgeInsets.only(bottom: 12),
@@ -151,6 +177,7 @@ class CartPage extends StatelessWidget {
                   ),
               ],
             ),
+      ),
       bottomSheet: cart.items.isNotEmpty
           ? CartBottomBar(
               cart: cart,

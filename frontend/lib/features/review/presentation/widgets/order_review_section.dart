@@ -46,7 +46,9 @@ class _OrderReviewSectionState extends State<OrderReviewSection> {
 
   @override
   Widget build(BuildContext context) {
-    if (widget.order.status != OrderStatus.delivered) {
+    if (widget.order.status == OrderStatus.canceled ||
+        widget.order.status == OrderStatus.expired ||
+        widget.order.status == OrderStatus.pendingPayment) {
       return const SizedBox.shrink();
     }
 

@@ -27,7 +27,7 @@ class OrderInvoicePage extends StatelessWidget {
             icon: const Icon(Icons.print_outlined),
             onPressed: () {
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
+                const SnackBar(
                   content: Text(
                     kIsWeb
                         ? 'Dùng hộp thoại in của trình duyệt (Ctrl+P).'

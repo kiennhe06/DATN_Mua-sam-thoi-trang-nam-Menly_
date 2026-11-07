@@ -411,9 +411,11 @@ class _VNPayPaymentPageState extends State<VNPayPaymentPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text('Cổng Thanh Toán VNPAY',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-              Text('Đơn hàng: ${widget.order.code}',
-                  style: const TextStyle(fontSize: 12, color: Colors.white70)),
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+              Text(
+                '${widget.order.code} • ${formatPrice(widget.order.total)}',
+                style: const TextStyle(fontSize: 12, color: Colors.white70),
+              ),
             ],
           ),
           actions: [

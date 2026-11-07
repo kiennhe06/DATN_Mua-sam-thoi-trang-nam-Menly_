@@ -1,9 +1,8 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:menly_app/core/share/product_share.dart';
-import 'package:menly_app/core/theme/app_theme.dart';
 import 'package:menly_app/core/utils/format.dart';
+import 'package:menly_app/core/theme/app_theme.dart';
 import 'package:menly_app/features/cart/data/models/cart_item_model.dart';
 import 'package:menly_app/features/product/data/models/product_model.dart';
 import 'package:menly_app/features/cart/presentation/providers/cart_provider.dart';
@@ -658,69 +657,6 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
     );
   }
 
-  void _showShareSheet() {
-    final link = ProductShare.productUri(_product).toString();
-
-    showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      builder: (sheetContext) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Padding(
-                padding: EdgeInsets.fromLTRB(20, 0, 20, 8),
-                child: Text(
-                  'Chia sẻ sản phẩm',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Text(
-                  link,
-                  style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
-                ),
-              ),
-              const SizedBox(height: 8),
-              ListTile(
-                leading: const Icon(Icons.share_outlined),
-                title: const Text('Chia sẻ qua ứng dụng khác'),
-                onTap: () async {
-                  Navigator.pop(sheetContext);
-                  try {
-                    await ProductShare.share(_product);
-                  } catch (_) {
-                    if (!mounted) return;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Không thể mở ứng dụng chia sẻ')),
-                    );
-                  }
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.link),
-                title: const Text('Sao chép liên kết'),
-                onTap: () async {
-                  final messenger = ScaffoldMessenger.of(context);
-                  final navigator = Navigator.of(sheetContext);
-                  await ProductShare.copyLink(_product);
-                  navigator.pop();
-                  messenger.showSnackBar(
-                    const SnackBar(content: Text('Đã sao chép liên kết sản phẩm')),
-                  );
-                },
-              ),
-              const SizedBox(height: 8),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final p = _product;
@@ -741,11 +677,6 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
       appBar: AppBar(
         title: Text(p.name),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.share_outlined),
-            tooltip: 'Chia sẻ sản phẩm',
-            onPressed: _showShareSheet,
-          ),
           IconButton(
             icon: Icon(
               isFav ? Icons.favorite : Icons.favorite_border,
@@ -832,14 +763,29 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                   ),
                   const SizedBox(height: 8),
 
-                  // Gia tien (du lieu that tu backend)
-                  Text(
-                    formatVnd(p.price),
-                    style: const TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.w900,
-                      color: AppTheme.accentRed,
-                    ),
+                  // Gia tien
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.baseline,
+                    textBaseline: TextBaseline.alphabetic,
+                    children: [
+                      Text(
+                        formatPrice(p.price),
+                        style: const TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.w900,
+                          color: AppTheme.accentRed,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Text(
+                        formatPrice((p.price * 1.25).toInt()),
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: AppTheme.textMuted,
+                          decoration: TextDecoration.lineThrough,
+                        ),
+                      ),
+                    ],
                   ),
                   const Divider(height: 28),
 
@@ -1113,7 +1059,11 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                         color: AppTheme.textSecondary),
                   ),
                   const SizedBox(height: 30),
-                  ProductReviewsSection(productId: p.id),
+                  ProductReviewsSection(
+                    productId: p.id,
+                    productName: p.name,
+                    thumbnailUrl: p.thumbnailUrl,
+                  ),
                   const SizedBox(height: 26),
                   ProductRelatedGrid(
                     product: _product,
