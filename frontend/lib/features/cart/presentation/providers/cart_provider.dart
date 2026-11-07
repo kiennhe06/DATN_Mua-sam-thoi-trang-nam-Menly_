@@ -146,10 +146,12 @@ class CartProvider extends ChangeNotifier {
 
   /// Them san pham vao gio (POST /api/v1/cart/items)
   Future<bool> addToCart(ProductModel product,
-      {String size = 'M', String color = 'Đen', int quantity = 1}) async {
+      {String size = '', String color = '', int quantity = 1}) async {
     ProductVariantModel? selectedVariant;
     for (final variant in product.variants) {
-      if (variant.size == size && variant.color == color) {
+      final sameSize = variant.size.toLowerCase() == size.toLowerCase();
+      final sameColor = variant.color.toLowerCase() == color.toLowerCase();
+      if (sameSize && sameColor) {
         selectedVariant = variant;
         break;
       }
@@ -166,8 +168,8 @@ class CartProvider extends ChangeNotifier {
     final existingIndex = _items.indexWhere(
       (item) =>
           item.product.id == product.id &&
-          item.size == size &&
-          item.color == color,
+          item.size.toLowerCase() == size.toLowerCase() &&
+          item.color.toLowerCase() == color.toLowerCase(),
     );
 
     final variantId = selectedVariant.id;
