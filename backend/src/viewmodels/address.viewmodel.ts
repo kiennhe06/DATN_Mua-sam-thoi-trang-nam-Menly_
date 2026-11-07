@@ -9,10 +9,10 @@ export class AddressViewModel {
   }
 
   async create(userId: string, body: Omit<AddressRow, 'id' | 'user_id' | 'created_at'>): Promise<AddressRow> {
-    if (!body.full_name?.trim()) throw new Error('Vui lòng nhập tên người nhận');
+    if (!body.recipient_name?.trim()) throw new Error('Vui lòng nhập tên người nhận');
     if (!body.phone?.trim()) throw new Error('Vui lòng nhập số điện thoại');
     if (!body.province?.trim()) throw new Error('Vui lòng nhập tỉnh/thành phố');
-    if (!body.detail?.trim()) throw new Error('Vui lòng nhập địa chỉ chi tiết');
+    if (!body.detail_address?.trim()) throw new Error('Vui lòng nhập địa chỉ chi tiết');
     return this.model.create(userId, body);
   }
 

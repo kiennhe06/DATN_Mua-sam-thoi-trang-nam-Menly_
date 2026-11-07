@@ -64,7 +64,10 @@ export class ReviewViewModel {
     return this.model.create({
       userId: input.userId,
       productId: purchased.productId,
-      orderItemId: input.orderItemId,
+      // Dung orderItemId da tra ra o tren chu khong phai input.orderItemId:
+      // khi nguoi dung danh gia tu man san pham thi input khong co truong nay,
+      // gui len null se vi pham rang buoc not null cua product_reviews.
+      orderItemId,
       rating: input.rating,
       comment: input.comment,
       images,
