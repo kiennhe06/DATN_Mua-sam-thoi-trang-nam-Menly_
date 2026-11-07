@@ -5,7 +5,7 @@ import 'package:menly_app/core/network/api_client.dart';
 import 'package:menly_app/features/auth/presentation/pages/forgot_password_page.dart';
 import 'package:menly_app/features/auth/presentation/pages/register_page.dart';
 import 'package:menly_app/features/auth/presentation/providers/auth_provider.dart';
-import 'package:menly_app/main.dart';
+import 'package:menly_app/core/navigation/main_navigation_shell.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginPage extends StatefulWidget {
