@@ -17,23 +17,24 @@ class ProductVariantModel {
   factory ProductVariantModel.fromJson(Map<String, dynamic> json) {
     return ProductVariantModel(
       id: json['id']?.toString() ?? '',
-      size: json['size']?.toString() ?? 'M',
-      color: json['color']?.toString() ?? 'Đen',
+      size: json['size']?.toString() ?? '',
+      color: json['color']?.toString() ?? '',
       sku: json['sku']?.toString() ?? '',
-      stock: (json['stock'] is num) ? (json['stock'] as num).toInt() : 50,
+      stock: (json['stock'] is num) ? (json['stock'] as num).toInt() : 0,
     );
   }
 
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'size': size,
-    'color': color,
-    'sku': sku,
-    'stock': stock,
-  };
+        'id': id,
+        'size': size,
+        'color': color,
+        'sku': sku,
+        'stock': stock,
+      };
 }
 
 /// Model san pham Menly (AP-SP1, TM11, TM02, AP-YT1)
+/// Chi dung du lieu that tra ve tu backend, khong tu sinh bien the/anh gia.
 class ProductModel {
   final String id;
   final String name;
@@ -48,6 +49,7 @@ class ProductModel {
   final bool isNew;
   final bool isBestSeller;
   final List<ProductVariantModel> variants;
+  final List<String> images;
 
   const ProductModel({
     required this.id,
@@ -58,90 +60,109 @@ class ProductModel {
     required this.thumbnailUrl,
     this.categoryId = '',
     this.categoryName = '',
-    this.ratingAvg = 5.0,
+    this.ratingAvg = 0,
     this.ratingCount = 0,
     this.isNew = false,
     this.isBestSeller = false,
     this.variants = const [],
+    this.images = const [],
   });
 
-  factory ProductModel.fromJson(Map<String, dynamic> json) {
-    var rawVariants = json['variants'] ?? json['product_variants'];
-    List<ProductVariantModel> parsedVariants = [];
-    if (rawVariants is List) {
-      parsedVariants = rawVariants
-          .map((v) => ProductVariantModel.fromJson(Map<String, dynamic>.from(v)))
-          .toList();
-    }
-    if (parsedVariants.isEmpty) {
-      final cat = (json['category_name']?.toString() ?? '').toLowerCase();
-      final name = (json['name']?.toString() ?? '').toLowerCase();
-      final slug = (json['slug']?.toString() ?? '').toLowerCase();
-      final isBottom = cat.contains('quần') ||
-          cat.contains('jean') ||
-          name.contains('quần') ||
-          name.contains('jean') ||
-          slug.contains('quan') ||
-          slug.contains('jean');
-
-      if (isBottom) {
-        parsedVariants = [
-          ProductVariantModel(id: '${json['id']}-29-den', size: '29', color: 'Đen', sku: '${json['slug']}-29-Den', stock: 30),
-          ProductVariantModel(id: '${json['id']}-30-den', size: '30', color: 'Đen', sku: '${json['slug']}-30-Den', stock: 45),
-          ProductVariantModel(id: '${json['id']}-31-den', size: '31', color: 'Đen', sku: '${json['slug']}-31-Den', stock: 50),
-          ProductVariantModel(id: '${json['id']}-32-den', size: '32', color: 'Đen', sku: '${json['slug']}-32-Den', stock: 40),
-          ProductVariantModel(id: '${json['id']}-33-den', size: '33', color: 'Đen', sku: '${json['slug']}-33-Den', stock: 35),
-          ProductVariantModel(id: '${json['id']}-34-den', size: '34', color: 'Đen', sku: '${json['slug']}-34-Den', stock: 25),
-          ProductVariantModel(id: '${json['id']}-30-xanh', size: '30', color: 'Xanh Đậm', sku: '${json['slug']}-30-Xanh', stock: 40),
-          ProductVariantModel(id: '${json['id']}-31-xanh', size: '31', color: 'Xanh Đậm', sku: '${json['slug']}-31-Xanh', stock: 40),
-          ProductVariantModel(id: '${json['id']}-32-xanh', size: '32', color: 'Xanh Đậm', sku: '${json['slug']}-32-Xanh', stock: 30),
-        ];
-      } else {
-        parsedVariants = [
-          ProductVariantModel(id: '${json['id']}-s-den', size: 'S', color: 'Đen', sku: '${json['slug']}-S-Den', stock: 30),
-          ProductVariantModel(id: '${json['id']}-m-den', size: 'M', color: 'Đen', sku: '${json['slug']}-M-Den', stock: 50),
-          ProductVariantModel(id: '${json['id']}-l-den', size: 'L', color: 'Đen', sku: '${json['slug']}-L-Den', stock: 50),
-          ProductVariantModel(id: '${json['id']}-xl-den', size: 'XL', color: 'Đen', sku: '${json['slug']}-XL-Den', stock: 40),
-          ProductVariantModel(id: '${json['id']}-2xl-den', size: '2XL', color: 'Đen', sku: '${json['slug']}-2XL-Den', stock: 25),
-          ProductVariantModel(id: '${json['id']}-m-trang', size: 'M', color: 'Trắng', sku: '${json['slug']}-M-Trang', stock: 40),
-          ProductVariantModel(id: '${json['id']}-l-trang', size: 'L', color: 'Trắng', sku: '${json['slug']}-L-Trang', stock: 40),
-          ProductVariantModel(id: '${json['id']}-xl-trang', size: 'XL', color: 'Trắng', sku: '${json['slug']}-XL-Trang', stock: 30),
-          ProductVariantModel(id: '${json['id']}-m-xam', size: 'M', color: 'Xám', sku: '${json['slug']}-M-Xam', stock: 35),
-          ProductVariantModel(id: '${json['id']}-l-xam', size: 'L', color: 'Xám', sku: '${json['slug']}-L-Xam', stock: 35),
-        ];
+  /// Danh sach anh that de hien thi gallery (uu tien product_images, sau do thumbnail).
+  List<String> get galleryImages {
+    final seen = <String>{};
+    final real = <String>[];
+    for (final url in [...images, thumbnailUrl]) {
+      if (url.isEmpty || url.contains('picsum.photos') || seen.contains(url)) {
+        continue;
       }
+      seen.add(url);
+      real.add(url);
     }
+    return real;
+  }
+
+  factory ProductModel.fromJson(Map<String, dynamic> json) {
+    final parsedVariants = <ProductVariantModel>[];
+    final rawVariants = json['variants'] ?? json['product_variants'];
+    if (rawVariants is List) {
+      parsedVariants.addAll(rawVariants.whereType<Map>().map(
+          (v) => ProductVariantModel.fromJson(Map<String, dynamic>.from(v))));
+    }
+
+    final parsedImages = _parseImages(json['product_images'] ?? json['images']);
+
+    final rawThumb = json['thumbnail_url']?.toString() ?? '';
+    final validThumb =
+        (rawThumb.isNotEmpty && !rawThumb.contains('picsum')) ? rawThumb : '';
 
     return ProductModel(
       id: json['id']?.toString() ?? '',
       name: json['name']?.toString() ?? '',
       slug: json['slug']?.toString() ?? '',
-      description: json['description']?.toString() ?? json['descr']?.toString() ?? 'Sản phẩm thời trang nam Menly cao cấp, thiết kế hiện đại, chất liệu bền đẹp, thoải mái vận động.',
+      description: json['description']?.toString() ??
+          json['descr']?.toString() ??
+          '',
       price: (json['price'] is num) ? (json['price'] as num).toInt() : 0,
-      thumbnailUrl: (json['thumbnail_url'] != null && !json['thumbnail_url'].toString().contains('picsum')) ? json['thumbnail_url'].toString() : 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800&q=80',
+      thumbnailUrl: validThumb.isNotEmpty
+          ? validThumb
+          : (parsedImages.isNotEmpty ? parsedImages.first : ''),
       categoryId: json['category_id']?.toString() ?? '',
-      categoryName: json['category_name']?.toString() ?? '',
-      ratingAvg: (json['rating_avg'] is num) ? (json['rating_avg'] as num).toDouble() : 4.8,
-      ratingCount: (json['rating_count'] is num) ? (json['rating_count'] as num).toInt() : 12,
+      categoryName: json['category_name']?.toString() ??
+          (json['categories'] is Map
+              ? (json['categories']['name']?.toString() ?? '')
+              : ''),
+      ratingAvg:
+          (json['rating_avg'] is num) ? (json['rating_avg'] as num).toDouble() : 0,
+      ratingCount:
+          (json['rating_count'] is num) ? (json['rating_count'] as num).toInt() : 0,
       isNew: json['is_new'] == true || json['is_new'] == 1,
       isBestSeller: json['is_best_seller'] == true || json['is_best_seller'] == 1,
       variants: parsedVariants,
+      images: parsedImages,
     );
   }
 
+  static List<String> _parseImages(dynamic raw) {
+    if (raw is! List) return const [];
+
+    final entries = <Map<String, dynamic>>[];
+    for (final item in raw) {
+      if (item is Map) {
+        entries.add(Map<String, dynamic>.from(item));
+      } else if (item is String && item.isNotEmpty) {
+        entries.add({'url': item});
+      }
+    }
+
+    entries.sort((a, b) {
+      final aOrder =
+          a['sort_order'] is num ? (a['sort_order'] as num).toInt() : 0;
+      final bOrder =
+          b['sort_order'] is num ? (b['sort_order'] as num).toInt() : 0;
+      return aOrder.compareTo(bOrder);
+    });
+
+    return entries
+        .map((entry) => entry['url']?.toString() ?? '')
+        .where((url) => url.isNotEmpty && !url.contains('picsum.photos'))
+        .toList();
+  }
+
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'name': name,
-    'slug': slug,
-    'description': description,
-    'price': price,
-    'thumbnail_url': thumbnailUrl,
-    'category_id': categoryId,
-    'category_name': categoryName,
-    'rating_avg': ratingAvg,
-    'rating_count': ratingCount,
-    'is_new': isNew,
-    'is_best_seller': isBestSeller,
-    'variants': variants.map((v) => v.toJson()).toList(),
-  };
+        'id': id,
+        'name': name,
+        'slug': slug,
+        'description': description,
+        'price': price,
+        'thumbnail_url': thumbnailUrl,
+        'category_id': categoryId,
+        'category_name': categoryName,
+        'rating_avg': ratingAvg,
+        'rating_count': ratingCount,
+        'is_new': isNew,
+        'is_best_seller': isBestSeller,
+        'variants': variants.map((v) => v.toJson()).toList(),
+        'images': images,
+      };
 }

@@ -7,6 +7,7 @@ import '../../../../core/widgets/product_card.dart';
 import '../../../../main.dart';
 import '../../../cart/presentation/providers/cart_provider.dart';
 import '../../../product/presentation/pages/product_detail_page.dart';
+import '../../../product/presentation/providers/product_provider.dart';
 import '../providers/wishlist_provider.dart';
 
 /// Man hinh San pham Yeu thich cao cap (AP-YT1)
@@ -159,17 +160,30 @@ class WishlistPage extends StatelessWidget {
                       ),
                     );
                   },
-                  onAdd: () {
+                  onAdd: () async {
                     final cart = context.read<CartProvider>();
-                    final s =
-                        p.variants.isNotEmpty ? p.variants.first.size : 'M';
-                    final col =
-                        p.variants.isNotEmpty ? p.variants.first.color : 'Đen';
-                    cart.addToCart(p, size: s, color: col);
-                    ScaffoldMessenger.of(context).showSnackBar(
+                    final productProv = context.read<ProductProvider>();
+                    final messenger = ScaffoldMessenger.of(context);
+                    final detail =
+                        await productProv.fetchProductDetail(p.id);
+                    final source = detail ?? p;
+                    final availableVariants = source.variants
+                        .where((variant) => variant.stock > 0);
+                    if (availableVariants.isEmpty) {
+                      messenger.showSnackBar(const SnackBar(
+                          content: Text('Sản phẩm hiện không có hàng')));
+                      return;
+                    }
+                    final variant = availableVariants.first;
+                    final added = await cart.addToCart(source,
+                        size: variant.size, color: variant.color);
+                    messenger.showSnackBar(
                       SnackBar(
-                        content: Text('Đã thêm "${p.name}" vào giỏ hàng'),
-                        backgroundColor: c.primary,
+                        content: Text(added
+                            ? 'Đã thêm "${p.name}" vào giỏ hàng'
+                            : cart.errorMessage ??
+                                'Không thể thêm sản phẩm vào giỏ'),
+                        backgroundColor: added ? c.primary : Colors.red,
                         duration: const Duration(seconds: 2),
                       ),
                     );

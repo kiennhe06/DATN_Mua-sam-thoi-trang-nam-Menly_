@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:menly_app/core/theme/app_theme.dart';
-import 'package:menly_app/core/utils/app_snackbar.dart';
 import 'package:menly_app/core/widgets/category_pill.dart';
 import 'package:menly_app/core/widgets/product_card.dart';
 import 'package:menly_app/features/cart/presentation/providers/cart_provider.dart';
@@ -279,22 +278,27 @@ class ProductListPage extends StatelessWidget {
                                   wishlistProv.toggleFavorite(p),
                               onAdd: () async {
                                 final cart = context.read<CartProvider>();
-                                final availableVariants = p.variants
+                                final messenger =
+                                    ScaffoldMessenger.of(context);
+                                final detail =
+                                    await productProv.fetchProductDetail(p.id);
+                                final source = detail ?? p;
+                                final availableVariants = source.variants
                                     .where((variant) => variant.stock > 0);
                                 if (availableVariants.isEmpty) {
-                                  AppSnackBar.show(context,
-                                      message: 'Sản phẩm hiện không có hàng');
+                                  messenger.showSnackBar(const SnackBar(
+                                      content: Text(
+                                          'Sản phẩm hiện không có hàng')));
                                   return;
                                 }
                                 final variant = availableVariants.first;
-                                final added = await cart.addToCart(p,
+                                final added = await cart.addToCart(source,
                                     size: variant.size, color: variant.color);
-                                if (!context.mounted) return;
-                                AppSnackBar.show(context,
-                                    message: added
+                                messenger.showSnackBar(SnackBar(
+                                    content: Text(added
                                         ? 'Đã thêm "${p.name}" vào giỏ'
                                         : cart.errorMessage ??
-                                            'Không thể thêm sản phẩm vào giỏ');
+                                            'Không thể thêm sản phẩm vào giỏ')));
                               },
                             );
                           },
