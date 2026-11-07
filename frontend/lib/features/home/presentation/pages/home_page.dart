@@ -9,6 +9,7 @@ import 'package:menly_app/features/product/data/models/product_model.dart';
 import 'package:menly_app/features/auth/presentation/pages/login_page.dart';
 import 'package:menly_app/features/auth/presentation/pages/profile_page.dart';
 import 'package:menly_app/features/auth/presentation/providers/auth_provider.dart';
+import 'package:menly_app/features/auth/presentation/widgets/profile_avatar.dart';
 import 'package:menly_app/features/notification/presentation/pages/notifications_page.dart';
 import 'package:menly_app/features/notification/presentation/providers/notification_provider.dart';
 import 'package:menly_app/features/cart/presentation/providers/cart_provider.dart';
@@ -215,12 +216,11 @@ class _HomePageState extends State<HomePage> {
             },
             icon: Consumer<AuthProvider>(
               builder: (_, auth, __) {
-                if (auth.isLoggedIn &&
-                    auth.user?.avatarUrl != null &&
-                    auth.user!.avatarUrl!.isNotEmpty) {
-                  return CircleAvatar(
+                if (auth.isLoggedIn) {
+                  return ProfileAvatar(
+                    avatarUrl: auth.user?.avatarUrl,
                     radius: 12,
-                    backgroundImage: NetworkImage(auth.user!.avatarUrl!),
+                    fallbackText: auth.user?.fullName ?? 'M',
                   );
                 }
                 return const Icon(
