@@ -187,7 +187,7 @@ export default function ProductsPage() {
           }
         }}
         title="Xem chi tiết và tồn kho"
-        className="rounded-lg bg-slate-800 px-2.5 py-1.5 text-xs font-semibold text-slate-300 transition-all hover:bg-amber-500 hover:text-slate-950"
+        className="rounded-lg bg-tint px-2.5 py-1.5 text-xs font-semibold text-ink-mid transition-all hover:bg-camel-hover hover:text-ink"
       >
         <Eye className="h-3.5 w-3.5" />
       </button>
@@ -206,7 +206,7 @@ export default function ProductsPage() {
           }
         }}
         title="Sửa sản phẩm"
-        className="rounded-lg bg-slate-800 p-1.5 text-amber-300 transition-colors hover:bg-amber-500 hover:text-slate-950"
+        className="rounded-lg bg-tint p-1.5 text-camel-dark transition-colors hover:bg-camel-hover hover:text-ink"
       >
         <Pencil className="h-3.5 w-3.5" />
       </button>
@@ -214,7 +214,7 @@ export default function ProductsPage() {
         type="button"
         onClick={() => handleToggleProductVisibility(product)}
         title={product.isActive === false ? 'Hiển thị lại sản phẩm' : 'Ẩn sản phẩm khỏi ứng dụng'}
-        className={`rounded-lg bg-slate-800 p-1.5 transition-colors ${product.isActive === false ? 'text-emerald-300 hover:bg-emerald-500 hover:text-slate-950' : 'text-rose-300 hover:bg-rose-500 hover:text-white'}`}
+        className={`rounded-lg bg-tint p-1.5 transition-colors ${product.isActive === false ? 'text-ok hover:bg-ok-bg' : 'text-danger hover:bg-danger-bg'}`}
       >
         {product.isActive === false ? <RotateCcw className="h-3.5 w-3.5" /> : <Trash2 className="h-3.5 w-3.5" />}
       </button>
@@ -309,7 +309,7 @@ export default function ProductsPage() {
             disabled={categories.length === 0}
             title={categories.length === 0 ? 'Backend chưa có danh mục để gán cho sản phẩm' : undefined}
             onClick={() => setShowCreateModal(true)}
-            className="inline-flex items-center gap-2 rounded-xl bg-amber-500 px-4 py-2.5 text-sm font-bold text-slate-950 shadow-lg shadow-amber-950/20 transition-colors hover:bg-amber-400 disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded-xl bg-camel px-4 py-2.5 text-sm font-bold text-ink shadow-lg shadow-camel/15 transition-colors hover:bg-camel-hover disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Plus className="h-4 w-4" /> Thêm sản phẩm
           </button>
@@ -321,8 +321,8 @@ export default function ProductsPage() {
             role={notification.type === 'error' ? 'alert' : 'status'}
             className={`flex items-center gap-2 rounded-xl border px-4 py-2.5 text-xs shadow-lg animate-fade-in ${
               notification.type === 'error'
-                ? 'border-rose-500/30 bg-rose-500/10 text-rose-300'
-                : 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400'
+                ? 'border-danger-line bg-danger-bg text-danger'
+                : 'border-ok-line bg-ok-bg text-ok'
             }`}
           >
             {notification.type === 'error' ? (
@@ -335,7 +335,7 @@ export default function ProductsPage() {
         )}
 
         {loadError && (
-          <div className="flex items-center justify-between gap-4 rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-300">
+          <div className="flex items-center justify-between gap-4 rounded-xl border border-danger-line bg-danger-bg px-4 py-3 text-sm text-danger">
             <span>{loadError}</span>
             <button type="button" onClick={loadData} className="shrink-0 font-semibold underline">
               Thử tải lại
@@ -344,13 +344,13 @@ export default function ProductsPage() {
         )}
 
         {/* 1. Category Filter Tabs */}
-        <div className="bg-slate-900/70 border border-slate-800 p-4 rounded-2xl space-y-3">
-          <div className="flex items-center justify-between text-xs text-slate-400 font-semibold">
+        <div className="bg-panel border border-line p-4 rounded-2xl space-y-3 shadow-panel">
+          <div className="flex items-center justify-between text-xs text-ink-muted font-semibold">
             <span className="flex items-center gap-1.5">
-              <FolderOpen className="w-4 h-4 text-amber-400" />
+              <FolderOpen className="w-4 h-4 text-camel-dark" />
               DANH MỤC THỜI TRANG NAM ({categories.length} danh mục)
             </span>
-            <span className="text-[11px] text-slate-500 font-normal">
+            <span className="text-[11px] text-ink-muted font-normal">
               Bấm vào danh mục để lọc hoặc chọn &quot;Tất cả&quot; để xem phân nhóm
             </span>
           </div>
@@ -360,8 +360,8 @@ export default function ProductsPage() {
               onClick={() => setSelectedCategory('all')}
               className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer flex items-center gap-2 ${
                 selectedCategory === 'all'
-                  ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
-                  : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700'
+                  ? 'bg-camel text-ink shadow-md shadow-camel/20'
+                  : 'bg-tint text-ink-mid hover:bg-tint-strong'
               }`}
             >
               <Layers className="w-3.5 h-3.5" />
@@ -369,8 +369,8 @@ export default function ProductsPage() {
               <span
                 className={`px-1.5 py-0.2 rounded-full text-[10px] ${
                   selectedCategory === 'all'
-                    ? 'bg-slate-950 text-amber-400 font-mono'
-                    : 'bg-slate-900 text-slate-400'
+                    ? 'bg-panel text-camel-dark font-mono'
+                    : 'bg-panel text-ink-muted'
                 }`}
               >
                 {products.length}
@@ -389,16 +389,16 @@ export default function ProductsPage() {
                   onClick={() => setSelectedCategory(c.id)}
                   className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer flex items-center gap-2 ${
                     selectedCategory === c.id
-                      ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
-                      : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700'
+                      ? 'bg-camel text-ink shadow-md shadow-camel/20'
+                      : 'bg-tint text-ink-mid hover:bg-tint-strong'
                   }`}
                 >
                   <span>{c.name}</span>
                   <span
                     className={`px-1.5 py-0.2 rounded-full text-[10px] ${
                       selectedCategory === c.id
-                        ? 'bg-slate-950 text-amber-400 font-mono'
-                        : 'bg-slate-900 text-slate-400'
+                        ? 'bg-panel text-camel-dark font-mono'
+                        : 'bg-panel text-ink-muted'
                     }`}
                   >
                     {count}
@@ -410,16 +410,16 @@ export default function ProductsPage() {
         </div>
 
         {/* 2. Control Toolbar: Search, Sort & View Mode */}
-        <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between bg-slate-900/60 p-4 rounded-2xl border border-slate-800">
+        <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between bg-panel p-4 rounded-2xl border border-line shadow-panel">
           {/* Search Box */}
-          <div className="flex items-center gap-3 flex-1 max-w-md bg-slate-950 px-3.5 py-2.5 rounded-xl border border-slate-800">
-            <Search className="w-4 h-4 text-slate-400 shrink-0" />
+          <div className="flex items-center gap-3 flex-1 max-w-md bg-panel px-3.5 py-2.5 rounded-xl border border-line shadow-panel">
+            <Search className="w-4 h-4 text-ink-muted shrink-0" />
             <input
               type="text"
               placeholder="Tìm kiếm sản phẩm theo tên, slug hoặc ID..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="bg-transparent text-xs text-white placeholder-slate-500 focus:outline-none w-full"
+              className="bg-transparent text-xs text-ink placeholder-ink-muted focus:outline-none w-full"
             />
           </div>
 
@@ -428,51 +428,51 @@ export default function ProductsPage() {
               aria-label="Lọc trạng thái sản phẩm"
               value={statusFilter}
               onChange={(event) => setStatusFilter(event.target.value as 'active' | 'inactive' | 'all')}
-              className="rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-xs font-medium text-slate-300 focus:border-amber-500 focus:outline-none"
+              className="rounded-xl border border-line bg-panel px-3 py-2 text-xs font-medium text-ink-mid focus:border-camel focus:outline-none shadow-panel"
             >
               <option value="active">Đang hiển thị</option>
               <option value="inactive">Đã ẩn</option>
               <option value="all">Tất cả trạng thái</option>
             </select>
             {/* Sort Dropdown */}
-            <div className="flex items-center gap-2 bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-800">
-              <ArrowUpDown className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-              <span className="text-[11px] text-slate-400 font-medium">Sắp xếp:</span>
+            <div className="flex items-center gap-2 bg-panel px-3 py-1.5 rounded-xl border border-line shadow-panel">
+              <ArrowUpDown className="w-3.5 h-3.5 text-camel-dark shrink-0" />
+              <span className="text-[11px] text-ink-muted font-medium">Sắp xếp:</span>
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as SortOption)}
-                className="bg-transparent text-xs text-white font-medium focus:outline-none cursor-pointer pr-1"
+                className="bg-transparent text-xs text-ink font-medium focus:outline-none cursor-pointer pr-1"
               >
-                <option value="category" className="bg-slate-900 text-white">
+                <option value="category" className="bg-panel text-ink">
                   Theo Danh mục (Áo sơ mi → Áo Polo → Quần → Áo khoác)
                 </option>
-                <option value="price_asc" className="bg-slate-900 text-white">
+                <option value="price_asc" className="bg-panel text-ink">
                   Giá: Thấp đến Cao
                 </option>
-                <option value="price_desc" className="bg-slate-900 text-white">
+                <option value="price_desc" className="bg-panel text-ink">
                   Giá: Cao đến Thấp
                 </option>
-                <option value="name_asc" className="bg-slate-900 text-white">
+                <option value="name_asc" className="bg-panel text-ink">
                   Tên: A → Z
                 </option>
-                <option value="stock_desc" className="bg-slate-900 text-white">
+                <option value="stock_desc" className="bg-panel text-ink">
                   Tồn kho: Nhiều nhất
                 </option>
-                <option value="stock_asc" className="bg-slate-900 text-white">
+                <option value="stock_asc" className="bg-panel text-ink">
                   Tồn kho: Ít nhất
                 </option>
               </select>
             </div>
 
             {/* View Mode Toggle: Grouped Sections vs Single Table */}
-            <div className="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800">
+            <div className="flex items-center bg-panel p-1 rounded-xl border border-line shadow-panel">
               <button
                 onClick={() => setViewMode('grouped')}
                 title="Gom nhóm theo Danh mục"
                 className={`p-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all ${
                   viewMode === 'grouped'
-                    ? 'bg-amber-500 text-slate-950'
-                    : 'text-slate-400 hover:text-white'
+                    ? 'bg-camel text-ink'
+                    : 'text-ink-muted hover:text-ink'
                 }`}
               >
                 <LayoutGrid className="w-3.5 h-3.5" />
@@ -483,8 +483,8 @@ export default function ProductsPage() {
                 title="Danh sách Bảng tổng hợp"
                 className={`p-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all ${
                   viewMode === 'table'
-                    ? 'bg-amber-500 text-slate-950'
-                    : 'text-slate-400 hover:text-white'
+                    ? 'bg-camel text-ink'
+                    : 'text-ink-muted hover:text-ink'
                 }`}
               >
                 <List className="w-3.5 h-3.5" />
@@ -496,11 +496,11 @@ export default function ProductsPage() {
 
         {/* 3. Product Presentation Area */}
         {loading ? (
-          <div className="py-20 text-center text-slate-500 text-sm bg-slate-900/60 border border-slate-800 rounded-2xl">
+          <div className="py-20 text-center text-ink-muted text-sm bg-panel border border-line rounded-2xl shadow-panel">
             Đang tải danh mục sản phẩm...
           </div>
         ) : sortedProducts.length === 0 ? (
-          <div className="py-20 text-center text-slate-500 text-sm bg-slate-900/60 border border-slate-800 rounded-2xl">
+          <div className="py-20 text-center text-ink-muted text-sm bg-panel border border-line rounded-2xl shadow-panel">
             Không tìm thấy sản phẩm phù hợp với bộ lọc
           </div>
         ) : viewMode === 'grouped' ? (
@@ -509,22 +509,22 @@ export default function ProductsPage() {
             {groupedProducts.map((group) => (
               <div
                 key={group.category.id}
-                className="bg-slate-900/60 border border-slate-800 rounded-2xl overflow-hidden shadow-lg"
+                className="bg-panel border border-line rounded-2xl overflow-hidden shadow-lg"
               >
                 {/* Category Group Header */}
-                <div className="p-4 bg-slate-950/80 border-b border-slate-800 flex items-center justify-between">
+                <div className="p-4 bg-tint border-b border-line flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <span className="w-3 h-3 rounded-full bg-amber-400 shadow-sm shadow-amber-400/50"></span>
-                    <h3 className="font-bold text-white text-sm tracking-wide">
+                    <span className="w-3 h-3 rounded-full bg-camel shadow-sm shadow-camel/30"></span>
+                    <h3 className="font-bold text-ink text-sm tracking-wide">
                       {group.category.name}
                     </h3>
-                    <span className="bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded-full text-[11px] font-mono font-bold">
+                    <span className="bg-camel-tint text-camel-dark border border-camel/25 px-2 py-0.5 rounded-full text-[11px] font-mono font-bold">
                       {group.items.length} sản phẩm
                     </span>
                   </div>
                   <button
                     onClick={() => setSelectedCategory(group.category.id)}
-                    className="text-xs text-slate-400 hover:text-amber-400 transition-colors font-medium flex items-center gap-1"
+                    className="text-xs text-ink-muted hover:text-camel-dark transition-colors font-medium flex items-center gap-1"
                   >
                     Xem riêng danh mục này →
                   </button>
@@ -534,7 +534,7 @@ export default function ProductsPage() {
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs">
                     <thead>
-                      <tr className="bg-slate-950/40 text-slate-400 font-semibold border-b border-slate-800/80">
+                      <tr className="bg-tint text-ink-muted font-semibold border-b border-line">
                         <th className="py-2.5 px-4">Hình ảnh</th>
                         <th className="py-2.5 px-4">Tên sản phẩm</th>
                         <th className="py-2.5 px-4">Chuyển Danh mục</th>
@@ -543,24 +543,24 @@ export default function ProductsPage() {
                         <th className="py-2.5 px-4 text-center">Hành động</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-800/50 text-slate-300">
+                    <tbody className="divide-y divide-line text-ink-mid">
                       {group.items.map((p) => {
                         const totalStock = getProductStock(p);
                         return (
-                          <tr key={p.id} className="hover:bg-slate-800/40 transition-colors">
+                          <tr key={p.id} className="hover:bg-tint transition-colors">
                             <td className="py-2.5 px-4">
                               <img
                                 src={p.thumbnailUrl || undefined}
                                 alt={p.name}
-                                className="w-12 h-14 object-cover rounded-lg border border-slate-800 bg-slate-950"
+                                className="w-12 h-14 object-cover rounded-lg border border-line bg-panel"
                               />
                             </td>
                             <td className="py-2.5 px-4 max-w-xs">
                               <div className="flex items-center gap-2">
-                                <p className="font-semibold text-white line-clamp-1">{p.name}</p>
-                                {p.isActive === false && <span className="shrink-0 rounded bg-slate-700 px-1.5 py-0.5 text-[9px] font-semibold text-slate-300">Đã ẩn</span>}
+                                <p className="font-semibold text-ink line-clamp-1">{p.name}</p>
+                                {p.isActive === false && <span className="shrink-0 rounded-md bg-tint-strong px-1.5 py-0.5 text-[9px] font-semibold text-ink-mid">Đã ẩn</span>}
                               </div>
-                              <p className="text-[11px] font-mono text-slate-400 line-clamp-1">
+                              <p className="text-[11px] font-mono text-ink-muted line-clamp-1">
                                 {p.slug}
                               </p>
                             </td>
@@ -570,7 +570,7 @@ export default function ProductsPage() {
                                 onChange={(e) =>
                                   handleUpdateProductCategory(p.id, e.target.value)
                                 }
-                                className="bg-slate-950 border border-slate-800 rounded-lg px-2 py-1 text-[11px] text-amber-400 font-medium focus:outline-none focus:border-amber-500 cursor-pointer"
+                                className="bg-panel border border-line rounded-lg px-2 py-1 text-[11px] text-camel-dark font-medium focus:outline-none focus:border-camel cursor-pointer"
                               >
                                 {categories.map((c) => (
                                   <option key={c.id} value={c.id}>
@@ -579,13 +579,13 @@ export default function ProductsPage() {
                                 ))}
                               </select>
                             </td>
-                            <td className="py-2.5 px-4 font-bold text-amber-400 font-mono text-xs">
+                            <td className="py-2.5 px-4 font-bold text-camel-dark font-mono text-xs">
                               {p.price.toLocaleString('vi-VN')} đ
                             </td>
                             <td className="py-2.5 px-4 min-w-[200px]">
                               <div className="flex items-start justify-between gap-2">
                                 <CompactVariantDisplay variants={p.variants} />
-                                <span className="text-[10px] bg-emerald-500/10 text-emerald-400 px-1.5 py-0.5 rounded font-mono font-bold border border-emerald-500/20 shrink-0 mt-0.5">
+                                <span className="text-[10px] bg-ok-bg text-ok px-1.5 py-0.5 rounded-md font-mono font-bold border border-ok-line shrink-0 mt-0.5">
                                   {totalStock} pcs
                                 </span>
                               </div>
@@ -604,8 +604,8 @@ export default function ProductsPage() {
           </div>
         ) : (
           /* SINGLE TABLE VIEW */
-          <div className="bg-slate-900/60 border border-slate-800 rounded-2xl overflow-hidden shadow-lg">
-            <div className="p-4 border-b border-slate-800 flex items-center justify-between text-xs text-slate-400 font-medium">
+          <div className="bg-panel border border-line rounded-2xl overflow-hidden shadow-lg">
+            <div className="p-4 border-b border-line flex items-center justify-between text-xs text-ink-muted font-medium">
               <span>Hiển thị {sortedProducts.length} sản phẩm</span>
               <span>Sắp xếp theo: {sortBy}</span>
             </div>
@@ -613,7 +613,7 @@ export default function ProductsPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <thead>
-                  <tr className="bg-slate-950/60 text-slate-400 font-semibold border-b border-slate-800">
+                  <tr className="bg-tint text-ink-muted font-semibold border-b border-line">
                     <th className="py-3 px-4">Hình ảnh</th>
                     <th className="py-3 px-4">Tên sản phẩm</th>
                     <th className="py-3 px-4">Danh mục phân loại</th>
@@ -622,25 +622,25 @@ export default function ProductsPage() {
                     <th className="py-3 px-4 text-center">Hành động</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800/60 text-slate-300">
+                <tbody className="divide-y divide-line text-ink-mid">
                   {sortedProducts.map((p) => {
                     const cat = getProductCategory(p);
                     const totalStock = getProductStock(p);
                     return (
-                      <tr key={p.id} className="hover:bg-slate-800/40 transition-colors">
+                      <tr key={p.id} className="hover:bg-tint transition-colors">
                         <td className="py-3 px-4">
                           <img
                             src={p.thumbnailUrl || undefined}
                             alt={p.name}
-                            className="w-12 h-14 object-cover rounded-lg border border-slate-800 bg-slate-950"
+                            className="w-12 h-14 object-cover rounded-lg border border-line bg-panel"
                           />
                         </td>
                         <td className="py-3 px-4 max-w-xs">
                           <div className="flex items-center gap-2">
-                            <p className="font-semibold text-white line-clamp-1">{p.name}</p>
-                            {p.isActive === false && <span className="shrink-0 rounded bg-slate-700 px-1.5 py-0.5 text-[9px] font-semibold text-slate-300">Đã ẩn</span>}
+                            <p className="font-semibold text-ink line-clamp-1">{p.name}</p>
+                            {p.isActive === false && <span className="shrink-0 rounded-md bg-tint-strong px-1.5 py-0.5 text-[9px] font-semibold text-ink-mid">Đã ẩn</span>}
                           </div>
-                          <p className="text-xs font-mono text-slate-400 line-clamp-1">{p.slug}</p>
+                          <p className="text-xs font-mono text-ink-muted line-clamp-1">{p.slug}</p>
                         </td>
                         <td className="py-3 px-4">
                           <select
@@ -648,7 +648,7 @@ export default function ProductsPage() {
                             onChange={(e) =>
                               handleUpdateProductCategory(p.id, e.target.value)
                             }
-                            className="bg-slate-950 border border-slate-800 rounded-lg px-2 py-1 text-xs text-amber-400 font-semibold focus:outline-none focus:border-amber-500 cursor-pointer"
+                            className="bg-panel border border-line rounded-lg px-2 py-1 text-xs text-camel-dark font-semibold focus:outline-none focus:border-camel cursor-pointer"
                           >
                             {categories.map((c) => (
                               <option key={c.id} value={c.id}>
@@ -657,13 +657,13 @@ export default function ProductsPage() {
                             ))}
                           </select>
                         </td>
-                        <td className="py-3 px-4 font-bold text-amber-400 font-mono text-xs">
+                        <td className="py-3 px-4 font-bold text-camel-dark font-mono text-xs">
                           {p.price.toLocaleString('vi-VN')} đ
                         </td>
                         <td className="py-3 px-4 min-w-[200px]">
                           <div className="flex items-start justify-between gap-2">
                             <CompactVariantDisplay variants={p.variants} />
-                            <span className="text-[10px] bg-emerald-500/10 text-emerald-400 px-1.5 py-0.5 rounded font-mono font-bold border border-emerald-500/20 shrink-0 mt-0.5">
+                            <span className="text-[10px] bg-ok-bg text-ok px-1.5 py-0.5 rounded-md font-mono font-bold border border-ok-line shrink-0 mt-0.5">
                               {totalStock} pcs
                             </span>
                           </div>

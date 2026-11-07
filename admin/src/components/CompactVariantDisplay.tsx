@@ -43,14 +43,14 @@ export function CompactVariantDisplay({
     return (
       <div className={`flex flex-col gap-1.5 ${className}`}>
         <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider shrink-0">
+          <span className="text-[10px] font-semibold text-ink-muted uppercase tracking-wider shrink-0">
             {sizePrefix}
           </span>
           <div className="flex items-center gap-1 flex-wrap">
             {defaultSizes.map((s) => (
               <span
                 key={s}
-                className="px-1.5 py-0.5 rounded-md bg-slate-900 border border-slate-700/80 text-[11px] font-mono font-bold text-amber-400 shadow-xs"
+                className="px-1.5 py-0.5 rounded-md bg-panel border border-line-strong text-[11px] font-mono font-bold text-camel-dark shadow-xs"
               >
                 {s}
               </span>
@@ -95,18 +95,18 @@ export function CompactVariantDisplay({
     <div className={`flex flex-col gap-1.5 ${className}`}>
       {/* Size row on top (Bên trên là Size) */}
       <div className="flex items-center gap-1.5 flex-wrap">
-        <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider shrink-0">
+        <span className="text-[10px] font-semibold text-ink-muted uppercase tracking-wider shrink-0">
           {sizePrefix}
         </span>
         <div className="flex items-center gap-1 flex-wrap">
           {uniqueSizes.map((s) => (
             <span
               key={s.size}
-              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-slate-900 border border-slate-700/80 text-[11px] font-mono shadow-xs"
+              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-panel border border-line-strong text-[11px] font-mono shadow-xs"
             >
-              <strong className="text-amber-400 font-bold">{s.size}</strong>
+              <strong className="text-camel-dark font-bold">{s.size}</strong>
               {showStockCount && (
-                <span className="text-white text-[10px] font-bold">({s.stock})</span>
+                <span className="text-ink text-[10px] font-bold">({s.stock})</span>
               )}
             </span>
           ))}
@@ -116,22 +116,22 @@ export function CompactVariantDisplay({
       {/* Color row below (Bên dưới là Màu) */}
       {uniqueColors.length > 0 && (
         <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider shrink-0">
+          <span className="text-[10px] font-semibold text-ink-muted uppercase tracking-wider shrink-0">
             {colorPrefix}
           </span>
           <div className="flex items-center gap-1 flex-wrap">
             {uniqueColors.map((c) => (
               <span
                 key={c.color}
-                className="inline-flex items-center gap-1.5 px-1.5 py-0.5 rounded-md bg-slate-950/80 border border-slate-800 text-[11px] text-slate-300 font-medium shadow-xs"
+                className="inline-flex items-center gap-1.5 px-1.5 py-0.5 rounded-md bg-tint border border-line text-[11px] text-ink-mid font-medium shadow-xs"
               >
                 <span
-                  className="w-2 h-2 rounded-full border border-white/20 shrink-0"
+                  className="w-2 h-2 rounded-full border border-line shrink-0"
                   style={{ backgroundColor: getColorHex(c.color) }}
                 />
                 <span>{c.color}</span>
                 {showStockCount && (
-                  <span className="text-slate-400 text-[10px] font-mono">({c.stock})</span>
+                  <span className="text-ink-muted text-[10px] font-mono">({c.stock})</span>
                 )}
               </span>
             ))}

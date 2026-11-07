@@ -27,6 +27,8 @@ export default function DashboardPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [, setMovements] = useState<InventoryMovement[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   // Date filter state
   const [preset, setPreset] = useState<DateFilterPreset>('all');
@@ -35,20 +37,36 @@ export default function DashboardPage() {
   const [toDay, setToDay] = useState('');
 
   const loadData = useCallback(async () => {
-    try {
-      const [cats, ords, movs, prods] = await Promise.all([
-        fetchCategories(),
-        fetchAdminOrders(),
-        fetchInventoryMovements(),
-        fetchAdminProducts({ limit: 400 }),
-      ]);
-      setCategories(cats);
-      setOrders(ords);
-      setMovements(movs);
-      setProducts(prods.items || []);
-    } catch (err) {
-      console.error('Error loading dashboard data:', err);
+    // allSettled chu khong phai all: truoc day chi can mot nguon loi la ca bon
+    // deu bi bo, bang dieu khien hien toan so 0 nhu the cua hang khong co don nao.
+    const [cats, ords, movs, prods] = await Promise.allSettled([
+      fetchCategories(),
+      fetchAdminOrders(),
+      fetchInventoryMovements(),
+      fetchAdminProducts({ limit: 400 }),
+    ]);
+
+    if (cats.status === 'fulfilled') setCategories(cats.value);
+    if (ords.status === 'fulfilled') setOrders(ords.value);
+    if (movs.status === 'fulfilled') setMovements(movs.value);
+    if (prods.status === 'fulfilled') setProducts(prods.value.items || []);
+
+    const failures = [cats, ords, movs, prods].filter(
+      (r): r is PromiseRejectedResult => r.status === 'rejected',
+    );
+    if (failures.length > 0) {
+      console.error('Loi tai du lieu bang dieu khien:', failures.map((f) => f.reason));
     }
+    // Chi bao loi khi khong lay duoc gi, de mot endpoint hong khong lam ca trang
+    // bao dong trong khi so lieu chinh van dung.
+    setLoadError(
+      failures.length === 4
+        ? failures[0].reason instanceof Error
+          ? failures[0].reason.message
+          : 'Không tải được dữ liệu từ backend.'
+        : null,
+    );
+    setHasLoadedOnce(true);
   }, []);
 
   useEffect(() => {
@@ -126,7 +144,7 @@ export default function DashboardPage() {
   }, [preset, customDay, fromDay, toDay]);
 
   // Category donut segments — real product count per category from backend data
-  const categoryColors = ['#f59e0b', '#3b82f6', '#10b981', '#6366f1', '#a855f7'];
+  const categoryColors = ['#b8824a', '#1f5c8b', '#2f6b4f', '#a4553a', '#6b5b95'];
   const finalDonutSegments: DonutSegment[] = categories
     .map((cat, idx) => {
       const count = products.filter((p) => p.categoryId === cat.id).length;
@@ -149,6 +167,17 @@ export default function DashboardPage() {
       />
 
       <div className="flex-1 space-y-6 p-4 sm:space-y-8 sm:p-6 xl:p-8">
+        {!hasLoadedOnce && (
+          <p className="rounded-2xl border border-line bg-panel px-4 py-3 text-sm text-ink-muted shadow-panel">
+            Đang tải số liệu...
+          </p>
+        )}
+        {hasLoadedOnce && loadError && (
+          <p className="rounded-2xl border border-danger-line bg-danger-bg px-4 py-3 text-sm text-danger">
+            Không tải được số liệu: {loadError} — các con số bên dưới chưa phản ánh dữ liệu thật.
+          </p>
+        )}
+
         {/* 1. DATE FILTER TOOLBAR */}
         <DashboardDateFilter
           preset={preset}
@@ -178,8 +207,8 @@ export default function DashboardPage() {
         {/* 2. BI ANALYTICS DASHBOARD SECTION */}
         <div className="space-y-3">
           <div className="flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-cyan-400" />
-            <h2 className="text-base font-bold text-white tracking-tight">
+            <Sparkles className="w-4 h-4 text-cyan-700" />
+            <h2 className="text-base font-bold text-ink tracking-tight">
               Phân tích Hoạt động Mua bán & Hàng hoá ({dateLabel})
             </h2>
           </div>

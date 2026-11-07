@@ -44,25 +44,25 @@ export function Header({ title, subtitle, onRefresh }: HeaderProps) {
   }
 
   return (
-    <header className="sticky top-0 z-20 flex items-center justify-between gap-3 border-b border-slate-800/80 bg-slate-950/85 px-4 py-3.5 pl-16 backdrop-blur-xl sm:px-6 sm:pl-16 md:px-8 md:pl-8">
+    <header className="sticky top-0 z-20 flex items-center justify-between gap-3 border-b border-line bg-canvas/85 px-4 py-3.5 pl-16 backdrop-blur-xl sm:px-6 sm:pl-16 md:px-8 md:pl-8">
       <div className="min-w-0">
-        <p className="mb-1 hidden text-[10px] font-bold uppercase tracking-[0.18em] text-amber-300/80 sm:block">
+        <p className="mb-1 hidden text-[10px] font-bold uppercase tracking-[0.18em] text-camel-dark sm:block">
           Menly / Quản trị
         </p>
-        <h1 className="truncate text-base font-bold tracking-tight text-white sm:text-xl">{title}</h1>
+        <h1 className="truncate text-base font-bold tracking-tight text-ink sm:text-xl">{title}</h1>
         {subtitle && (
-          <p className="mt-1 hidden max-w-3xl truncate text-xs text-slate-400 sm:block">{subtitle}</p>
+          <p className="mt-1 hidden max-w-3xl truncate text-xs text-ink-muted sm:block">{subtitle}</p>
         )}
       </div>
 
       <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-        <div className="hidden items-center gap-2.5 border-r border-slate-800 pr-4 lg:flex">
-          <span className="flex h-9 w-9 items-center justify-center rounded-full border border-amber-400/20 bg-amber-400/10 text-amber-300">
+        <div className="hidden items-center gap-2.5 border-r border-line pr-4 lg:flex">
+          <span className="flex h-9 w-9 items-center justify-center rounded-full border border-camel/25 bg-camel-tint text-camel-dark">
             <ShieldCheck className="h-4 w-4" />
           </span>
           <div className="max-w-40">
-            <p className="truncate text-xs font-semibold text-slate-200">{identity}</p>
-            <p className="mt-0.5 text-[10px] text-slate-500">Quản trị viên</p>
+            <p className="truncate text-xs font-semibold text-ink">{identity}</p>
+            <p className="mt-0.5 text-[10px] text-ink-muted">Quản trị viên</p>
           </div>
         </div>
 
@@ -70,7 +70,7 @@ export function Header({ title, subtitle, onRefresh }: HeaderProps) {
           <button
             type="button"
             onClick={onRefresh}
-            className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-800 bg-slate-900 text-slate-300 transition hover:border-slate-700 hover:bg-slate-800 hover:text-white"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-line bg-panel text-ink-mid shadow-panel transition hover:border-line-strong hover:bg-tint hover:text-ink"
             title="Làm mới dữ liệu"
             aria-label="Làm mới dữ liệu"
           >
@@ -81,7 +81,7 @@ export function Header({ title, subtitle, onRefresh }: HeaderProps) {
         <button
           type="button"
           onClick={handleLogout}
-          className="inline-flex h-9 items-center justify-center gap-2 rounded-xl border border-slate-800 bg-slate-900 px-2.5 text-xs font-semibold text-slate-300 transition hover:border-rose-500/30 hover:bg-rose-500/10 hover:text-rose-300 sm:px-3"
+          className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-line bg-panel px-2.5 text-xs font-semibold text-ink-mid shadow-panel transition hover:border-danger-line hover:bg-danger-bg hover:text-danger sm:px-3"
           title="Đăng xuất khỏi hệ thống"
         >
           <LogOut className="h-4 w-4" />

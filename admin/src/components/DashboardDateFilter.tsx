@@ -41,12 +41,12 @@ export function DashboardDateFilter({
   ];
 
   return (
-    <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 space-y-4 shadow-lg">
+    <div className="bg-panel border border-line rounded-2xl p-5 space-y-4 shadow-panel">
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         {/* Title & Presets */}
         <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-2 text-slate-300 font-semibold text-xs mr-2">
-            <Filter className="w-4 h-4 text-amber-400" />
+          <div className="flex items-center gap-2 text-ink-mid font-semibold text-xs mr-2">
+            <Filter className="w-4 h-4 text-camel-dark" />
             <span>Lọc ngày:</span>
           </div>
 
@@ -55,10 +55,10 @@ export function DashboardDateFilter({
               key={btn.value}
               type="button"
               onClick={() => onPresetChange(btn.value)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all cursor-pointer ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
                 preset === btn.value
-                  ? 'bg-amber-500 text-slate-950 font-bold shadow-md shadow-amber-500/20'
-                  : 'bg-slate-950/80 text-slate-400 hover:text-white hover:bg-slate-800 border border-slate-800'
+                  ? 'bg-camel text-ink font-bold shadow-panel'
+                  : 'bg-panel text-ink-mid hover:text-ink hover:bg-tint border border-line'
               }`}
             >
               {btn.label}
@@ -67,50 +67,50 @@ export function DashboardDateFilter({
         </div>
 
         {/* Live Filter Result Summary */}
-        <div className="flex items-center gap-3 bg-slate-950/90 border border-slate-800/80 px-4 py-2 rounded-xl text-xs">
-          <span className="text-slate-400">Kết quả lọc:</span>
-          <span className="font-bold text-amber-400 font-mono">{ordersCount} đơn</span>
-          <span className="text-slate-600">|</span>
-          <span className="font-bold text-emerald-400 font-mono">{formattedRevenue}</span>
+        <div className="flex items-center gap-3 bg-tint border border-line px-4 py-2 rounded-lg text-xs">
+          <span className="text-ink-muted">Kết quả lọc:</span>
+          <span className="font-bold text-camel-dark font-mono">{ordersCount} đơn</span>
+          <span className="text-ink-muted">|</span>
+          <span className="font-bold text-ok font-mono">{formattedRevenue}</span>
         </div>
       </div>
 
       {/* Custom Date Pickers */}
-      <div className="pt-3 border-t border-slate-800/60 flex flex-wrap items-center gap-4 text-xs">
+      <div className="pt-3 border-t border-line flex flex-wrap items-center gap-4 text-xs">
         {/* Single specific date picker */}
         <div className="flex items-center gap-2">
-          <span className="text-slate-400 flex items-center gap-1.5 font-medium">
-            <Calendar className="w-3.5 h-3.5 text-cyan-400" />
+          <span className="text-ink-muted flex items-center gap-1.5 font-medium">
+            <Calendar className="w-3.5 h-3.5 text-camel-dark" />
             Chọn ngày cụ thể:
           </span>
           <input
             type="date"
             value={customDay}
             onChange={(e) => onCustomDayChange(e.target.value)}
-            className={`px-2.5 py-1.5 rounded-xl bg-slate-950 border text-white font-mono text-xs focus:outline-none focus:border-amber-500 ${
-              preset === 'custom_day' ? 'border-amber-500 text-amber-300' : 'border-slate-800'
+            className={`px-2.5 py-1.5 rounded-xl bg-panel border text-ink font-mono text-xs focus:outline-none focus:border-camel ${
+              preset === 'custom_day' ? 'border-camel text-camel-dark' : 'border-line'
             }`}
           />
         </div>
 
         {/* Date range picker */}
         <div className="flex items-center gap-2">
-          <span className="text-slate-400 font-medium">Khoảng ngày:</span>
+          <span className="text-ink-muted font-medium">Khoảng ngày:</span>
           <input
             type="date"
             value={fromDay}
             onChange={(e) => onRangeChange(e.target.value, toDay)}
-            className={`px-2 py-1.5 rounded-xl bg-slate-950 border text-white font-mono text-xs focus:outline-none focus:border-amber-500 ${
-              preset === 'custom_range' ? 'border-amber-500' : 'border-slate-800'
+            className={`px-2 py-1.5 rounded-xl bg-panel border text-ink font-mono text-xs focus:outline-none focus:border-camel ${
+              preset === 'custom_range' ? 'border-camel' : 'border-line'
             }`}
           />
-          <span className="text-slate-500">-</span>
+          <span className="text-ink-muted">-</span>
           <input
             type="date"
             value={toDay}
             onChange={(e) => onRangeChange(fromDay, e.target.value)}
-            className={`px-2 py-1.5 rounded-xl bg-slate-950 border text-white font-mono text-xs focus:outline-none focus:border-amber-500 ${
-              preset === 'custom_range' ? 'border-amber-500' : 'border-slate-800'
+            className={`px-2 py-1.5 rounded-xl bg-panel border text-ink font-mono text-xs focus:outline-none focus:border-camel ${
+              preset === 'custom_range' ? 'border-camel' : 'border-line'
             }`}
           />
         </div>
@@ -120,7 +120,7 @@ export function DashboardDateFilter({
           <button
             type="button"
             onClick={onReset}
-            className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-slate-400 hover:text-white bg-slate-800/60 hover:bg-slate-800 transition-colors ml-auto cursor-pointer"
+            className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-ink-muted hover:text-ink bg-tint hover:bg-tint-strong transition-colors ml-auto cursor-pointer"
             title="Xem tất cả ngày"
           >
             <RotateCcw className="w-3 h-3" />
