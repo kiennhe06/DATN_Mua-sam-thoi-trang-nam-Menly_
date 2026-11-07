@@ -11,6 +11,14 @@ import 'package:menly_app/features/product/data/models/product_model.dart';
 /// The san pham chuan UI/UX Menly:
 /// Bo goc tron, hieu ung hover/press nhe, anh theo ty le, nut tim yeu thich va nut them gio.
 class ProductCard extends StatelessWidget {
+  // Ten san pham luon chiem dung so dong nay nen khoi chu duoi the cao co dinh,
+  // nho vay anh o moi the trong cung mot hang deu cao bang nhau.
+  static const double _nameFontSize = 13.0;
+  static const double _nameLineHeight = 1.25;
+  static const int _nameMaxLines = 2;
+  static const double _nameBoxHeight =
+      _nameFontSize * _nameLineHeight * _nameMaxLines;
+
   final ProductModel product;
   final bool isFavorite;
   final VoidCallback? onTap;
@@ -50,61 +58,71 @@ class ProductCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Stack(
-              children: [
-                ClipRRect(
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(AppTheme.radiusLg),
-                  ),
-                  child: AspectRatio(
-                    aspectRatio: 1.15,
+            // Anh nhan phan chieu cao con lai cua o luoi. Dung Expanded thay cho
+            // AspectRatio co dinh de the khong bi tran khi o luoi thap di tren
+            // man hinh hep (chu va nut ben duoi cao co dinh theo pixel).
+            Expanded(
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  ClipRRect(
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(AppTheme.radiusLg),
+                    ),
                     child: _image(c),
                   ),
-                ),
-                if (badge != null)
-                  Positioned(
-                    top: 8,
-                    left: 8,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: c.inkCard.withValues(alpha: 0.85),
-                        borderRadius: BorderRadius.circular(AppTheme.radiusPill),
-                      ),
-                      child: Text(
-                        badge!,
-                        style: TextStyle(
-                          color: c.onInk,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
+                  if (badge != null)
+                    Positioned(
+                      top: 8,
+                      left: 8,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: c.inkCard.withValues(alpha: 0.85),
+                          borderRadius:
+                              BorderRadius.circular(AppTheme.radiusPill),
+                        ),
+                        child: Text(
+                          badge!,
+                          style: TextStyle(
+                            color: c.onInk,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                       ),
                     ),
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: _FavButton(
+                      active: isFavorite,
+                      onTap: onToggleFavorite,
+                    ),
                   ),
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: _FavButton(
-                    active: isFavorite,
-                    onTap: onToggleFavorite,
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
               child: Column(
+                mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    product.name,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: c.textPrimary,
-                      fontSize: 13.0,
-                      height: 1.25,
-                      fontWeight: FontWeight.w700,
+                  // Chua san cho du 2 dong de gia va nut o moi the deu thang hang
+                  SizedBox(
+                    height: _nameBoxHeight,
+                    child: Text(
+                      product.name,
+                      maxLines: _nameMaxLines,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: c.textPrimary,
+                        fontSize: _nameFontSize,
+                        height: _nameLineHeight,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 4),

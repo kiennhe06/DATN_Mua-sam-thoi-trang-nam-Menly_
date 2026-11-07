@@ -16,9 +16,12 @@ export class ProductModel {
 
   // Lay danh sach san pham (loc theo danh muc, tim theo ten)
   async findAll(opts: { search?: string; categoryId?: string; limit?: number } = {}) {
+    // Kem product_variants de ung dung co id bien the that khi them vao gio hang
     let query = this.db
       .from('products')
-      .select('*, product_images(id, url, sort_order), categories(id, name)')
+      .select(
+        '*, product_variants(id, size, color, sku, stock), product_images(id, url, sort_order), categories(id, name)',
+      )
       .eq('is_active', true)
       .eq('approval_status', 'approved');
     if (opts.categoryId) query = query.eq('category_id', opts.categoryId);
