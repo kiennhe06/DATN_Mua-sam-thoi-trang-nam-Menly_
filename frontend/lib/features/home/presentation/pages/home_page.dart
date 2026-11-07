@@ -8,8 +8,7 @@ import 'package:menly_app/features/product/data/models/product_model.dart';
 import 'package:menly_app/features/auth/presentation/pages/login_page.dart';
 import 'package:menly_app/features/auth/presentation/pages/profile_page.dart';
 import 'package:menly_app/features/auth/presentation/providers/auth_provider.dart';
-import 'package:menly_app/features/notification/presentation/pages/notifications_page.dart';
-import 'package:menly_app/features/notification/presentation/providers/notification_provider.dart';
+import 'package:menly_app/features/notification/presentation/widgets/notification_bell_button.dart';
 import 'package:menly_app/features/cart/presentation/providers/cart_provider.dart';
 import 'package:menly_app/features/product/presentation/pages/product_detail_page.dart';
 import 'package:menly_app/features/product/presentation/pages/product_list_page.dart';
@@ -155,55 +154,7 @@ class _HomePageState extends State<HomePage> {
                     color: AppTheme.accentOrange,
                     fontSize: 13)),
           ),
-          IconButton(
-            tooltip: 'Thông báo',
-            visualDensity: VisualDensity.compact,
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const NotificationsPage()),
-            ),
-            icon: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                const Icon(
-                  Icons.notifications_outlined,
-                  color: AppTheme.textPrimary,
-                  size: 22,
-                ),
-                Consumer<NotificationProvider>(
-                  builder: (_, notifProv, __) {
-                    if (notifProv.unreadCount > 0) {
-                      return Positioned(
-                        top: -2,
-                        right: -2,
-                        child: Container(
-                          padding: const EdgeInsets.all(3),
-                          decoration: const BoxDecoration(
-                            color: AppTheme.accentRed,
-                            shape: BoxShape.circle,
-                          ),
-                          constraints: const BoxConstraints(
-                            minWidth: 14,
-                            minHeight: 14,
-                          ),
-                          child: Text(
-                            '${notifProv.unreadCount}',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 9,
-                              fontWeight: FontWeight.bold,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                      );
-                    }
-                    return const SizedBox.shrink();
-                  },
-                ),
-              ],
-            ),
-          ),
+          const NotificationBellButton(),
           IconButton(
             tooltip: 'Tài khoản',
             visualDensity: VisualDensity.compact,

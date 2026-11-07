@@ -16,6 +16,10 @@ export class NotificationViewModel {
     return this.model.findByUser(userId);
   }
 
+  async unreadCount(userId: string): Promise<number> {
+    return this.model.countUnread(userId);
+  }
+
   async markRead(id: string, userId: string): Promise<void> {
     return this.model.markRead(id, userId);
   }

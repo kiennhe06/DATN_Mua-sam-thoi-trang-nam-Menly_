@@ -16,8 +16,21 @@ String _formatDate(DateTime dt) {
 }
 
 /// Màn hình danh sách thông báo của Menly
-class NotificationsPage extends StatelessWidget {
+class NotificationsPage extends StatefulWidget {
   const NotificationsPage({super.key});
+
+  @override
+  State<NotificationsPage> createState() => _NotificationsPageState();
+}
+
+class _NotificationsPageState extends State<NotificationsPage> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<NotificationProvider>().loadNotifications();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -29,7 +42,11 @@ class NotificationsPage extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppTheme.scaffoldBackground,
       appBar: AppBar(
-        title: const Text('Thông báo'),
+        title: Text(
+          notifProv.unreadCount > 0
+              ? 'Thông báo (${notifProv.unreadCountLabel})'
+              : 'Thông báo',
+        ),
         centerTitle: true,
         actions: [
           if (items.isNotEmpty && notifProv.unreadCount > 0)

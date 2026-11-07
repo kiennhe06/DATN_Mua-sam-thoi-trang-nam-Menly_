@@ -24,7 +24,7 @@ class NotificationItem {
       title: json['title']?.toString() ?? '',
       body: json['body']?.toString() ?? json['message']?.toString() ?? '',
       type: json['type']?.toString() ?? 'general',
-      isRead: json['is_read'] == true,
+      isRead: json['is_read'] == true || json['isRead'] == true,
       createdAt: json['created_at'] != null
           ? DateTime.tryParse(json['created_at'].toString()) ?? DateTime.now()
           : DateTime.now(),
@@ -38,6 +38,7 @@ class NotificationProvider extends ChangeNotifier {
   final ApiClient _api = ApiClient();
   List<NotificationItem> _notifications = [];
   bool _isLoading = false;
+  int _unreadCount = 0;
 
   NotificationProvider({bool autoLoad = true}) {
     if (autoLoad) loadNotifications();
@@ -45,7 +46,14 @@ class NotificationProvider extends ChangeNotifier {
 
   List<NotificationItem> get notifications => _notifications;
   bool get isLoading => _isLoading;
-  int get unreadCount => _notifications.where((n) => !n.isRead).length;
+  int get unreadCount {
+    if (_notifications.isNotEmpty) {
+      return _notifications.where((n) => !n.isRead).length;
+    }
+    return _unreadCount;
+  }
+
+  String get unreadCountLabel => unreadCount > 99 ? '99+' : '$unreadCount';
 
   /// Load danh sach thong bao tu backend (GET /api/v1/notifications)
   Future<void> loadNotifications() async {
@@ -58,6 +66,10 @@ class NotificationProvider extends ChangeNotifier {
         _notifications = list
             .map((item) => NotificationItem.fromJson(Map<String, dynamic>.from(item)))
             .toList();
+        final apiUnread = res.data['unread_count'];
+        _unreadCount = apiUnread is num
+            ? apiUnread.toInt()
+            : _notifications.where((n) => !n.isRead).length;
       }
     } catch (_) {
       // Khong co thong bao hoac chua dang nhap
@@ -72,6 +84,7 @@ class NotificationProvider extends ChangeNotifier {
     final idx = _notifications.indexWhere((n) => n.id == id);
     if (idx >= 0) {
       _notifications[idx].isRead = true;
+      if (_unreadCount > 0) _unreadCount--;
       notifyListeners();
       try {
         await _api.dio.patch('/notifications/$id/read');
@@ -84,6 +97,7 @@ class NotificationProvider extends ChangeNotifier {
     for (var n in _notifications) {
       n.isRead = true;
     }
+    _unreadCount = 0;
     notifyListeners();
     try {
       await _api.dio.patch('/notifications/read-all');
@@ -92,7 +106,14 @@ class NotificationProvider extends ChangeNotifier {
 
   /// Xoa 1 thong bao (DELETE /api/v1/notifications/:id)
   Future<void> deleteNotification(String id) async {
+    final removed = _notifications.cast<NotificationItem?>().firstWhere(
+          (n) => n?.id == id,
+          orElse: () => null,
+        );
     _notifications.removeWhere((n) => n.id == id);
+    if (removed != null && !removed.isRead && _unreadCount > 0) {
+      _unreadCount--;
+    }
     notifyListeners();
     try {
       await _api.dio.delete('/notifications/$id');
