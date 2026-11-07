@@ -20,7 +20,8 @@ class ProductVariantModel {
       size: json['size']?.toString() ?? 'M',
       color: json['color']?.toString() ?? 'Đen',
       sku: json['sku']?.toString() ?? '',
-      stock: (json['stock'] is num) ? (json['stock'] as num).toInt() : 50,
+      // Thieu ton kho thi coi nhu het hang, khong doan bua thanh con hang
+      stock: (json['stock'] is num) ? (json['stock'] as num).toInt() : 0,
     );
   }
 
@@ -73,44 +74,9 @@ class ProductModel {
           .map((v) => ProductVariantModel.fromJson(Map<String, dynamic>.from(v)))
           .toList();
     }
-    if (parsedVariants.isEmpty) {
-      final cat = (json['category_name']?.toString() ?? '').toLowerCase();
-      final name = (json['name']?.toString() ?? '').toLowerCase();
-      final slug = (json['slug']?.toString() ?? '').toLowerCase();
-      final isBottom = cat.contains('quần') ||
-          cat.contains('jean') ||
-          name.contains('quần') ||
-          name.contains('jean') ||
-          slug.contains('quan') ||
-          slug.contains('jean');
-
-      if (isBottom) {
-        parsedVariants = [
-          ProductVariantModel(id: '${json['id']}-29-den', size: '29', color: 'Đen', sku: '${json['slug']}-29-Den', stock: 30),
-          ProductVariantModel(id: '${json['id']}-30-den', size: '30', color: 'Đen', sku: '${json['slug']}-30-Den', stock: 45),
-          ProductVariantModel(id: '${json['id']}-31-den', size: '31', color: 'Đen', sku: '${json['slug']}-31-Den', stock: 50),
-          ProductVariantModel(id: '${json['id']}-32-den', size: '32', color: 'Đen', sku: '${json['slug']}-32-Den', stock: 40),
-          ProductVariantModel(id: '${json['id']}-33-den', size: '33', color: 'Đen', sku: '${json['slug']}-33-Den', stock: 35),
-          ProductVariantModel(id: '${json['id']}-34-den', size: '34', color: 'Đen', sku: '${json['slug']}-34-Den', stock: 25),
-          ProductVariantModel(id: '${json['id']}-30-xanh', size: '30', color: 'Xanh Đậm', sku: '${json['slug']}-30-Xanh', stock: 40),
-          ProductVariantModel(id: '${json['id']}-31-xanh', size: '31', color: 'Xanh Đậm', sku: '${json['slug']}-31-Xanh', stock: 40),
-          ProductVariantModel(id: '${json['id']}-32-xanh', size: '32', color: 'Xanh Đậm', sku: '${json['slug']}-32-Xanh', stock: 30),
-        ];
-      } else {
-        parsedVariants = [
-          ProductVariantModel(id: '${json['id']}-s-den', size: 'S', color: 'Đen', sku: '${json['slug']}-S-Den', stock: 30),
-          ProductVariantModel(id: '${json['id']}-m-den', size: 'M', color: 'Đen', sku: '${json['slug']}-M-Den', stock: 50),
-          ProductVariantModel(id: '${json['id']}-l-den', size: 'L', color: 'Đen', sku: '${json['slug']}-L-Den', stock: 50),
-          ProductVariantModel(id: '${json['id']}-xl-den', size: 'XL', color: 'Đen', sku: '${json['slug']}-XL-Den', stock: 40),
-          ProductVariantModel(id: '${json['id']}-2xl-den', size: '2XL', color: 'Đen', sku: '${json['slug']}-2XL-Den', stock: 25),
-          ProductVariantModel(id: '${json['id']}-m-trang', size: 'M', color: 'Trắng', sku: '${json['slug']}-M-Trang', stock: 40),
-          ProductVariantModel(id: '${json['id']}-l-trang', size: 'L', color: 'Trắng', sku: '${json['slug']}-L-Trang', stock: 40),
-          ProductVariantModel(id: '${json['id']}-xl-trang', size: 'XL', color: 'Trắng', sku: '${json['slug']}-XL-Trang', stock: 30),
-          ProductVariantModel(id: '${json['id']}-m-xam', size: 'M', color: 'Xám', sku: '${json['slug']}-M-Xam', stock: 35),
-          ProductVariantModel(id: '${json['id']}-l-xam', size: 'L', color: 'Xám', sku: '${json['slug']}-L-Xam', stock: 35),
-        ];
-      }
-    }
+    // Khong tu sinh bien the thay the khi may chu khong tra ve. Bien the tu bia
+    // co id khong phai UUID nen gio hang se tu choi, va ton kho bia ra lam nguoi
+    // dung tuong con hang. De trong thi man hinh hien dung "khong co hang".
 
     return ProductModel(
       id: json['id']?.toString() ?? '',

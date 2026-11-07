@@ -159,20 +159,30 @@ class WishlistPage extends StatelessWidget {
                       ),
                     );
                   },
-                  onAdd: () {
+                  onAdd: () async {
                     final cart = context.read<CartProvider>();
-                    final s =
-                        p.variants.isNotEmpty ? p.variants.first.size : 'M';
-                    final col =
-                        p.variants.isNotEmpty ? p.variants.first.color : 'Đen';
-                    cart.addToCart(p, size: s, color: col);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Đã thêm "${p.name}" vào giỏ hàng'),
-                        backgroundColor: c.primary,
-                        duration: const Duration(seconds: 2),
-                      ),
-                    );
+                    final messenger = ScaffoldMessenger.of(context);
+                    // Chi chon bien the con hang, va bao dung ket qua that
+                    final availableVariants =
+                        p.variants.where((variant) => variant.stock > 0);
+                    if (availableVariants.isEmpty) {
+                      messenger.showSnackBar(const SnackBar(
+                        content: Text('Sản phẩm hiện không có hàng'),
+                        duration: Duration(seconds: 2),
+                      ));
+                      return;
+                    }
+                    final variant = availableVariants.first;
+                    final added = await cart.addToCart(p,
+                        size: variant.size, color: variant.color);
+                    messenger.showSnackBar(SnackBar(
+                      content: Text(added
+                          ? 'Đã thêm "${p.name}" vào giỏ hàng'
+                          : cart.errorMessage ??
+                              'Không thể thêm sản phẩm vào giỏ'),
+                      backgroundColor: added ? c.primary : null,
+                      duration: const Duration(seconds: 2),
+                    ));
                   },
                 );
               },
