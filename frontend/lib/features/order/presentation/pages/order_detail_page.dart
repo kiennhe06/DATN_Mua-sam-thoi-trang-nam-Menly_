@@ -18,7 +18,7 @@ import 'order_return_request_page.dart';
 import 'vnpay_payment_page.dart';
 
 /// Man hinh Chi tiet don hang & Theo doi hanh trinh (AP-DH2)
-class OrderDetailPage extends StatelessWidget {
+class OrderDetailPage extends StatefulWidget {
   final String? orderId;
   final OrderModel? order;
 
@@ -29,14 +29,34 @@ class OrderDetailPage extends StatelessWidget {
   });
 
   @override
+  State<OrderDetailPage> createState() => _OrderDetailPageState();
+}
+
+class _OrderDetailPageState extends State<OrderDetailPage> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final id = widget.order?.id ?? widget.orderId;
+      final orderProv = context.read<OrderProvider>();
+      if (id != null && id.isNotEmpty) {
+        orderProv.fetchOrderById(id);
+      }
+      orderProv.loadReturnRequests();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
     final orderProv = context.watch<OrderProvider>();
 
-    OrderModel? currentOrder = order;
-    if (currentOrder == null && orderId != null) {
-      currentOrder = orderProv.findById(orderId!);
+    final id = widget.order?.id ?? widget.orderId;
+    OrderModel? currentOrder;
+    if (id != null && id.isNotEmpty) {
+      currentOrder = orderProv.findById(id);
     }
+    currentOrder ??= widget.order;
 
     if (currentOrder == null) {
       return Scaffold(
@@ -173,6 +193,15 @@ class OrderDetailPage extends StatelessWidget {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
+                  if (existing.reason.trim().isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      existing.reason,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(color: c.textMuted, fontSize: 12),
+                    ),
+                  ],
                 ],
               ),
             ),

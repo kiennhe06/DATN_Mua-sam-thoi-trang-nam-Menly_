@@ -27,7 +27,9 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Menly cần quyền truy cập thư viện ảnh để bạn đính kèm ảnh thực tế khi đánh giá sản phẩm.</string>
+	<string>Menly cần quyền truy cập thư viện ảnh để bạn đính kèm ảnh khi đánh giá hoặc trả hàng.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Menly cần quyền camera để bạn chụp ảnh minh chứng khi gửi yêu cầu trả hàng.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

@@ -172,8 +172,12 @@ class OrderProvider extends ChangeNotifier {
 
     for (final image in images.take(5)) {
       final bytes = await image.readAsBytes();
+      final name = image.name.trim();
+      final filename = name.contains('.')
+          ? name
+          : 'proof-${DateTime.now().millisecondsSinceEpoch}.jpg';
       form.files.add(
-        MapEntry('images', MultipartFile.fromBytes(bytes, filename: image.name)),
+        MapEntry('images', MultipartFile.fromBytes(bytes, filename: filename)),
       );
     }
 
@@ -181,7 +185,11 @@ class OrderProvider extends ChangeNotifier {
       final res = await _api.dio.post(
         '/order-returns',
         data: form,
-        options: Options(contentType: 'multipart/form-data'),
+        options: Options(
+          sendTimeout: const Duration(seconds: 60),
+          receiveTimeout: const Duration(seconds: 60),
+          connectTimeout: const Duration(seconds: 30),
+        ),
       );
       final data = res.data['data'] ?? res.data;
       final created = OrderReturnModel.fromJson(Map<String, dynamic>.from(data));
@@ -281,13 +289,13 @@ class OrderProvider extends ChangeNotifier {
     return createdOrder;
   }
 
-  /// Làm mới trạng thái đơn từ backend sau khi backend xác thực kết quả VNPay.
-  Future<void> refreshOrderAfterPayment(String orderId) async {
+  /// Làm mới 1 đơn từ API (chi tiết / trả hàng / sau thanh toán VNPay).
+  Future<OrderModel?> fetchOrderById(String orderId) async {
     try {
       final response = await _api.dio.get('/orders/$orderId');
       final rawOrder = response.data?['data'];
       if (rawOrder is! Map) {
-        throw StateError('Backend không trả về đơn hàng đã thanh toán');
+        throw StateError('Backend không trả về đơn hàng');
       }
 
       final updatedOrder =
@@ -299,11 +307,17 @@ class OrderProvider extends ChangeNotifier {
         _orders[index] = updatedOrder;
       }
       _errorMessage = null;
+      notifyListeners();
+      return updatedOrder;
     } catch (error) {
       _errorMessage = 'Không thể làm mới trạng thái đơn hàng: $error';
-    } finally {
       notifyListeners();
+      return null;
     }
+  }
+
+  Future<void> refreshOrderAfterPayment(String orderId) async {
+    await fetchOrderById(orderId);
   }
 
   // =================== AP-QT9: QUẢN LÝ ĐƠN CHO NHÂN VIÊN TRÊN APP ===================
