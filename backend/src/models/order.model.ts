@@ -15,6 +15,7 @@ export interface CreateOrderInput {
   discount_amount?: number;
   total: number;
   voucher_code?: string;
+  idempotency_key?: string;
   items: Array<{
     variant_id?: string;
     product_name: string;
@@ -284,66 +285,118 @@ export class OrderModel {
 
   /** Tạo đơn hàng mới, lưu vào bảng orders + order_items trên Supabase */
   async createOrder(input: CreateOrderInput): Promise<OrderRow> {
-    const code = `MNL-${Date.now() % 100000}`;
-    const status = input.payment_method === 'vnpay' ? 'pending_payment' : 'processing';
-
-    const { data: order, error } = await this.db
-      .from('orders')
-      .insert({
-        code,
-        user_id: input.userId,
-        status,
-        payment_method: input.payment_method,
-        subtotal: input.subtotal,
-        shipping_fee: input.shipping_fee,
-        total: input.total,
-        ship_name: input.ship_name,
-        ship_phone: input.ship_phone,
-        ship_address: input.ship_address,
-      })
-      .select()
-      .single();
-
-    if (error || !order) {
-      throw new Error(error?.message ?? 'Không thể tạo đơn hàng');
+    if (!input.items.length || input.items.some((item) => !item.variant_id || !Number.isInteger(item.quantity) || item.quantity < 1)) {
+      throw new Error('Sản phẩm hoặc số lượng đặt hàng không hợp lệ');
     }
 
-    // Lưu các items vào bảng order_items
-    if (input.items.length > 0) {
-      const itemRows = input.items.map((item) => ({
-        order_id: order.id,
-        variant_id: item.variant_id ?? null,
-        product_name: item.product_name,
-        size: item.size,
-        color: item.color,
-        unit_price: item.unit_price,
-        quantity: item.quantity,
-      }));
-      const { error: itemError } = await this.db.from('order_items').insert(itemRows);
-      if (itemError) {
-        console.error('Loi khi luu order items:', itemError.message);
-      }
+    let created: any;
+    let error: any;
+
+    // Thử gọi hàm create_order có hỗ trợ p_shipping_fee (9 tham số)
+    const rpc9 = await this.db.rpc('create_order', {
+      p_user_id: input.userId,
+      p_payment_method: input.payment_method,
+      p_ship_name: input.ship_name,
+      p_ship_phone: input.ship_phone,
+      p_ship_address: input.ship_address,
+      p_items: input.items.map((item) => ({ variant_id: item.variant_id, quantity: item.quantity })),
+      p_voucher_code: input.voucher_code ?? null,
+      p_idempotency_key: input.idempotency_key ?? null,
+      p_shipping_fee: input.shipping_fee ?? 0,
+    });
+
+    const errMsg = (rpc9.error?.message ?? '').toLowerCase();
+    const errCode = rpc9.error?.code ?? '';
+    if (rpc9.error && (errMsg.includes('schema cache') || errMsg.includes('create_order') || errMsg.includes('function') || errCode === 'PGRST202' || errCode === '42883')) {
+      // Fallback cho Supabase instance chưa cập nhật tham số p_shipping_fee (hàm 8 tham số)
+      const rpc8 = await this.db.rpc('create_order', {
+        p_user_id: input.userId,
+        p_payment_method: input.payment_method,
+        p_ship_name: input.ship_name,
+        p_ship_phone: input.ship_phone,
+        p_ship_address: input.ship_address,
+        p_items: input.items.map((item) => ({ variant_id: item.variant_id, quantity: item.quantity })),
+        p_voucher_code: input.voucher_code ?? null,
+        p_idempotency_key: input.idempotency_key ?? null,
+      });
+      created = rpc8.data;
+      error = rpc8.error;
+
+    } else {
+      created = rpc9.data;
+      error = rpc9.error;
     }
 
-    // Luu voucher da ap dung vao bang order_vouchers (neu co) + tang so lan da dung
-    if (input.voucher_code?.trim() && (input.discount_amount ?? 0) > 0) {
-      const voucher = await this.voucherModel.findActiveByCode(input.voucher_code);
-      if (voucher) {
-        const { error: voucherErr } = await this.db.from('order_vouchers').insert({
-          order_id: order.id,
-          voucher_id: voucher.id,
-          discount_amount: input.discount_amount,
-        });
-        if (voucherErr) {
-          console.error('Khong luu duoc order_vouchers:', voucherErr.message);
-        } else {
-          await this.voucherModel.incrementUsage(voucher.id, voucher.used_count ?? 0);
+    if (error) throw new Error(error.message);
+
+    const rpcOrder = Array.isArray(created) ? created[0] : created;
+    if (!rpcOrder?.id) throw new Error('Backend không trả về mã đơn hàng vừa tạo');
+
+    // Đồng bộ chính xác tổng thanh toán, phí ship và giảm giá voucher theo đúng dữ liệu app gửi
+    const calculatedTotal = (input.total !== undefined && input.total > 0)
+      ? input.total
+      : Math.max(0, input.subtotal + (input.shipping_fee ?? 0) - (input.discount_amount ?? 0));
+
+    const updatePayload: Record<string, any> = {
+      shipping_fee: input.shipping_fee ?? 0,
+      total: calculatedTotal,
+    };
+    if (input.subtotal && input.subtotal > 0) {
+      updatePayload.subtotal = input.subtotal;
+    }
+
+    await this.db.from('orders').update(updatePayload).eq('id', rpcOrder.id);
+
+    // Đồng bộ chi tiết mã giảm giá vào order_vouchers nếu có mã và chiết khấu
+    if (input.voucher_code && (input.discount_amount ?? 0) > 0) {
+      try {
+        const { data: existingVoucher } = await this.db
+          .from('order_vouchers')
+          .select('id')
+          .eq('order_id', rpcOrder.id)
+          .maybeSingle();
+
+        if (!existingVoucher) {
+          const cleanCode = input.voucher_code.trim();
+          const { data: vRow } = await this.db
+            .from('vouchers')
+            .select('id, used_count')
+            .ilike('code', cleanCode)
+            .maybeSingle();
+
+          if (vRow) {
+            await this.db.from('order_vouchers').insert({
+              order_id: rpcOrder.id,
+              voucher_id: vRow.id,
+              discount_amount: input.discount_amount,
+            });
+            await this.db.from('vouchers').update({
+              used_count: (vRow.used_count ?? 0) + 1,
+            }).eq('id', vRow.id);
+          }
         }
+      } catch {
+        // Bỏ qua lỗi phụ nếu bảng vouchers tạm thời không khả dụng
       }
     }
 
-    const fullOrder = await this.getOrderById(order.id, input.userId);
-    return fullOrder ?? (order as OrderRow);
+    const { data: order, error: orderError } = await this.db
+      .from('orders')
+      .select('*, order_items(*)')
+      .eq('id', rpcOrder.id)
+      .single();
+    if (orderError) throw new Error(orderError.message);
+
+    const createdOrder = {
+      ...order,
+      discount_amount: input.discount_amount ?? Math.max(0, order.subtotal + order.shipping_fee - order.total),
+    } as OrderRow;
+    await this.notifyOrderUser(
+      createdOrder,
+      'Đặt hàng thành công',
+      `Đơn hàng #${createdOrder.code} đã được tạo. Menly sẽ cập nhật khi đơn được xử lý.`,
+    );
+    return createdOrder;
   }
 
   /** Lấy danh sách đơn hàng của 1 user (kèm items) */
@@ -373,47 +426,25 @@ export class OrderModel {
 
   /** Hủy đơn hàng (chỉ khi status là processing hoặc pending_payment) */
   async cancelOrder(orderId: string, userId: string, reason: string): Promise<OrderRow> {
-    // Kiểm tra tồn tại và quyền sở hữu
-    const { data: existing, error: fetchErr } = await this.db
-      .from('orders')
-      .select('id, status, user_id')
-      .eq('id', orderId)
-      .eq('user_id', userId)
-      .single();
-
-    if (fetchErr || !existing) {
-      throw new Error('Không tìm thấy đơn hàng');
-    }
-
-    const cancellable = ['processing', 'pending_payment', 'pending'];
-    if (!cancellable.includes(existing.status)) {
-      throw new Error('Đơn hàng không thể hủy ở trạng thái hiện tại');
-    }
-
-    const { data: updated, error: updateErr } = await this.db
-      .from('orders')
-      .update({ status: 'cancelled' })
-      .eq('id', orderId)
-      .select('*, order_items(*)')
-      .single();
-
-    if (updateErr || !updated) {
-      throw new Error(updateErr?.message ?? 'Không thể hủy đơn hàng');
-    }
-
-    // Ghi lich su huy don (ly do luu o note; khong lam hong request neu bang chua co)
-    const { error: historyErr } = await this.db.from('order_status_history').insert({
-      order_id: orderId,
-      from_status: existing.status,
-      to_status: 'cancelled',
-      changed_by: userId,
-      note: reason,
+    const { data, error } = await this.db.rpc('cancel_order', {
+      p_order_id: orderId,
+      p_user_id: userId,
+      p_reason: reason,
+      p_is_admin: false,
     });
-    if (historyErr) {
-      console.error('Khong ghi duoc lich su huy don:', historyErr.message);
-    }
-
-    return updated as OrderRow;
+    if (error) throw new Error(error.message);
+    const cancelled = Array.isArray(data) ? data[0] : data;
+    if (!cancelled?.id) throw new Error('Backend không trả về đơn hàng đã hủy');
+    const { data: order, error: orderError } = await this.db.from('orders')
+      .select('*, order_items(*)').eq('id', orderId).single();
+    if (orderError) throw new Error(orderError.message);
+    const cancelledOrder = order as OrderRow;
+    await this.notifyOrderUser(
+      cancelledOrder,
+      'Đơn hàng đã hủy',
+      `Đơn hàng #${cancelledOrder.code} đã được hủy.`,
+    );
+    return cancelledOrder;
   }
 
   // =========== ADMIN: QUAN LY DON HANG ===========
@@ -430,7 +461,26 @@ export class OrderModel {
 
     const { data, error } = await query;
     if (error) throw new Error(error.message);
-    return (data ?? []) as OrderRow[];
+    return this.enrichOrders((data ?? []) as OrderRow[]);
+  }
+
+  async staffUpdateOrderStatus(orderId: string, toStatus: string, staffId: string, note?: string) {
+    const { data: current, error } = await this.db.from('orders')
+      .select('status').eq('id', orderId).maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!current) return null;
+
+    const transitions: Record<string, string[]> = {
+      paid: ['processing'],
+      processing: ['shipping'],
+      shipping: ['delivered'],
+      delivered: ['completed'],
+    };
+    if (!transitions[current.status]?.includes(toStatus)) {
+      throw new Error('Không thể chuyển đơn hàng từ trạng thái hiện tại');
+    }
+
+    return this.adminUpdateOrderStatus(orderId, toStatus, staffId, note);
   }
 
   /** [Admin] Doi trang thai 1 don hang + ghi lich su trang thai */
@@ -440,6 +490,27 @@ export class OrderModel {
     adminId: string,
     note?: string
   ): Promise<OrderRow | null> {
+    if (toStatus === 'cancelled') {
+      const { data, error } = await this.db.rpc('cancel_order', {
+        p_order_id: orderId,
+        p_user_id: adminId,
+        p_reason: note ?? null,
+        p_is_admin: true,
+      });
+      if (error) throw new Error(error.message);
+      if (!data) return null;
+      const { data: order, error: orderError } = await this.db.from('orders')
+        .select('*, order_items(*)').eq('id', orderId).single();
+      if (orderError) throw new Error(orderError.message);
+      const cancelledOrder = order as OrderRow;
+      await this.notifyOrderUser(
+        cancelledOrder,
+        'Đơn hàng đã hủy',
+        `Đơn hàng #${cancelledOrder.code} đã được hủy.`,
+      );
+      return cancelledOrder;
+    }
+
     const { data: current, error: fetchErr } = await this.db
       .from('orders')
       .select('id, status')
@@ -472,7 +543,64 @@ export class OrderModel {
       console.error('Khong ghi duoc lich su trang thai don:', historyErr.message);
     }
 
-    return updated as OrderRow;
+    const updatedOrder = updated as OrderRow;
+    await this.notifyOrderUser(
+      updatedOrder,
+      this.orderStatusTitle(toStatus),
+      `Đơn hàng #${updatedOrder.code} ${this.orderStatusBody(toStatus)}`,
+    );
+    return updatedOrder;
+  }
+
+  private orderStatusTitle(status: string): string {
+    switch (status) {
+      case 'paid':
+        return 'Đã thanh toán';
+      case 'processing':
+        return 'Đơn đang được xử lý';
+      case 'shipping':
+        return 'Đơn đang giao';
+      case 'delivered':
+        return 'Đã giao hàng';
+      case 'completed':
+        return 'Đơn hàng hoàn tất';
+      case 'cancelled':
+        return 'Đơn hàng đã hủy';
+      default:
+        return 'Cập nhật đơn hàng';
+    }
+  }
+
+  private orderStatusBody(status: string): string {
+    switch (status) {
+      case 'paid':
+        return 'đã thanh toán thành công.';
+      case 'processing':
+        return 'đang được Menly xử lý.';
+      case 'shipping':
+        return 'đang được giao đến bạn.';
+      case 'delivered':
+        return 'đã giao thành công.';
+      case 'completed':
+        return 'đã hoàn tất. Cảm ơn bạn đã mua sắm tại Menly.';
+      case 'cancelled':
+        return 'đã được hủy.';
+      default:
+        return 'đã được cập nhật.';
+    }
+  }
+
+  private async notifyOrderUser(order: OrderRow, title: string, body: string): Promise<void> {
+    if (!order?.user_id) return;
+    const { error } = await this.db.from('notifications').insert({
+      user_id: order.user_id,
+      title,
+      body,
+      type: 'order',
+      data: { order_id: order.id, code: order.code },
+    });
+    if (error) {
+      console.error('Khong tao duoc thong bao don hang:', error.message);
+    }
   }
 }
-

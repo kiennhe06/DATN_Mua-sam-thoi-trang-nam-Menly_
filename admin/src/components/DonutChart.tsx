@@ -54,10 +54,10 @@ export function DonutChart({
     : null;
 
   return (
-    <div className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800 hover:border-slate-700 transition-all duration-300 shadow-lg">
+    <div className="p-6 rounded-2xl bg-panel border border-line hover:border-line-strong transition-all duration-300 shadow-panel">
       <div className="mb-4">
-        <h3 className="font-bold text-white text-base">{title}</h3>
-        <p className="text-xs text-slate-400 mt-0.5">{subtitle}</p>
+        <h3 className="font-bold text-ink text-base">{title}</h3>
+        <p className="text-xs text-ink-muted mt-0.5">{subtitle}</p>
       </div>
 
       <div className="flex flex-col md:flex-row items-center gap-8 justify-between pt-2">
@@ -70,7 +70,7 @@ export function DonutChart({
               r={radius}
               stroke="currentColor"
               strokeWidth={thickness}
-              className="text-slate-800/70"
+              className="text-tint"
               fill="transparent"
             />
 
@@ -105,16 +105,16 @@ export function DonutChart({
                 >
                   {activeSegment.count} SP
                 </span>
-                <span className="text-[11px] font-semibold text-slate-300 line-clamp-1 max-w-[120px]">
+                <span className="text-[11px] font-semibold text-ink-mid line-clamp-1 max-w-[120px]">
                   {activeSegment.percent}% cơ cấu
                 </span>
               </>
             ) : (
               <>
-                <span className="text-2xl font-extrabold text-white font-mono tracking-tight">
+                <span className="text-2xl font-extrabold text-ink font-mono tracking-tight">
                   {totalLabel}
                 </span>
-                <span className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">
+                <span className="text-[10px] font-medium text-ink-muted uppercase tracking-wider">
                   {segments.length} Danh mục
                 </span>
               </>
@@ -132,7 +132,7 @@ export function DonutChart({
                 onMouseEnter={() => setHoveredId(seg.id)}
                 onMouseLeave={() => setHoveredId(null)}
                 className={`flex items-center justify-between p-2.5 rounded-xl transition-all cursor-pointer ${
-                  isHovered ? 'bg-slate-800/80 scale-[1.02]' : 'bg-slate-950/40 hover:bg-slate-800/40'
+                  isHovered ? 'bg-camel-tint scale-[1.02]' : 'bg-tint hover:bg-camel-tint/60'
                 }`}
               >
                 <div className="flex items-center gap-2.5">
@@ -140,11 +140,11 @@ export function DonutChart({
                     className="w-3 h-3 rounded-full shrink-0 shadow-sm"
                     style={{ backgroundColor: seg.color }}
                   />
-                  <span className="text-xs font-semibold text-slate-300">{seg.label}</span>
+                  <span className="text-xs font-semibold text-ink-mid">{seg.label}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold font-mono text-white">{seg.count} sp</span>
-                  <span className="text-[11px] font-mono text-slate-400 bg-slate-900 px-1.5 py-0.5 rounded border border-slate-800">
+                  <span className="text-xs font-bold font-mono text-ink">{seg.count} sp</span>
+                  <span className="text-[11px] font-mono text-ink-muted bg-panel px-1.5 py-0.5 rounded-md border border-line">
                     {seg.percent}%
                   </span>
                 </div>

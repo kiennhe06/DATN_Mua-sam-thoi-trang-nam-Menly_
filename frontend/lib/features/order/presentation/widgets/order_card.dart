@@ -5,6 +5,7 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/format.dart';
 import 'package:menly_app/features/order/data/models/order_model.dart';
 import '../pages/order_detail_page.dart';
+import '../pages/order_return_request_page.dart';
 import 'order_cancel_dialog.dart';
 import '../providers/order_provider.dart';
 
@@ -24,6 +25,8 @@ class OrderCard extends StatelessWidget {
     switch (status) {
       case OrderStatus.pendingPayment:
         return Colors.orange;
+      case OrderStatus.paid:
+        return Colors.teal;
       case OrderStatus.processing:
         return c.secondary;
       case OrderStatus.shipping:
@@ -32,7 +35,10 @@ class OrderCard extends StatelessWidget {
         return c.success;
       case OrderStatus.canceled:
       case OrderStatus.returned:
+      case OrderStatus.expired:
         return c.danger;
+      case OrderStatus.completed:
+        return c.success;
     }
   }
 
@@ -86,11 +92,13 @@ class OrderCard extends StatelessWidget {
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
                     color: statusColor.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: statusColor.withValues(alpha: 0.3)),
+                    border:
+                        Border.all(color: statusColor.withValues(alpha: 0.3)),
                   ),
                   child: Text(
                     order.status.label,
@@ -134,7 +142,10 @@ class OrderCard extends StatelessWidget {
             if (order.items.length > 2)
               Text(
                 '+ Thêm ${order.items.length - 2} sản phẩm khác',
-                style: TextStyle(color: c.textMuted, fontSize: 11, fontStyle: FontStyle.italic),
+                style: TextStyle(
+                    color: c.textMuted,
+                    fontSize: 11,
+                    fontStyle: FontStyle.italic),
               ),
             const SizedBox(height: 10),
 
@@ -145,7 +156,8 @@ class OrderCard extends StatelessWidget {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Tổng thanh toán:', style: TextStyle(color: c.textSecondary, fontSize: 11)),
+                    Text('Tổng thanh toán:',
+                        style: TextStyle(color: c.textSecondary, fontSize: 11)),
                     Text(
                       formatVnd(order.total),
                       style: TextStyle(
@@ -170,15 +182,69 @@ class OrderCard extends StatelessWidget {
                         },
                         child: Text(
                           'Hủy đơn',
-                          style: TextStyle(color: c.danger, fontWeight: FontWeight.bold, fontSize: 12.5),
+                          style: TextStyle(
+                              color: c.danger,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12.5),
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                    ],
+                    if (order.status != OrderStatus.canceled &&
+                        order.status != OrderStatus.expired &&
+                        order.status != OrderStatus.pendingPayment) ...[
+                      ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: c.secondary,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 8),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8)),
+                          elevation: 0,
+                        ),
+                        icon: const Icon(Icons.star_rate_rounded, size: 15),
+                        label: const Text('Đánh giá',
+                            style: TextStyle(
+                                fontSize: 12, fontWeight: FontWeight.bold)),
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => OrderDetailPage(order: order),
+                            ),
+                          );
+                        },
+                      ),
+                      const SizedBox(width: 6),
+                    ],
+                    if (orderProv.canRequestReturn(order)) ...[
+                      TextButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => OrderReturnRequestPage(order: order),
+                            ),
+                          );
+                        },
+                        child: Text(
+                          'Trả hàng',
+                          style: TextStyle(
+                            color: c.primary,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12.5,
+                          ),
                         ),
                       ),
                       const SizedBox(width: 4),
                     ],
                     OutlinedButton(
                       style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 8),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10)),
                       ),
                       onPressed: () {
                         Navigator.push(
@@ -188,7 +254,8 @@ class OrderCard extends StatelessWidget {
                           ),
                         );
                       },
-                      child: const Text('Chi tiết', style: TextStyle(fontSize: 12.5)),
+                      child: const Text('Chi tiết',
+                          style: TextStyle(fontSize: 12.5)),
                     ),
                   ],
                 ),

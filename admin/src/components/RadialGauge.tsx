@@ -24,10 +24,10 @@ export function RadialGauge({
   const strokeDashoffset = semiCircumference - (clampedValue / 100) * semiCircumference;
 
   return (
-    <div className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800 hover:border-slate-700 transition-all duration-300 flex flex-col items-center text-center">
+    <div className="p-6 rounded-2xl bg-panel border border-line hover:border-line-strong transition-all duration-300 flex flex-col items-center text-center shadow-panel">
       <div className="w-full text-left mb-2">
-        <h3 className="font-bold text-white text-base">{title}</h3>
-        <p className="text-xs text-slate-400 mt-0.5">{subtitle}</p>
+        <h3 className="font-bold text-ink text-base">{title}</h3>
+        <p className="text-xs text-ink-muted mt-0.5">{subtitle}</p>
       </div>
 
       <div className="relative my-2">
@@ -39,9 +39,9 @@ export function RadialGauge({
         >
           <defs>
             <linearGradient id="gauge-grad" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#10b981" />
-              <stop offset="70%" stopColor="#f59e0b" />
-              <stop offset="100%" stopColor="#ef4444" />
+              <stop offset="0%" stopColor="#047857" />
+              <stop offset="70%" stopColor="#b45309" />
+              <stop offset="100%" stopColor="#b91c1c" />
             </linearGradient>
           </defs>
 
@@ -51,7 +51,7 @@ export function RadialGauge({
             fill="none"
             stroke="currentColor"
             strokeWidth={strokeWidth}
-            className="text-slate-800/80"
+            className="text-tint"
             strokeLinecap="round"
           />
 
@@ -69,23 +69,23 @@ export function RadialGauge({
         </svg>
 
         <div className="absolute inset-x-0 bottom-1 flex flex-col items-center">
-          <span className="text-3xl font-extrabold text-white font-mono tracking-tight">
+          <span className="text-3xl font-extrabold text-ink font-mono tracking-tight">
             {Math.round(clampedValue)}%
           </span>
-          <span className="text-[11px] font-bold text-emerald-400 mt-0.5 uppercase tracking-wider">
+          <span className="text-[11px] font-bold text-ok mt-0.5 uppercase tracking-wider">
             {statusText}
           </span>
         </div>
       </div>
 
-      <div className="w-full grid grid-cols-2 gap-2 mt-4 pt-4 border-t border-slate-800/80 text-xs">
-        <div className="p-2 rounded-lg bg-slate-950/60 border border-slate-800/80">
-          <span className="text-slate-400 text-[11px]">Tồn khả dụng</span>
-          <p className="font-bold text-emerald-400 font-mono text-sm mt-0.5">368 / 375 SKU</p>
+      <div className="w-full grid grid-cols-2 gap-2 mt-4 pt-4 border-t border-line text-xs">
+        <div className="p-2 rounded-lg bg-tint border border-line">
+          <span className="text-ink-muted text-[11px]">Tồn khả dụng</span>
+          <p className="font-bold text-ok font-mono text-sm mt-0.5">368 / 375 SKU</p>
         </div>
-        <div className="p-2 rounded-lg bg-slate-950/60 border border-slate-800/80">
-          <span className="text-slate-400 text-[11px]">Cảnh báo thiếu</span>
-          <p className="font-bold text-amber-400 font-mono text-sm mt-0.5">7 SKU (&lt;30)</p>
+        <div className="p-2 rounded-lg bg-tint border border-line">
+          <span className="text-ink-muted text-[11px]">Cảnh báo thiếu</span>
+          <p className="font-bold text-camel-dark font-mono text-sm mt-0.5">7 SKU (&lt;30)</p>
         </div>
       </div>
     </div>

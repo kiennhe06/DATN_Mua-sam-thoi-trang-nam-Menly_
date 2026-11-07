@@ -16,7 +16,7 @@ import { adminFetch as apiFetch, getApiUrl } from './api-client';
 export async function checkServerHealth(): Promise<boolean> {
   try {
     const BASE = getApiUrl();
-    const res = await fetch(`${BASE}/health`, { method: 'GET' });
+    const res = await fetch(`${BASE}/api/v1/health`, { method: 'GET' });
     return res.ok;
   } catch {
     return false;
@@ -37,6 +37,31 @@ export async function fetchCategories(): Promise<Category[]> {
 // Chuan hoa de cac man hinh (dem/gom danh muc, hien thi) doc dung field. Dung any vi
 // du lieu goc co the o ca hai dang snake/camel.
 function normalizeProduct(p: any): Product {
+  // Backend tra bien the o khoa snake_case `product_variants`; chuan hoa ve `variants`
+  // (camelCase) de trang San pham / Kho tinh dung ton kho theo tung bien the.
+  const rawVariants = p.variants ?? p.product_variants ?? [];
+  const variants = Array.isArray(rawVariants)
+    ? rawVariants.map((v: any) => ({
+        id: v.id,
+        productId: v.productId ?? v.product_id ?? p.id,
+        size: v.size ?? '',
+        color: v.color ?? '',
+        sku: v.sku ?? '',
+        stock: Number(v.stock ?? 0),
+      }))
+    : [];
+  const rawImages = p.images ?? p.product_images ?? [];
+  const images = Array.isArray(rawImages)
+    ? rawImages
+        .map((image: any, index: number) => ({
+          id: image.id ?? '',
+          productId: image.productId ?? image.product_id ?? p.id,
+          url: typeof image === 'string' ? image : image.url,
+          sortOrder: image.sortOrder ?? image.sort_order ?? index,
+        }))
+        .filter((image: { url?: string }) => Boolean(image.url))
+    : [];
+
   return {
     ...p,
     id: p.id,
@@ -46,8 +71,11 @@ function normalizeProduct(p: any): Product {
     description: p.description ?? null,
     price: Number(p.price ?? 0),
     thumbnailUrl: p.thumbnailUrl ?? p.thumbnail_url ?? null,
+    categoryName: p.categoryName ?? p.category_name ?? p.categories?.name ?? '',
+    images,
     isActive: p.isActive ?? p.is_active,
     createdAt: p.createdAt ?? p.created_at,
+    variants,
   };
 }
 
@@ -169,13 +197,15 @@ export async function fetchAdminOrders(
       shipName: o.shipName || o.ship_name || o.ship?.name || '',
       shipPhone: o.shipPhone || o.ship_phone || o.ship?.phone || '',
       shipAddress: o.shipAddress || o.ship_address || o.ship?.address || '',
-      shippingAddress: o.shippingAddress || {
-        name: o.shipName || o.ship_name || o.ship?.name || '',
-        phone: o.shipPhone || o.ship_phone || o.ship?.phone || '',
-        address: o.shipAddress || o.ship_address || o.ship?.address || '',
-        note: o.note || '',
-      },
+      voucherCode: o.voucherCode || o.voucher_code || null,
+      discountAmount: Number(o.discountAmount ?? o.discount_amount ?? 0),
       createdAt: o.createdAt || o.created_at || new Date().toISOString(),
+      shippingAddress: {
+        name: o.shippingAddress?.name || o.shipName || o.ship_name || o.ship?.name || '',
+        phone: o.shippingAddress?.phone || o.shipPhone || o.ship_phone || o.ship?.phone || '',
+        address: o.shippingAddress?.address || o.shipAddress || o.ship_address || o.ship?.address || '',
+        note: o.shippingAddress?.note || o.note || '',
+      },
       items: (o.items || o.order_items || []).map((it: any) => ({
         id: it.id || `oi-${Math.random()}`,
         orderId: it.orderId || it.order_id || o.id,
@@ -202,15 +232,11 @@ export async function updateOrderStatus(
 
 // ========== INVENTORY ==========
 export async function fetchInventoryMovements(): Promise<InventoryMovement[]> {
-  try {
-    const data = await apiFetch<{ data: InventoryMovement[] } | InventoryMovement[]>(
-      '/api/v1/admin/inventory/movements'
-    );
-    if (Array.isArray(data)) return data;
-    return (data as { data: InventoryMovement[] }).data || [];
-  } catch {
-    return [];
-  }
+  const data = await apiFetch<{ data: InventoryMovement[] } | InventoryMovement[]>(
+    '/api/v1/admin/inventory/movements'
+  );
+  if (Array.isArray(data)) return data;
+  return (data as { data: InventoryMovement[] }).data || [];
 }
 
 export async function adjustInventory(
@@ -255,7 +281,7 @@ export async function fetchAdminUsers(): Promise<UserAccount[]> {
 }
 
 export async function updateUserRole(userId: string, role: 'admin' | 'customer'): Promise<void> {
-  await apiFetch(`/api/v1/admin/users/${userId}/role`, {
+  await apiFetch(`/api/v1/admin/users/${userId}`, {
     method: 'PUT',
     body: JSON.stringify({ role }),
   });
@@ -316,17 +342,19 @@ export async function fetchAdminVouchers(): Promise<Voucher[]> {
 }
 
 export async function createVoucher(data: CreateVoucherInput): Promise<Voucher> {
-  return apiFetch<Voucher>('/api/v1/admin/vouchers', {
+  const result = await apiFetch<Voucher | { data: Voucher }>('/api/v1/admin/vouchers', {
     method: 'POST',
     body: JSON.stringify(data),
   });
+  return 'data' in result ? result.data : result;
 }
 
 export async function updateVoucher(id: string, data: Partial<CreateVoucherInput>): Promise<Voucher> {
-  return apiFetch<Voucher>(`/api/v1/admin/vouchers/${id}`, {
+  const result = await apiFetch<Voucher | { data: Voucher }>(`/api/v1/admin/vouchers/${id}`, {
     method: 'PUT',
     body: JSON.stringify(data),
   });
+  return 'data' in result ? result.data : result;
 }
 
 export async function deleteVoucher(id: string): Promise<boolean> {

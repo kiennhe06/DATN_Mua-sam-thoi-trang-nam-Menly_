@@ -101,7 +101,10 @@ export class VoucherModel {
       return { valid: false, discountAmount: 0, message: 'Mã giảm giá không tồn tại hoặc đã hết hạn' };
     }
 
-    if (new Date(voucher.end_date) < new Date()) {
+    const now = Date.now();
+    const startDate = voucher.start_date ? Date.parse(voucher.start_date) : Number.NaN;
+    const endDate = Date.parse(voucher.end_date);
+    if (!Number.isFinite(startDate) || !Number.isFinite(endDate) || startDate > now || endDate < now) {
       return { valid: false, discountAmount: 0, message: 'Mã giảm giá đã hết hạn' };
     }
 

@@ -11,12 +11,15 @@ import 'app_colors.dart';
 class AppTheme {
   AppTheme._();
 
-  // Shared corner-radius scale (design tokens).
-  static const double radiusSm = 8;
-  static const double radiusMd = 12;
-  static const double radiusLg = 16;
-  static const double radiusXl = 22;
-  static const double radiusPill = 999;
+  // Shared corner-radius scale (design tokens). These seven values are the only
+  // radii used in the app, so every surface rounds off consistently.
+  static const double radiusXs = 6; // sale tags, tiny markers
+  static const double radiusSm = 10; // small buttons, inputs, search fields
+  static const double radiusMd = 12; // primary buttons, size pickers
+  static const double radiusCard = 14; // product cards, 3:4 images, large buttons
+  static const double radiusLg = 16; // panels, stat cards
+  static const double radiusXl = 20; // hero images, bottom sheets
+  static const double radiusPill = 999; // chips, dots, swatches, avatars
 
   // Mau chu dao: Den sau tham & Xam kim loai (Zara, Coolmate, Routine)
   static const Color primary = Color(0xFF1C1B17); // Ink neutral
@@ -26,7 +29,6 @@ class AppTheme {
 
   // Mau nhan (Sale, Hot, Voucher, Gia)
   static const Color accentRed = Color(0xFFC0564B);
-  static const Color accentOrange = Color(0xFFEA580C);
   static const Color accentGreen = Color(0xFF3E7C5A);
 
   // Mau nen & Mat be mat

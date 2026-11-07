@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { requireAuth } from '../../middlewares/auth.js';
+import { requireAuth, requireStaffOrAdmin } from '../../middlewares/auth.js';
 import { OrderModel } from '../../models/order.model.js';
 import { OrderViewModel } from '../../viewmodels/order.viewmodel.js';
 import { validateBody } from '../../middlewares/validate.js';
@@ -38,10 +38,11 @@ router.post('/', requireAuth, async (req, res) => {
       ship_phone: req.body.ship_phone,
       ship_address: req.body.ship_address,
       subtotal: Number(req.body.subtotal ?? 0),
-      shipping_fee: Number(req.body.shipping_fee ?? 0),
       discount_amount: Number(req.body.discount_amount ?? 0),
       total: Number(req.body.total ?? 0),
+      shipping_fee: Number(req.body.shipping_fee ?? 0),
       voucher_code: req.body.voucher_code,
+      idempotency_key: typeof req.body.idempotency_key === 'string' ? req.body.idempotency_key : undefined,
       items: req.body.items ?? [],
     });
     return res.status(201).json({ data: order });
@@ -102,6 +103,36 @@ router.post('/track', async (req, res) => {
   }
 });
 
+router.get('/staff', requireStaffOrAdmin, async (_req, res, next) => {
+  try {
+    return res.json({ data: await orderModel.adminListOrders({ limit: 500 }) });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+router.put('/:id/status', requireStaffOrAdmin, async (req, res, next) => {
+  const allowedStatuses = ['paid', 'processing', 'shipping', 'delivered', 'completed'];
+  if (typeof req.body?.status !== 'string' || !allowedStatuses.includes(req.body.status)) {
+    return res.status(400).json({ error: 'Trạng thái đơn hàng không hợp lệ' });
+  }
+  try {
+    const data = await orderModel.staffUpdateOrderStatus(
+      req.params.id,
+      req.body.status,
+      req.user!.id,
+      typeof req.body.note === 'string' ? req.body.note : undefined,
+    );
+    if (!data) return res.status(404).json({ error: 'Không tìm thấy đơn hàng' });
+    return res.json({ data });
+  } catch (error) {
+    if (error instanceof Error && error.message.includes('Không thể chuyển')) {
+      return res.status(409).json({ error: error.message });
+    }
+    return next(error);
+  }
+});
+
 // GET /api/v1/orders/:id - Chi tiet don hang (yeu cau dang nhap)
 router.get('/:id', requireAuth, async (req, res) => {
   try {
@@ -125,4 +156,3 @@ router.put('/:id/cancel', requireAuth, async (req, res) => {
 });
 
 export default router;
-

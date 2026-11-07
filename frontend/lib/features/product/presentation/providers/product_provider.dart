@@ -23,6 +23,7 @@ class ProductProvider extends ChangeNotifier {
 
   bool _loading = false;
   String? _error;
+  Future<void>? _initialLoad;
 
   // Filter state
   String _selectedCategory = 'Tất cả';
@@ -34,15 +35,21 @@ class ProductProvider extends ChangeNotifier {
   double _maxPrice = 1000000;
 
   ProductProvider() {
-    init();
+    _initialLoad = init();
   }
 
   bool get isLoading => _loading;
   String? get error => _error;
   List<ProductModel> get products => _filteredProducts;
   List<BannerModel> get banners => _banners;
+  List<CategoryModel> get categoryItems => List.unmodifiable(_categories);
   List<ProductModel> get recentlyViewed => _recentlyViewed;
   List<String> get searchHistory => _searchHistory;
+
+  /// Tong so san pham that tai duoc tu API (dung cho man cho).
+  int get totalProductCount => _allProducts.length;
+  int get bannerCount => _banners.length;
+  int get categoryCount => _categories.length;
 
   String get selectedCategory => _selectedCategory;
   String get searchQuery => _searchQuery;
@@ -65,17 +72,7 @@ class ProductProvider extends ChangeNotifier {
   /// Danh muc san pham (ket noi API /categories)
   List<String> get categories {
     final list = ['Tất cả'];
-    if (_categories.isNotEmpty) {
-      list.addAll(_categories.map((c) => c.name));
-    } else {
-      list.addAll([
-        'Áo sơ mi',
-        'Áo thun',
-        'Quần jeans',
-        'Quần tây',
-        'Áo khoác',
-      ]);
-    }
+    list.addAll(_categories.map((c) => c.name));
     return list;
   }
 
@@ -88,6 +85,9 @@ class ProductProvider extends ChangeNotifier {
       loadSearchHistory(),
     ]);
   }
+
+  /// Dung cho man cho: doi du lieu that nap xong ma khong goi API trung lap.
+  Future<void> ensureInitialized() => _initialLoad ??= init();
 
   /// AP-BN1: Goi API GET /api/v1/banners
   Future<void> loadBanners() async {
@@ -146,7 +146,8 @@ class ProductProvider extends ChangeNotifier {
           }
           if (json['is_best_seller'] == null) {
             json['is_best_seller'] = (idx >= 6 && idx < 18) ||
-                (json['rating_count'] != null && (json['rating_count'] as num) >= 10);
+                (json['rating_count'] != null &&
+                    (json['rating_count'] as num) >= 10);
           }
           return ProductModel.fromJson(json);
         }).toList();

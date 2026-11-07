@@ -14,33 +14,49 @@ export interface CircularProgressRingProps {
   badge?: string;
 }
 
+function getDisplayTextClass(text?: string) {
+  if (!text) return 'text-xl sm:text-2xl font-mono font-extrabold';
+  if (text.length > 18) return 'text-[11px] sm:text-xs font-bold';
+  if (text.length > 14) return 'text-xs sm:text-sm font-bold';
+  if (text.length > 10) return 'text-sm sm:text-base font-extrabold';
+  if (text.length > 6) return 'text-base sm:text-lg font-extrabold';
+  return 'text-xl sm:text-2xl font-mono font-extrabold';
+}
+
 export function CircularProgressRing({
   value,
-  size = 140,
-  strokeWidth = 12,
+  size = 148,
+  strokeWidth = 11,
   title,
   subtitle,
   valueDisplay,
-  gradientFrom = '#f59e0b',
-  gradientTo = '#fbbf24',
+  gradientFrom = '#b8824a',
+  gradientTo = '#d4a373',
   badge,
 }: CircularProgressRingProps) {
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   const clampedValue = Math.min(100, Math.max(0, value));
   const strokeDashoffset = circumference - (clampedValue / 100) * circumference;
-  const gradientId = `grad-${title.replace(/\s+/g, '-').toLowerCase()}`;
+  // Strip accents and punctuation: the id goes into url(#...), where parentheses
+  // from Vietnamese titles such as "Doanh thu (Hom nay)" break the reference.
+  const gradientId = `grad-${title
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '') || 'ring'}`;
 
   return (
-    <div className="flex flex-col items-center justify-between p-5 rounded-2xl bg-slate-900/60 border border-slate-800 hover:border-slate-700 transition-all duration-300 relative group">
+    <div className="flex flex-col items-center justify-between p-5 rounded-2xl bg-panel border border-line hover:border-line-strong transition-all duration-300 relative group shadow-panel">
       {badge && (
-        <span className="absolute top-4 right-4 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+        <span className="absolute top-4 right-4 text-[10px] font-bold px-2 py-0.5 rounded-full bg-ok-bg text-ok border border-ok-line">
           {badge}
         </span>
       )}
 
       <div className="w-full text-left mb-3">
-        <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{title}</h4>
+        <h4 className="text-xs font-semibold text-ink-muted uppercase tracking-wider">{title}</h4>
       </div>
 
       <div className="relative flex items-center justify-center my-2">
@@ -59,7 +75,7 @@ export function CircularProgressRing({
             r={radius}
             stroke="currentColor"
             strokeWidth={strokeWidth}
-            className="text-slate-800/80"
+            className="text-tint"
             fill="transparent"
           />
 
@@ -80,13 +96,18 @@ export function CircularProgressRing({
 
         {/* Center Text */}
         <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-2">
-          <span className="text-xl sm:text-2xl font-extrabold text-white tracking-tight font-mono truncate max-w-full">
+          <span
+            className={`text-ink tracking-tight whitespace-nowrap leading-none select-all ${getDisplayTextClass(
+              valueDisplay
+            )}`}
+            title={valueDisplay || `${Math.round(clampedValue)}%`}
+          >
             {valueDisplay || `${Math.round(clampedValue)}%`}
           </span>
         </div>
       </div>
 
-      <p className="text-xs text-slate-400 text-center mt-2 leading-relaxed">{subtitle}</p>
+      <p className="text-xs text-ink-muted text-center mt-2 leading-relaxed">{subtitle}</p>
     </div>
   );
 }

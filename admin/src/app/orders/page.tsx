@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Header } from '../../components/Header';
 import { OrderStatusBadge } from '../../components/Badge';
 import { ChangeOrderStatusModal } from '../../components/ChangeOrderStatusModal';
+import { OrderInvoiceModal } from '../../components/OrderInvoiceModal';
 import { fetchAdminOrders, updateOrderStatus } from '../../lib/api';
 import { Order, OrderStatus } from '../../lib/types';
 import {
@@ -17,6 +18,7 @@ import {
   MapPin,
   Calendar,
   Search,
+  Printer,
 } from 'lucide-react';
 
 const STATUS_TABS: { label: string; value: OrderStatus | 'all' }[] = [
@@ -42,6 +44,7 @@ export default function OrdersPage() {
   const [statusNote, setStatusNote] = useState('');
   const [updating, setUpdating] = useState(false);
   const [feedback, setFeedback] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
+  const [invoiceOrder, setInvoiceOrder] = useState<Order | null>(null);
 
   const loadOrders = useCallback(async () => {
     setLoading(true);
@@ -111,16 +114,16 @@ export default function OrdersPage() {
 
       <div className="flex-1 space-y-6 p-4 sm:p-6 xl:p-8">
         {/* Status Filter Tabs */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 bg-slate-900/60 p-3 rounded-2xl border border-slate-800">
-          <Filter className="w-4 h-4 text-slate-400 ml-2 mr-1" />
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 bg-panel p-3 rounded-2xl border border-line shadow-panel">
+          <Filter className="w-4 h-4 text-ink-muted ml-2 mr-1" />
           {STATUS_TABS.map((tab) => (
             <button
               key={tab.value}
               onClick={() => setActiveTab(tab.value)}
               className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all shrink-0 cursor-pointer ${
                 activeTab === tab.value
-                  ? 'bg-amber-500 text-slate-950 shadow-sm'
-                  : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                  ? 'bg-camel text-ink shadow-sm'
+                  : 'bg-tint text-ink-mid hover:bg-tint-strong'
               }`}
             >
               {tab.label}
@@ -128,14 +131,14 @@ export default function OrdersPage() {
           ))}
         </div>
 
-        <label className="flex max-w-xl items-center gap-3 rounded-xl border border-slate-800 bg-slate-900/60 px-4 py-3">
-          <Search className="h-4 w-4 shrink-0 text-slate-400" />
+        <label className="flex max-w-xl items-center gap-3 rounded-xl border border-line bg-panel px-4 py-3 shadow-panel">
+          <Search className="h-4 w-4 shrink-0 text-ink-muted" />
           <input
             type="search"
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
             placeholder="Tìm theo mã đơn, tên hoặc số điện thoại người nhận..."
-            className="w-full bg-transparent text-sm text-white outline-none placeholder:text-slate-500"
+            className="w-full bg-transparent text-sm text-ink outline-none placeholder:text-ink-muted"
           />
         </label>
 
@@ -144,8 +147,8 @@ export default function OrdersPage() {
           <div
             className={`p-3 rounded-xl text-xs font-semibold flex items-center gap-2 ${
               feedback.type === 'success'
-                ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
-                : 'bg-rose-500/10 text-rose-400 border border-rose-500/30'
+                ? 'bg-ok-bg text-ok border border-ok-line'
+                : 'bg-danger-bg text-danger border border-danger-line'
             }`}
           >
             {feedback.type === 'success' ? (
@@ -160,20 +163,20 @@ export default function OrdersPage() {
         {/* Orders list */}
         <div className="space-y-4">
           {loading ? (
-            <div className="p-16 text-center text-slate-500 text-sm">Đang tải đơn hàng...</div>
+            <div className="p-16 text-center text-ink-muted text-sm">Đang tải đơn hàng...</div>
           ) : loadError ? (
-            <div role="alert" className="rounded-xl border border-rose-500/30 bg-rose-500/10 p-6 text-center">
-              <p className="text-sm text-rose-300">{loadError}</p>
+            <div role="alert" className="rounded-xl border border-danger-line bg-danger-bg p-6 text-center">
+              <p className="text-sm text-danger">{loadError}</p>
               <button
                 type="button"
                 onClick={loadOrders}
-                className="mt-3 rounded-lg border border-rose-400/30 px-3 py-1.5 text-xs font-semibold text-rose-200 hover:bg-rose-500/10"
+                className="mt-3 rounded-lg border border-danger-line px-3 py-1.5 text-xs font-semibold text-danger hover:bg-danger-bg"
               >
                 Thử tải lại
               </button>
             </div>
           ) : filteredOrders.length === 0 ? (
-            <div className="p-16 text-center text-slate-500 text-sm">
+            <div className="p-16 text-center text-ink-muted text-sm">
               {orders.length === 0
                 ? 'Không tìm thấy đơn hàng nào ở bộ lọc này'
                 : 'Không tìm thấy đơn hàng khớp với nội dung tìm kiếm'}
@@ -183,35 +186,43 @@ export default function OrdersPage() {
               {filteredOrders.map((ord) => (
                 <div
                   key={ord.id}
-                  className="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 hover:border-slate-700 transition-all space-y-4 shadow-sm"
+                  className="bg-panel border border-line rounded-2xl p-5 hover:border-line-strong transition-all space-y-4 shadow-sm"
                 >
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800/60">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-line">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 font-bold">
+                      <div className="w-10 h-10 rounded-xl bg-camel-tint border border-camel/25 flex items-center justify-center text-camel-dark font-bold">
                         <ShoppingBag className="w-5 h-5" />
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
-                          <span className="font-mono font-bold text-white text-sm">#{ord.code}</span>
+                          <span className="font-mono font-bold text-ink text-sm">#{ord.code}</span>
                           <OrderStatusBadge status={ord.status} />
                         </div>
-                        <div className="flex items-center gap-3 text-[11px] text-slate-400 mt-0.5">
+                        <div className="flex items-center gap-3 text-[11px] text-ink-muted mt-0.5">
                           <span className="flex items-center gap-1">
                             <Calendar className="w-3 h-3" />
                             {new Date(ord.createdAt).toLocaleString('vi-VN')}
                           </span>
                           <span>•</span>
-                          <span className="font-mono text-slate-300">ID: {ord.id.slice(0, 8)}...</span>
+                          <span className="font-mono text-ink-mid">ID: {ord.id.slice(0, 8)}...</span>
                         </div>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-3">
-                      <span className="text-base font-extrabold text-white font-mono">
+                    <div className="flex flex-wrap items-center gap-3">
+                      <span className="text-base font-extrabold text-ink font-mono">
                         {ord.total.toLocaleString('vi-VN')} đ
                       </span>
+                      <button
+                        type="button"
+                        onClick={() => setInvoiceOrder(ord)}
+                        className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-tint hover:bg-tint-strong text-ink border border-line-strong transition-all flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <Printer className="w-3.5 h-3.5" />
+                        Xem / In hóa đơn
+                      </button>
                       {ord.status === 'cancelled' ? (
-                        <span className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/30 flex items-center gap-1.5 cursor-not-allowed">
+                        <span className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-danger-bg text-danger border border-danger-line flex items-center gap-1.5 cursor-not-allowed">
                           <AlertCircle className="w-3.5 h-3.5" />
                           Đã huỷ (Cố định)
                         </span>
@@ -221,7 +232,7 @@ export default function OrdersPage() {
                             setSelectedOrder(ord);
                             setNewStatus(ord.status);
                           }}
-                          className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-amber-400 border border-slate-700 transition-all flex items-center gap-1.5 cursor-pointer"
+                          className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-tint hover:bg-tint-strong text-camel-dark border border-line-strong transition-all flex items-center gap-1.5 cursor-pointer"
                         >
                           <Truck className="w-3.5 h-3.5" />
                           Đổi trạng thái
@@ -231,63 +242,63 @@ export default function OrdersPage() {
                   </div>
 
                   {/* Customer info & Item list */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-3 border-t border-slate-800/60 text-xs">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-3 border-t border-line text-xs">
                     <div className="space-y-1">
-                      <span className="text-slate-400 font-semibold flex items-center gap-1">
-                        <User className="w-3 h-3 text-slate-500" /> Người nhận:
+                      <span className="text-ink-muted font-semibold flex items-center gap-1">
+                        <User className="w-3 h-3 text-ink-muted" /> Người nhận:
                       </span>
-                      <p className="text-slate-200 font-medium">{ord.shippingAddress.name}</p>
-                      <p className="text-slate-400">{ord.shippingAddress.phone}</p>
+                      <p className="text-ink font-medium">{ord.shippingAddress.name}</p>
+                      <p className="text-ink-muted">{ord.shippingAddress.phone}</p>
                     </div>
 
                     <div className="space-y-1">
-                      <span className="text-slate-400 font-semibold flex items-center gap-1">
-                        <MapPin className="w-3 h-3 text-slate-500" /> Địa chỉ giao hàng:
+                      <span className="text-ink-muted font-semibold flex items-center gap-1">
+                        <MapPin className="w-3 h-3 text-ink-muted" /> Địa chỉ giao hàng:
                       </span>
-                      <p className="text-slate-300 leading-relaxed">{ord.shippingAddress.address}</p>
+                      <p className="text-ink-mid leading-relaxed">{ord.shippingAddress.address}</p>
                       {ord.shippingAddress.note && (
-                        <p className="text-amber-400 text-[11px]">
+                        <p className="text-camel-dark text-[11px]">
                           * Ghi chú: {ord.shippingAddress.note}
                         </p>
                       )}
                     </div>
 
                     <div className="space-y-1">
-                      <span className="text-slate-400 font-semibold flex items-center gap-1">
-                        <CreditCard className="w-3 h-3 text-slate-500" /> Thanh toán:
+                      <span className="text-ink-muted font-semibold flex items-center gap-1">
+                        <CreditCard className="w-3 h-3 text-ink-muted" /> Thanh toán:
                       </span>
-                      <p className="text-slate-200 uppercase font-semibold">
+                      <p className="text-ink uppercase font-semibold">
                         {ord.paymentMethod === 'vnpay' ? 'Thanh toán trực tuyến VNPay' : 'Thanh toán khi nhận hàng (COD)'}
                       </p>
-                      <p className="text-slate-400 text-[11px]">
+                      <p className="text-ink-muted text-[11px]">
                         Gồm {ord.items.length} mặt hàng trong giỏ
                       </p>
                     </div>
                   </div>
 
-                  <div className="border-t border-slate-800/60 pt-3">
-                    <h3 className="mb-2 text-xs font-semibold text-slate-300">
+                  <div className="border-t border-line pt-3">
+                    <h3 className="mb-2 text-xs font-semibold text-ink-mid">
                       Chi tiết sản phẩm ({ord.items.length})
                     </h3>
                     {ord.items.length === 0 ? (
-                      <p className="text-xs text-slate-500">Đơn hàng chưa có thông tin mặt hàng.</p>
+                      <p className="text-xs text-ink-muted">Đơn hàng chưa có thông tin mặt hàng.</p>
                     ) : (
-                      <ul className="divide-y divide-slate-800/60">
+                      <ul className="divide-y divide-line">
                         {ord.items.map((item) => (
                           <li
                             key={item.id}
                             className="flex flex-col gap-1 py-2 text-xs sm:flex-row sm:items-center sm:justify-between"
                           >
                             <div>
-                              <p className="font-medium text-slate-200">{item.productName}</p>
-                              <p className="text-slate-400">
+                              <p className="font-medium text-ink">{item.productName}</p>
+                              <p className="text-ink-muted">
                                 Size {item.size} · Màu {item.color} · Số lượng {item.quantity}
                               </p>
                             </div>
-                            <p className="font-mono text-slate-300">
+                            <p className="font-mono text-ink-mid">
                               {item.unitPrice.toLocaleString('vi-VN')} đ × {item.quantity}
                               {' = '}
-                              <span className="font-semibold text-amber-300">
+                              <span className="font-semibold text-camel-dark">
                                 {(item.unitPrice * item.quantity).toLocaleString('vi-VN')} đ
                               </span>
                             </p>
@@ -297,34 +308,34 @@ export default function OrdersPage() {
                     )}
                   </div>
 
-                  <dl className="ml-auto w-full max-w-sm space-y-2 border-t border-slate-800/60 pt-3 text-xs">
-                    <div className="flex justify-between gap-4 text-slate-400">
+                  <dl className="ml-auto w-full max-w-sm space-y-2 border-t border-line pt-3 text-xs">
+                    <div className="flex justify-between gap-4 text-ink-muted">
                       <dt>Tạm tính sản phẩm</dt>
-                      <dd className="font-mono text-slate-200">
+                      <dd className="font-mono text-ink">
                         {ord.subtotal.toLocaleString('vi-VN')} đ
                       </dd>
                     </div>
-                    <div className="flex justify-between gap-4 text-slate-400">
+                    <div className="flex justify-between gap-4 text-ink-muted">
                       <dt>Phí vận chuyển</dt>
-                      <dd className="font-mono text-slate-200">
+                      <dd className="font-mono text-ink">
                         {ord.shippingFee === 0
                           ? 'Miễn phí'
                           : `${ord.shippingFee.toLocaleString('vi-VN')} đ`}
                       </dd>
                     </div>
                     {(ord.discountAmount ?? 0) > 0 && (
-                      <div className="flex justify-between gap-4 text-slate-400">
+                      <div className="flex justify-between gap-4 text-ink-muted">
                         <dt>
                           Giảm giá{ord.voucherCode ? ` (${ord.voucherCode})` : ''}
                         </dt>
-                        <dd className="font-mono text-emerald-300">
+                        <dd className="font-mono text-ok">
                           -{(ord.discountAmount ?? 0).toLocaleString('vi-VN')} đ
                         </dd>
                       </div>
                     )}
-                    <div className="flex justify-between gap-4 border-t border-slate-800 pt-2 font-semibold">
-                      <dt className="text-slate-300">Tổng thanh toán</dt>
-                      <dd className="font-mono text-sm text-amber-300">
+                    <div className="flex justify-between gap-4 border-t border-line pt-2 font-semibold">
+                      <dt className="text-ink-mid">Tổng thanh toán</dt>
+                      <dd className="font-mono text-sm text-camel-dark">
                         {ord.total.toLocaleString('vi-VN')} đ
                       </dd>
                     </div>
@@ -347,6 +358,8 @@ export default function OrdersPage() {
         onNoteChange={setStatusNote}
         onSave={handleUpdateStatus}
       />
+
+      <OrderInvoiceModal order={invoiceOrder} onClose={() => setInvoiceOrder(null)} />
     </div>
   );
 }

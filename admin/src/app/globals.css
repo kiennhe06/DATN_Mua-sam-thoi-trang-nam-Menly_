@@ -1,7 +1,71 @@
 @import "tailwindcss";
 
+/*
+ * Menly admin design tokens.
+ * Warm light surfaces + ink sidebar, matching the Flutter app palette.
+ */
+@theme {
+  /* Surfaces */
+  --color-canvas: #f6f4f1;
+  --color-panel: #ffffff;
+  --color-tint: #efece5;
+  --color-tint-strong: #e4e0d7;
+
+  /* Ink / typography */
+  --color-ink: #1c1b17;
+  --color-ink-mid: #3a362e;
+  --color-ink-muted: #6e6a5f;
+
+  /* Hairlines */
+  --color-line: #e7e2d9;
+  --color-line-strong: #d8d2c6;
+
+  /* Camel accent */
+  --color-camel: #b8824a;
+  --color-camel-hover: #a4713c;
+  --color-camel-dark: #8a6234;
+  --color-camel-tint: #f0e4d4;
+
+  /* Ink sidebar */
+  --color-sidebar: #1c1b17;
+  --color-sidebar-line: #302c24;
+  --color-sidebar-muted: #a39b8c;
+  --color-sidebar-active: rgb(247 245 241 / 10%);
+
+  /* Status (exact spec values) */
+  --color-ok: #047857;
+  --color-ok-bg: #ecfdf5;
+  --color-ok-line: #a7f3d0;
+  --color-warn: #b45309;
+  --color-warn-bg: #fffbeb;
+  --color-warn-line: #fde68a;
+  --color-danger: #b91c1c;
+  --color-danger-bg: #fef2f2;
+  --color-danger-line: #fecaca;
+
+  /* Supporting hue (secondary chart series, staff chip) */
+  --color-steel: #1f5c8b;
+
+  /* Role chips (Users page) */
+  --color-role-staff-bg: #e7eff6;
+  --color-role-staff-text: #1f5c8b;
+  --color-role-customer-bg: #efece5;
+  --color-role-customer-text: #475569;
+
+  /* Radius scale: 6 - 10 - 12 - 14 - 16 - 20 - 999 */
+  --radius-md: 6px;
+  --radius-lg: 10px;
+  --radius-xl: 12px;
+  --radius-2xl: 16px;
+  --radius-3xl: 20px;
+
+  /* Panel elevation */
+  --shadow-panel: 0 1px 2px rgb(28 27 23 / 5%), 0 3px 12px rgb(28 27 23 / 5%);
+  --shadow-panel-lg: 0 2px 4px rgb(28 27 23 / 6%), 0 12px 32px rgb(28 27 23 / 10%);
+}
+
 :root {
-  color-scheme: dark;
+  color-scheme: light;
 }
 
 html {
@@ -9,18 +73,16 @@ html {
 }
 
 body {
-  background:
-    radial-gradient(ellipse at 12% 0%, rgb(245 158 11 / 4%), transparent 34rem),
-    #020617;
+  background: #f6f4f1;
 }
 
 ::selection {
-  color: #0f172a;
-  background: rgb(252 211 77 / 85%);
+  color: #1c1b17;
+  background: rgb(184 130 74 / 30%);
 }
 
 * {
-  scrollbar-color: #334155 #0f172a;
+  scrollbar-color: #d8d2c6 #efece5;
   scrollbar-width: thin;
 }
 
@@ -33,6 +95,41 @@ textarea {
 }
 
 :focus-visible {
-  outline: 2px solid rgb(251 191 36 / 85%);
+  outline: 2px solid rgb(184 130 74 / 85%);
   outline-offset: 2px;
+}
+
+@media print {
+  body {
+    background: #fff !important;
+  }
+
+  body * {
+    visibility: hidden;
+  }
+
+  #invoice-print-area,
+  #invoice-print-area * {
+    visibility: visible;
+  }
+
+  #invoice-print-overlay {
+    position: static !important;
+    inset: auto !important;
+    overflow: visible !important;
+    background: #fff !important;
+    padding: 0 !important;
+  }
+
+  #invoice-print-area {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+  }
+
+  .invoice-print-hide {
+    display: none !important;
+  }
 }

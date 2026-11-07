@@ -8,14 +8,34 @@ class ApiClient {
   static final ApiClient _instance = ApiClient._internal();
   factory ApiClient() => _instance;
 
+  /// Cho phep cau hinh dia chi backend that khi chay tren may that:
+  /// flutter run --dart-define=API_BASE_URL=http://192.168.1.10:5000/api/v1
+  static const String _envBaseUrl = String.fromEnvironment('API_BASE_URL');
+
   late final Dio _dio;
   Dio get dio => _dio;
 
+  late final String baseUrl;
+
+  /// Goc may chu (scheme + host + port), dung de tao lien ket chia se that.
+  String get origin {
+    final uri = Uri.parse(baseUrl);
+    return '${uri.scheme}://${uri.authority}';
+  }
+
   ApiClient._internal() {
-    String baseUrl = 'http://10.0.2.2:5000/api/v1';
-    if (!kIsWeb && (Platform.isWindows || Platform.isLinux || Platform.isMacOS)) {
-      baseUrl = 'http://localhost:5000/api/v1';
+    var url = _envBaseUrl.trim();
+    if (url.isEmpty) {
+      url = 'http://10.0.2.2:5000/api/v1';
+      if (kIsWeb ||
+          (!kIsWeb &&
+              (Platform.isWindows ||
+                  Platform.isLinux ||
+                  Platform.isMacOS))) {
+        url = 'http://localhost:5000/api/v1';
+      }
     }
+    baseUrl = url.endsWith('/') ? url.substring(0, url.length - 1) : url;
 
     _dio = Dio(BaseOptions(
       baseUrl: baseUrl,
@@ -33,12 +53,47 @@ class ApiClient {
         onRequest: (options, handler) async {
           try {
             final prefs = await SharedPreferences.getInstance();
-            final token = prefs.getString('access_token') ?? prefs.getString('token');
+            final token =
+                prefs.getString('access_token') ?? prefs.getString('token');
             if (token != null && token.isNotEmpty) {
               options.headers['Authorization'] = 'Bearer $token';
             }
           } catch (_) {}
           return handler.next(options);
+        },
+        onError: (DioException error, handler) async {
+          if (error.response?.statusCode == 401) {
+            try {
+              final prefs = await SharedPreferences.getInstance();
+              final refreshToken = prefs.getString('refresh_token');
+              if (refreshToken != null && refreshToken.isNotEmpty) {
+                // Gọi làm mới access token với Dio độc lập để tránh vòng lặp
+                final refreshDio = Dio(BaseOptions(
+                  baseUrl: baseUrl,
+                  connectTimeout: const Duration(seconds: 5),
+                  receiveTimeout: const Duration(seconds: 5),
+                ));
+                final res = await refreshDio.post('/auth/refresh-token', data: {
+                  'refreshToken': refreshToken,
+                });
+                if (res.statusCode == 200 && res.data?['data']?['accessToken'] != null) {
+                  final newAccessToken = res.data['data']['accessToken'].toString();
+                  final newRefreshToken = res.data['data']['refreshToken']?.toString() ?? refreshToken;
+                  await prefs.setString('access_token', newAccessToken);
+                  await prefs.setString('refresh_token', newRefreshToken);
+
+                  // Thử lại request ban đầu với token mới
+                  final retryOptions = error.requestOptions;
+                  retryOptions.headers['Authorization'] = 'Bearer $newAccessToken';
+                  final retryResponse = await _dio.fetch(retryOptions);
+                  return handler.resolve(retryResponse);
+                }
+              }
+            } catch (_) {
+              // Refresh thất bại (hết hạn hoàn toàn)
+            }
+          }
+          return handler.next(error);
         },
       ),
     );

@@ -73,3 +73,4 @@ class HomeInfoFooter extends StatelessWidget {
     );
   }
 }
+

@@ -34,7 +34,6 @@ class _RegisterPageState extends State<RegisterPage> {
           'email': _emailController.text.trim(),
           'password': _passwordController.text,
           'phone': _phoneController.text.trim(),
-          'role': 'customer',
         },
       );
 

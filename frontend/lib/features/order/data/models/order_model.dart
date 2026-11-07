@@ -50,10 +50,13 @@ class OrderItemModel {
 /// Trang thai don hang
 enum OrderStatus {
   pendingPayment, // Chờ thanh toán
+  paid,            // Đã thanh toán
   processing,     // Đang xử lý
   shipping,       // Đang giao
   delivered,      // Đã giao
+  completed,      // Hoàn tất
   canceled,       // Đã hủy
+  expired,        // Hết hạn thanh toán
   returned,       // Trả hàng
 }
 
@@ -62,6 +65,8 @@ extension OrderStatusExtension on OrderStatus {
     switch (this) {
       case OrderStatus.pendingPayment:
         return 'pending_payment';
+      case OrderStatus.paid:
+        return 'paid';
       case OrderStatus.processing:
         return 'processing';
       case OrderStatus.shipping:
@@ -69,7 +74,11 @@ extension OrderStatusExtension on OrderStatus {
       case OrderStatus.delivered:
         return 'delivered';
       case OrderStatus.canceled:
-        return 'canceled';
+        return 'cancelled';
+      case OrderStatus.completed:
+        return 'completed';
+      case OrderStatus.expired:
+        return 'expired';
       case OrderStatus.returned:
         return 'returned';
     }
@@ -79,6 +88,8 @@ extension OrderStatusExtension on OrderStatus {
     switch (this) {
       case OrderStatus.pendingPayment:
         return 'Chờ thanh toán';
+      case OrderStatus.paid:
+        return 'Đã thanh toán';
       case OrderStatus.processing:
         return 'Đang xử lý';
       case OrderStatus.shipping:
@@ -87,6 +98,10 @@ extension OrderStatusExtension on OrderStatus {
         return 'Đã giao hàng';
       case OrderStatus.canceled:
         return 'Đã hủy';
+      case OrderStatus.completed:
+        return 'Hoàn tất';
+      case OrderStatus.expired:
+        return 'Hết hạn thanh toán';
       case OrderStatus.returned:
         return 'Đã trả hàng';
     }
@@ -111,9 +126,11 @@ extension OrderStatusExtension on OrderStatus {
       case 'da_huy':
         return OrderStatus.canceled;
       case 'paid':
-        return OrderStatus.processing;
+        return OrderStatus.paid;
       case 'completed':
-        return OrderStatus.delivered;
+        return OrderStatus.completed;
+      case 'expired':
+        return OrderStatus.expired;
       case 'returned':
       case 'tra_hang':
         return OrderStatus.returned;
@@ -159,9 +176,49 @@ class OrderModel {
     this.cancelReason,
   });
 
+  OrderModel copyWith({
+    String? id,
+    String? code,
+    OrderStatus? status,
+    String? paymentMethod,
+    bool? isPaid,
+    int? subtotal,
+    int? discountAmount,
+    int? shippingFee,
+    int? total,
+    String? shipName,
+    String? shipPhone,
+    String? shipAddress,
+    DateTime? createdAt,
+    List<OrderItemModel>? items,
+    String? cancelReason,
+  }) {
+    return OrderModel(
+      id: id ?? this.id,
+      code: code ?? this.code,
+      status: status ?? this.status,
+      paymentMethod: paymentMethod ?? this.paymentMethod,
+      isPaid: isPaid ?? this.isPaid,
+      subtotal: subtotal ?? this.subtotal,
+      discountAmount: discountAmount ?? this.discountAmount,
+      shippingFee: shippingFee ?? this.shippingFee,
+      total: total ?? this.total,
+      shipName: shipName ?? this.shipName,
+      shipPhone: shipPhone ?? this.shipPhone,
+      shipAddress: shipAddress ?? this.shipAddress,
+      createdAt: createdAt ?? this.createdAt,
+      items: items ?? this.items,
+      cancelReason: cancelReason ?? this.cancelReason,
+    );
+  }
+
   /// Co the huy don khong? (Chi cho phep huy khi con o trang thai cho thanh toan hoac dang xu ly)
   bool get canCancel =>
       status == OrderStatus.pendingPayment || status == OrderStatus.processing;
+
+  /// Co the gui yeu cau tra hang khi don da giao / hoan tat
+  bool get canReturn =>
+      status == OrderStatus.delivered || status == OrderStatus.completed;
 
   factory OrderModel.fromJson(Map<String, dynamic> json) {
     var rawItems = json['items'] ?? json['order_items'];
@@ -219,4 +276,3 @@ class OrderModel {
 
 typedef Order = OrderModel;
 typedef OrderItem = OrderItemModel;
-

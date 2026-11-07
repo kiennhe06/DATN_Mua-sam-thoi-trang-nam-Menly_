@@ -295,12 +295,16 @@ class ProfilePage extends StatelessWidget {
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                               decoration: BoxDecoration(
-                                color: Colors.blue.shade50,
+                                color: const Color(0xFFF0E4D4),
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: Text(
                                 user?.role == 'admin' ? 'Quản trị viên' : 'Thành viên Menly VIP',
-                                style: TextStyle(fontSize: 10, color: Colors.blue.shade800, fontWeight: FontWeight.bold),
+                                style: const TextStyle(
+                                  fontSize: 10,
+                                  color: Color(0xFF8A6234),
+                                  fontWeight: FontWeight.w700,
+                                ),
                               ),
                             ),
                           ],
@@ -317,7 +321,7 @@ class ProfilePage extends StatelessWidget {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppTheme.primary,
                           foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                           padding: const EdgeInsets.symmetric(vertical: 12),
                           elevation: 0,
                         ),
@@ -332,7 +336,7 @@ class ProfilePage extends StatelessWidget {
                         style: OutlinedButton.styleFrom(
                           foregroundColor: AppTheme.primary,
                           side: const BorderSide(color: AppTheme.primary),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                           padding: const EdgeInsets.symmetric(vertical: 10),
                         ),
                         onPressed: () => _showEditProfileModal(context, auth),
@@ -405,7 +409,9 @@ class ProfilePage extends StatelessWidget {
                   ProfileMenuItem(
                     title: 'Thông báo',
                     subtitle: 'Xem khuyến mãi, tin tức và thông báo từ shop',
-                    badge: '${context.watch<NotificationProvider>().unreadCount}',
+                    badge: context.watch<NotificationProvider>().unreadCount > 0
+                        ? context.watch<NotificationProvider>().unreadCountLabel
+                        : null,
                     onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationsPage())),
                   ),
                   const Divider(height: 1),

@@ -196,7 +196,7 @@ class _VNPayPaymentPageState extends State<VNPayPaymentPage> {
     });
 
     if (isSuccess) {
-      _handleSuccess(
+      await _handleSuccess(
         bankCode: bankCode,
         transactionNo: transactionNo,
         txnRef: txnRef,
@@ -206,11 +206,11 @@ class _VNPayPaymentPageState extends State<VNPayPaymentPage> {
     }
   }
 
-  void _handleSuccess(
-      {String? bankCode, String? transactionNo, String? txnRef}) {
+  Future<void> _handleSuccess(
+      {String? bankCode, String? transactionNo, String? txnRef}) async {
     final orderProv = context.read<OrderProvider>();
-    orderProv.markAsPaidVNPay(widget.order.id);
-    orderProv.loadOrders();
+    await orderProv.refreshOrderAfterPayment(widget.order.id);
+    if (!mounted) return;
 
     showDialog(
       context: context,
@@ -411,9 +411,11 @@ class _VNPayPaymentPageState extends State<VNPayPaymentPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text('Cổng Thanh Toán VNPAY',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-              Text('Đơn hàng: ${widget.order.code}',
-                  style: const TextStyle(fontSize: 12, color: Colors.white70)),
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+              Text(
+                '${widget.order.code} • ${formatPrice(widget.order.total)}',
+                style: const TextStyle(fontSize: 12, color: Colors.white70),
+              ),
             ],
           ),
           actions: [
