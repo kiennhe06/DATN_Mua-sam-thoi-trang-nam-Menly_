@@ -142,6 +142,7 @@ export class PaymentModel {
    */
   async createPaymentUrl(input: CreatePaymentUrlParams, clientIp = '127.0.0.1'): Promise<PaymentUrlResult> {
     const { amount, locale = 'vn', bankCode } = input;
+    let paymentAmount = amount;
     let orderId = input.orderId;
     let orderCode = input.orderCode;
 
@@ -162,6 +163,11 @@ export class PaymentModel {
         if (order.status === 'paid' || order.status === 'completed') {
           throw new PaymentError('Đơn hàng này đã được thanh toán trước đó', 400);
         }
+
+        // Luôn đồng bộ chính xác số tiền cần thanh toán theo tổng tiền đơn hàng đã lưu (đã trừ voucher)
+        if (typeof order.total === 'number' && order.total > 0) {
+          paymentAmount = order.total;
+        }
       }
     }
 
@@ -176,7 +182,7 @@ export class PaymentModel {
           order_id: orderId,
           provider: 'vnpay',
           txn_ref: txnRef,
-          amount,
+          amount: paymentAmount,
           status: 'pending',
         });
       } catch {
@@ -194,7 +200,7 @@ export class PaymentModel {
       vnp_TxnRef: txnRef,
       vnp_OrderInfo: input.orderInfo || `Thanh toan don hang ${orderCode || txnRef}`,
       vnp_OrderType: 'other',
-      vnp_Amount: String(amount * 100), // VNPay yêu cầu nhân 100
+      vnp_Amount: String(paymentAmount * 100), // VNPay yêu cầu nhân 100
       vnp_ReturnUrl: env.vnpay.returnUrl,
       vnp_IpAddr: clientIp === '::1' ? '127.0.0.1' : clientIp,
       vnp_CreateDate: formatVnpayDate(),
@@ -216,7 +222,7 @@ export class PaymentModel {
     return {
       paymentUrl,
       txnRef,
-      amount,
+      amount: paymentAmount,
       orderId,
       orderCode,
     };

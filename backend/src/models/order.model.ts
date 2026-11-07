@@ -322,19 +322,6 @@ export class OrderModel {
       created = rpc8.data;
       error = rpc8.error;
 
-      // Cập nhật phí vận chuyển và tổng tiền vào đơn hàng nếu có phí vận chuyển
-      if (!error && created) {
-        const rpcOrder = Array.isArray(created) ? created[0] : created;
-        if (rpcOrder?.id && input.shipping_fee && input.shipping_fee > 0) {
-          const { data: cur } = await this.db.from('orders').select('subtotal, total').eq('id', rpcOrder.id).single();
-          if (cur) {
-            await this.db.from('orders').update({
-              shipping_fee: input.shipping_fee,
-              total: cur.total + input.shipping_fee,
-            }).eq('id', rpcOrder.id);
-          }
-        }
-      }
     } else {
       created = rpc9.data;
       error = rpc9.error;
@@ -345,6 +332,54 @@ export class OrderModel {
     const rpcOrder = Array.isArray(created) ? created[0] : created;
     if (!rpcOrder?.id) throw new Error('Backend không trả về mã đơn hàng vừa tạo');
 
+    // Đồng bộ chính xác tổng thanh toán, phí ship và giảm giá voucher theo đúng dữ liệu app gửi
+    const calculatedTotal = (input.total !== undefined && input.total > 0)
+      ? input.total
+      : Math.max(0, input.subtotal + (input.shipping_fee ?? 0) - (input.discount_amount ?? 0));
+
+    const updatePayload: Record<string, any> = {
+      shipping_fee: input.shipping_fee ?? 0,
+      total: calculatedTotal,
+    };
+    if (input.subtotal && input.subtotal > 0) {
+      updatePayload.subtotal = input.subtotal;
+    }
+
+    await this.db.from('orders').update(updatePayload).eq('id', rpcOrder.id);
+
+    // Đồng bộ chi tiết mã giảm giá vào order_vouchers nếu có mã và chiết khấu
+    if (input.voucher_code && (input.discount_amount ?? 0) > 0) {
+      try {
+        const { data: existingVoucher } = await this.db
+          .from('order_vouchers')
+          .select('id')
+          .eq('order_id', rpcOrder.id)
+          .maybeSingle();
+
+        if (!existingVoucher) {
+          const cleanCode = input.voucher_code.trim();
+          const { data: vRow } = await this.db
+            .from('vouchers')
+            .select('id, used_count')
+            .ilike('code', cleanCode)
+            .maybeSingle();
+
+          if (vRow) {
+            await this.db.from('order_vouchers').insert({
+              order_id: rpcOrder.id,
+              voucher_id: vRow.id,
+              discount_amount: input.discount_amount,
+            });
+            await this.db.from('vouchers').update({
+              used_count: (vRow.used_count ?? 0) + 1,
+            }).eq('id', vRow.id);
+          }
+        }
+      } catch {
+        // Bỏ qua lỗi phụ nếu bảng vouchers tạm thời không khả dụng
+      }
+    }
+
     const { data: order, error: orderError } = await this.db
       .from('orders')
       .select('*, order_items(*)')
@@ -354,7 +389,7 @@ export class OrderModel {
 
     return {
       ...order,
-      discount_amount: Math.max(0, order.subtotal + order.shipping_fee - order.total),
+      discount_amount: input.discount_amount ?? Math.max(0, order.subtotal + order.shipping_fee - order.total),
     } as OrderRow;
   }
 

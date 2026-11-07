@@ -216,10 +216,17 @@ class _CheckoutPageState extends State<CheckoutPage> {
       setState(() => _isSubmitting = false);
 
       if (_paymentMethod == 'vnpay') {
+        final orderForPayment = (createdOrder.total == total && createdOrder.discountAmount == discount)
+            ? createdOrder
+            : createdOrder.copyWith(
+                total: total,
+                discountAmount: discount,
+                shippingFee: shippingFee,
+              );
         final paymentSuccess = await Navigator.push<bool>(
           context,
           MaterialPageRoute(
-            builder: (_) => VNPayPaymentPage(order: createdOrder),
+            builder: (_) => VNPayPaymentPage(order: orderForPayment),
           ),
         );
         if (!mounted) return;
