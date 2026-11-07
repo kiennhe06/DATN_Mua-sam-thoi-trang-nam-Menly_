@@ -17,6 +17,7 @@ export default function InventoryPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [selectedVariantId, setSelectedVariantId] = useState('');
 
   const loadData = useCallback(async () => {
@@ -38,6 +39,12 @@ export default function InventoryPage() {
       ) {
         setSelectedVariantId(prods.items[0].variants[0].id);
       }
+      setLoadError(null);
+    } catch (err) {
+      // Truoc day loi bi nuot: bang kho hien rong y het luc kho that su trong,
+      // thu kho nhin vao tuong khong co hang nao can nhap.
+      console.error('Loi tai du lieu kho:', err);
+      setLoadError(err instanceof Error ? err.message : 'Không tải được dữ liệu kho.');
     } finally {
       setLoading(false);
     }
@@ -65,6 +72,11 @@ export default function InventoryPage() {
       />
 
       <div className="flex-1 space-y-6 p-4 sm:space-y-8 sm:p-6 xl:p-8">
+        {loadError && (
+          <p className="rounded-2xl border border-danger-line bg-danger-bg px-4 py-3 text-sm text-danger">
+            Không tải được dữ liệu kho: {loadError} — số liệu bên dưới chưa phản ánh kho thật.
+          </p>
+        )}
         {/* Quick restock and policy cards */}
         <InventoryRestockForm
           products={products}

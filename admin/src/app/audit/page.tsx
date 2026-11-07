@@ -9,12 +9,19 @@ import { ScrollText, ShieldAlert, KeyRound } from 'lucide-react';
 export default function AuditPage() {
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   async function loadLogs() {
     setLoading(true);
     try {
       const data = await fetchAuditLogs();
       setLogs(data);
+      setLoadError(null);
+    } catch (err) {
+      // Truoc day loi bi nuot: trang hien "Chua co nhat ky nao" y het luc
+      // that su chua co ban ghi, nguoi dung khong biet la backend dang hong.
+      console.error('Loi tai nhat ky audit:', err);
+      setLoadError(err instanceof Error ? err.message : 'Không tải được nhật ký.');
     } finally {
       setLoading(false);
     }
@@ -61,6 +68,10 @@ export default function AuditPage() {
 
           {loading ? (
             <div className="py-20 text-center text-ink-muted text-sm">Đang tải nhật ký audit...</div>
+          ) : loadError ? (
+            <div className="m-4 rounded-2xl border border-danger-line bg-danger-bg px-4 py-3 text-sm text-danger">
+              Không tải được nhật ký: {loadError}
+            </div>
           ) : logs.length === 0 ? (
             <div className="py-20 text-center text-ink-muted text-sm">Chưa có nhật ký nào được ghi nhận</div>
           ) : (

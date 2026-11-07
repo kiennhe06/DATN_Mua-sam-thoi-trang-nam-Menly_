@@ -55,8 +55,9 @@ export class AuthModel {
    * Đăng ký tài khoản mới qua Supabase Auth
    */
   async register(input: RegisterInput) {
-    const { email, password, fullName, phone, role } = input;
-    const userRole = role ?? 'customer';
+    const { email, password, fullName, phone } = input;
+    // Dang ky cong khai luon ra tai khoan khach hang, khong cho client tu chon
+    const userRole = 'customer';
     const normalizedEmail = email.toLowerCase();
 
     // Dung Admin API (service_role) thay cho signUp de dang ky luon hoat dong:

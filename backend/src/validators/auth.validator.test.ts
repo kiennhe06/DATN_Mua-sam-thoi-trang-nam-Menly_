@@ -20,7 +20,19 @@ test('registerSchema: chấp nhận payload đăng ký hợp lệ', () => {
   if (result.success) {
     assert.equal(result.data.email, 'test@example.com');
     assert.equal(result.data.fullName, 'Nguyen Van A');
-    assert.equal(result.data.role, 'customer');
+  }
+});
+
+test('registerSchema: bo qua role client tu gui len', () => {
+  const result = registerSchema.safeParse({
+    email: 'ke-gian@example.com',
+    password: 'password123',
+    fullName: 'Ke Gian',
+    role: 'admin',
+  });
+  assert.equal(result.success, true);
+  if (result.success) {
+    assert.equal('role' in result.data, false);
   }
 });
 
