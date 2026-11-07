@@ -11,6 +11,7 @@ import 'package:menly_app/features/product/presentation/providers/product_provid
 import 'package:menly_app/features/review/presentation/widgets/product_reviews_section.dart';
 import '../widgets/product_perk_item.dart';
 import '../widgets/product_related_grid.dart';
+import 'package:menly_app/core/utils/format.dart';
 
 /// Trang Chi tiet san pham cao cap Menly (Chon Size & Mau theo dang Dropdown tien loi)
 class ProductDetailPage extends StatefulWidget {
@@ -203,7 +204,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                           height: 4,
                           decoration: BoxDecoration(
                             color: Colors.grey.shade300,
-                            borderRadius: BorderRadius.circular(2),
+                            borderRadius: BorderRadius.circular(999),
                           ),
                         ),
                       ),
@@ -250,7 +251,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                                   color: isTopsTab
                                       ? AppTheme.primary
                                       : Colors.grey.shade100,
-                                  borderRadius: BorderRadius.circular(8),
+                                  borderRadius: BorderRadius.circular(10),
                                 ),
                                 alignment: Alignment.center,
                                 child: Text(
@@ -277,7 +278,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                                   color: !isTopsTab
                                       ? AppTheme.primary
                                       : Colors.grey.shade100,
-                                  borderRadius: BorderRadius.circular(8),
+                                  borderRadius: BorderRadius.circular(10),
                                 ),
                                 alignment: Alignment.center,
                                 child: Text(
@@ -454,7 +455,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
                           color: Colors.amber.shade50,
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(10),
                           border: Border.all(color: Colors.amber.shade200),
                         ),
                         child: Column(
@@ -698,7 +699,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                     textBaseline: TextBaseline.alphabetic,
                     children: [
                       Text(
-                        '${p.price} đ',
+                        formatPrice(p.price),
                         style: const TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.w900,
@@ -707,7 +708,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                       ),
                       const SizedBox(width: 10),
                       Text(
-                        '${(p.price * 1.25).toInt()} đ',
+                        formatPrice((p.price * 1.25).toInt()),
                         style: const TextStyle(
                           fontSize: 14,
                           color: AppTheme.textMuted,
@@ -892,7 +893,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                       Container(
                         decoration: BoxDecoration(
                           border: Border.all(color: AppTheme.border),
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(10),
                         ),
                         child: Row(
                           children: [

@@ -99,7 +99,7 @@ class _OrderReviewSectionState extends State<OrderReviewSection> {
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         ClipRRect(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(10),
           child: SizedBox(
             width: 48,
             height: 48,
@@ -154,7 +154,7 @@ class _OrderReviewSectionState extends State<OrderReviewSection> {
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
               color: c.success.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(10),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -172,7 +172,7 @@ class _OrderReviewSectionState extends State<OrderReviewSection> {
           OutlinedButton(
             style: OutlinedButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             ),
             onPressed: () => _openReviewForm(item),
             child: const Text('Đánh giá', style: TextStyle(fontSize: 12)),

@@ -28,7 +28,7 @@ class OrderCancelDialog {
       isScrollControlled: true,
       backgroundColor: c.surface,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (ctx) {
         return StatefulBuilder(
@@ -50,7 +50,7 @@ class OrderCancelDialog {
                       height: 4,
                       decoration: BoxDecoration(
                         color: c.border,
-                        borderRadius: BorderRadius.circular(2),
+                        borderRadius: BorderRadius.circular(999),
                       ),
                     ),
                   ),

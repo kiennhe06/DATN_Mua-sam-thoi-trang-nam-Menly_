@@ -194,7 +194,7 @@ class OrderCard extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 14, vertical: 8),
                         shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8)),
+                            borderRadius: BorderRadius.circular(10)),
                       ),
                       onPressed: () {
                         Navigator.push(

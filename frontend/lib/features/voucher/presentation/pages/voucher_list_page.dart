@@ -61,7 +61,7 @@ class _VoucherListPageState extends State<VoucherListPage> {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
-                borderRadius: BorderRadius.circular(22),
+                borderRadius: BorderRadius.circular(20),
                 boxShadow: AppTheme.cardShadow,
               ),
               child: Row(
@@ -113,7 +113,7 @@ class _VoucherListPageState extends State<VoucherListPage> {
                     height: 72,
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(18),
+                      borderRadius: BorderRadius.circular(20),
                     ),
                     child: const Icon(
                       Icons.local_offer_rounded,
@@ -149,7 +149,7 @@ class _VoucherListPageState extends State<VoucherListPage> {
                   child: _SummaryCard(
                     label: 'Sắp hết',
                     value: '$expiringSoon',
-                    color: AppTheme.accentOrange,
+                    color: AppTheme.primaryAccent,
                     icon: Icons.timer_rounded,
                   ),
                 ),
@@ -344,7 +344,7 @@ class _VoucherCard extends StatelessWidget {
               children: [
                 Icon(
                   isPercentage ? Icons.percent_rounded : Icons.attach_money_rounded,
-                  color: isPercentage ? AppTheme.accentOrange : AppTheme.primary,
+                  color: isPercentage ? AppTheme.primaryAccent : AppTheme.primary,
                   size: 26,
                 ),
                 const SizedBox(height: 8),
@@ -354,7 +354,7 @@ class _VoucherCard extends StatelessWidget {
                   style: TextStyle(
                     fontWeight: FontWeight.w800,
                     fontSize: 15,
-                    color: isPercentage ? AppTheme.accentOrange : AppTheme.primary,
+                    color: isPercentage ? AppTheme.primaryAccent : AppTheme.primary,
                   ),
                 ),
               ],
@@ -387,7 +387,7 @@ class _VoucherCard extends StatelessWidget {
                         child: Text(
                           isPercentage ? 'Giảm %' : 'Giảm tiền',
                           style: TextStyle(
-                            color: isPercentage ? AppTheme.accentOrange : Colors.blue.shade700,
+                            color: isPercentage ? AppTheme.primaryAccent : Colors.blue.shade700,
                             fontSize: 10,
                             fontWeight: FontWeight.w700,
                           ),

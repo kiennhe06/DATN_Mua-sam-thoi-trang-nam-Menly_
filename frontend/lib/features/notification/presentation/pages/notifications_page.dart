@@ -5,6 +5,7 @@ import '../../../voucher/data/models/voucher_model.dart';
 import '../../../voucher/presentation/pages/voucher_list_page.dart';
 import '../../../voucher/presentation/providers/voucher_provider.dart';
 import '../providers/notification_provider.dart';
+import 'package:menly_app/core/utils/format.dart';
 
 String _formatDate(DateTime dt) {
   final d = dt.day.toString().padLeft(2, '0');
@@ -38,7 +39,7 @@ class NotificationsPage extends StatelessWidget {
               child: const Text(
                 'Đã đọc tất cả',
                 style: TextStyle(
-                  color: AppTheme.accentOrange,
+                  color: AppTheme.primaryAccent,
                   fontWeight: FontWeight.w600,
                   fontSize: 13,
                 ),
@@ -66,7 +67,7 @@ class NotificationsPage extends StatelessWidget {
                         gradient: const LinearGradient(
                           colors: [Color(0xFFFF8A3D), Color(0xFFFFB15C)],
                         ),
-                        borderRadius: BorderRadius.circular(18),
+                        borderRadius: BorderRadius.circular(20),
                       ),
                       child: Row(
                         children: [
@@ -255,7 +256,7 @@ class _VoucherOfferCard extends StatelessWidget {
       child: ListTile(
         leading: const CircleAvatar(
           backgroundColor: Color(0xFFFFF1E9),
-          child: Icon(Icons.local_offer_rounded, color: AppTheme.accentOrange),
+          child: Icon(Icons.local_offer_rounded, color: AppTheme.primaryAccent),
         ),
         title: Text(voucher.title, style: const TextStyle(fontWeight: FontWeight.bold)),
         subtitle: Padding(
@@ -309,7 +310,4 @@ class _EmptyNotifications extends StatelessWidget {
   }
 }
 
-String _formatCurrency(int value) => value.toString().replaceAllMapped(
-      RegExp(r'\B(?=(\d{3})+(?!\d))'),
-      (match) => ',',
-    );
+String _formatCurrency(int value) => formatNumber(value);

@@ -69,7 +69,7 @@ class HomeBannerSlider extends StatelessWidget {
                             horizontal: 7, vertical: 2),
                         decoration: BoxDecoration(
                           color: AppTheme.accentRed,
-                          borderRadius: BorderRadius.circular(4),
+                          borderRadius: BorderRadius.circular(6),
                         ),
                         child: const Text(
                           'BỘ SƯU TẬP MỚI',
@@ -112,7 +112,7 @@ class HomeBannerSlider extends StatelessWidget {
                 color: currentIndex == idx
                     ? AppTheme.primary
                     : Colors.grey.shade300,
-                borderRadius: BorderRadius.circular(2),
+                borderRadius: BorderRadius.circular(999),
               ),
             ),
           ),

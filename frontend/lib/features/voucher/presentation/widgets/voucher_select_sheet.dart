@@ -97,7 +97,7 @@ class _VoucherSelectSheetState extends State<VoucherSelectSheet> {
                   decoration: InputDecoration(
                     hintText: 'Nhập mã voucher (VD: WELCOME20, MENLY10)',
                     border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8)),
+                        borderRadius: BorderRadius.circular(10)),
                     contentPadding: const EdgeInsets.symmetric(
                         horizontal: 12, vertical: 10),
                     isDense: true,
@@ -110,7 +110,7 @@ class _VoucherSelectSheetState extends State<VoucherSelectSheet> {
                   backgroundColor: Colors.black87,
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8)),
+                      borderRadius: BorderRadius.circular(10)),
                   padding:
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 ),
@@ -212,7 +212,7 @@ class _VoucherSelectSheetState extends State<VoucherSelectSheet> {
                                           horizontal: 6, vertical: 2),
                                       decoration: BoxDecoration(
                                         color: Colors.green,
-                                        borderRadius: BorderRadius.circular(4),
+                                        borderRadius: BorderRadius.circular(6),
                                       ),
                                       child: const Text('Đang dùng',
                                           style: TextStyle(
@@ -259,7 +259,7 @@ class _VoucherSelectSheetState extends State<VoucherSelectSheet> {
                   foregroundColor: Colors.red,
                   side: const BorderSide(color: Colors.red),
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8)),
+                      borderRadius: BorderRadius.circular(10)),
                 ),
                 onPressed: () {
                   cart.removeVoucher();

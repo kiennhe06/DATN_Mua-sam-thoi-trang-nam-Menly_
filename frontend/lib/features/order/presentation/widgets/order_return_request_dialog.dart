@@ -32,7 +32,7 @@ class OrderReturnRequestDialog {
             return Container(
               decoration: BoxDecoration(
                 color: c.surface,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
               ),
               padding: EdgeInsets.fromLTRB(
                 20,
@@ -51,7 +51,7 @@ class OrderReturnRequestDialog {
                         height: 5,
                         decoration: BoxDecoration(
                           color: c.border,
-                          borderRadius: BorderRadius.circular(99),
+                          borderRadius: BorderRadius.circular(999),
                         ),
                       ),
                     ),

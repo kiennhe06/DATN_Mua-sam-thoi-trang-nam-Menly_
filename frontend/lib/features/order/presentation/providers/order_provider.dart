@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import '../../../../core/network/api_client.dart';
 import 'package:menly_app/features/cart/data/models/cart_item_model.dart';
 import 'package:menly_app/features/order/data/models/order_model.dart';
+import 'package:menly_app/core/network/api_error.dart';
 
 /// Provider quan ly Don hang khach hang & Don hang nhan vien tren app
 /// Phu trach boi: Thanh Toan (AP-DH2, TM07, AP-QT9, AP-TT1)
@@ -53,7 +54,8 @@ class OrderProvider extends ChangeNotifier {
         }
       }
     } catch (error) {
-      _errorMessage = 'Không thể tải đơn hàng: $error';
+      _errorMessage = friendlyErrorMessage(error,
+          fallback: 'Không tải được đơn hàng, vui lòng thử lại.');
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -74,7 +76,8 @@ class OrderProvider extends ChangeNotifier {
           .map((item) => OrderModel.fromJson(Map<String, dynamic>.from(item)))
           .toList();
     } catch (error) {
-      _errorMessage = 'Không thể tải danh sách đơn hàng: $error';
+      _errorMessage = friendlyErrorMessage(error,
+          fallback: 'Không tải được danh sách đơn hàng, vui lòng thử lại.');
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -133,15 +136,17 @@ class OrderProvider extends ChangeNotifier {
           final response = await _api.dio
               .put('/orders/$orderId/cancel', data: {'reason': reason});
           final rawOrder = response.data?['data'];
-          if (rawOrder is! Map)
+          if (rawOrder is! Map) {
             throw StateError('Backend không trả về đơn hàng đã cập nhật');
+          }
           _orders[index] =
               OrderModel.fromJson(Map<String, dynamic>.from(rawOrder));
           _errorMessage = null;
           notifyListeners();
           return true;
         } catch (error) {
-          _errorMessage = 'Không thể hủy đơn hàng: $error';
+          _errorMessage = friendlyErrorMessage(error,
+              fallback: 'Không hủy được đơn hàng, vui lòng thử lại.');
           notifyListeners();
           return false;
         }
@@ -188,12 +193,14 @@ class OrderProvider extends ChangeNotifier {
     });
 
     final rawOrder = response.data?['data'];
-    if (rawOrder is! Map)
+    if (rawOrder is! Map) {
       throw StateError('Backend không trả về đơn hàng vừa tạo');
+    }
     final createdOrder =
         OrderModel.fromJson(Map<String, dynamic>.from(rawOrder));
-    if (createdOrder.id.isEmpty)
+    if (createdOrder.id.isEmpty) {
       throw StateError('Backend trả về mã đơn hàng không hợp lệ');
+    }
     _orders.insert(0, createdOrder);
     _errorMessage = null;
     notifyListeners();
@@ -219,7 +226,8 @@ class OrderProvider extends ChangeNotifier {
       }
       _errorMessage = null;
     } catch (error) {
-      _errorMessage = 'Không thể làm mới trạng thái đơn hàng: $error';
+      _errorMessage = friendlyErrorMessage(error,
+          fallback: 'Không làm mới được trạng thái đơn hàng.');
     } finally {
       notifyListeners();
     }
@@ -268,15 +276,17 @@ class OrderProvider extends ChangeNotifier {
           'status': nextStatus.value,
         });
         final rawOrder = response.data?['data'];
-        if (rawOrder is! Map)
+        if (rawOrder is! Map) {
           throw StateError('Backend không trả về đơn hàng đã cập nhật');
+        }
         _orders[index] =
             OrderModel.fromJson(Map<String, dynamic>.from(rawOrder));
         _errorMessage = null;
         notifyListeners();
         return true;
       } catch (error) {
-        _errorMessage = 'Không thể cập nhật trạng thái đơn hàng: $error';
+        _errorMessage = friendlyErrorMessage(error,
+            fallback: 'Không cập nhật được trạng thái đơn hàng.');
         notifyListeners();
       }
     }

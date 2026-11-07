@@ -4,6 +4,7 @@ import 'package:menly_app/features/order/data/models/order_model.dart';
 import '../providers/order_provider.dart';
 import 'order_detail_page.dart';
 import 'order_invoice_page.dart';
+import 'package:menly_app/core/utils/format.dart';
 
 /// Man quan ly don hang cho nhan vien tren app (AP-QT9)
 class StaffOrderManagementPage extends StatefulWidget {
@@ -86,7 +87,7 @@ class _StaffOrderManagementPageState extends State<StaffOrderManagementPage> {
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(10),
                       border: Border.all(color: Colors.grey.shade300),
                     ),
                     child: Column(
@@ -107,7 +108,7 @@ class _StaffOrderManagementPageState extends State<StaffOrderManagementPage> {
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(10),
                       border: Border.all(color: Colors.grey.shade300),
                     ),
                     child: Column(
@@ -130,7 +131,7 @@ class _StaffOrderManagementPageState extends State<StaffOrderManagementPage> {
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(10),
                       border: Border.all(color: Colors.grey.shade300),
                     ),
                     child: Column(
@@ -242,7 +243,7 @@ class _StaffOrderManagementPageState extends State<StaffOrderManagementPage> {
                                   decoration: BoxDecoration(
                                     color: _getStatusColor(order.status)
                                         .withValues(alpha: 0.12),
-                                    borderRadius: BorderRadius.circular(4),
+                                    borderRadius: BorderRadius.circular(6),
                                   ),
                                   child: Text(
                                     order.status.label,
@@ -267,7 +268,7 @@ class _StaffOrderManagementPageState extends State<StaffOrderManagementPage> {
                                     fontSize: 12, color: Colors.grey.shade700)),
                             const SizedBox(height: 6),
                             Text(
-                              'Tổng thu: ${order.total} đ (${order.paymentMethod.toUpperCase()} • ${order.isPaid ? 'Đã thanh toán' : 'Thu tiền khi giao'})',
+                              'Tổng thu: ${formatPrice(order.total)} (${order.paymentMethod.toUpperCase()} • ${order.isPaid ? 'Đã thanh toán' : 'Thu tiền khi giao'})',
                               style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.bold,

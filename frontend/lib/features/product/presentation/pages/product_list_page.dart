@@ -2,13 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:menly_app/core/theme/app_theme.dart';
 import 'package:menly_app/core/utils/app_snackbar.dart';
-import 'package:menly_app/core/widgets/category_pill.dart';
+import 'package:menly_app/core/widgets/category_tab.dart';
 import 'package:menly_app/core/widgets/product_card.dart';
 import 'package:menly_app/features/cart/presentation/providers/cart_provider.dart';
 import 'package:menly_app/features/wishlist/presentation/providers/wishlist_provider.dart';
 import 'package:menly_app/features/product/presentation/providers/product_provider.dart';
 import 'product_detail_page.dart';
 import 'search_page.dart';
+import 'package:menly_app/core/utils/format.dart';
 
 /// Man hinh danh sach san pham cao cap Menly (AP-SP1: Loc, Tim kiem, Sap xep, Luoi 2 cot chu dong)
 class ProductListPage extends StatelessWidget {
@@ -76,7 +77,7 @@ class ProductListPage extends StatelessWidget {
                         selectedColor: AppTheme.primary,
                         backgroundColor: Colors.grey.shade100,
                         shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8)),
+                            borderRadius: BorderRadius.circular(10)),
                         onSelected: (_) =>
                             setState(() => currentSort = item['key']!),
                       );
@@ -92,7 +93,7 @@ class ProductListPage extends StatelessWidget {
                           style: TextStyle(
                               fontWeight: FontWeight.bold, fontSize: 14)),
                       Text(
-                        '${currentRange.start.toInt()} đ - ${currentRange.end.toInt()} đ',
+                        '${formatPrice(currentRange.start.toInt())} - ${formatPrice(currentRange.end.toInt())}',
                         style: const TextStyle(
                             color: AppTheme.accentRed,
                             fontWeight: FontWeight.bold,
@@ -179,11 +180,11 @@ class ProductListPage extends StatelessWidget {
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
               itemCount: productProv.categories.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 8),
+              separatorBuilder: (_, __) => const SizedBox(width: 20),
               itemBuilder: (ctx, i) {
                 final cat = productProv.categories[i];
                 final isSelected = productProv.selectedCategory == cat;
-                return CategoryPill(
+                return CategoryTab(
                   label: cat,
                   selected: isSelected,
                   onTap: () => productProv.setCategory(cat),
@@ -252,7 +253,7 @@ class ProductListPage extends StatelessWidget {
                           gridDelegate:
                               const SliverGridDelegateWithFixedCrossAxisCount(
                             crossAxisCount: 2,
-                            childAspectRatio: 0.65,
+                            childAspectRatio: 0.5,
                             crossAxisSpacing: 12,
                             mainAxisSpacing: 12,
                           ),

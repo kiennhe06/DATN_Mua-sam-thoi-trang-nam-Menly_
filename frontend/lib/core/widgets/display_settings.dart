@@ -27,7 +27,7 @@ class _DisplaySettingsSheet extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: c.background,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
       ),
       padding: EdgeInsets.fromLTRB(
           24, 14, 24, MediaQuery.of(context).padding.bottom + 24),
@@ -41,7 +41,7 @@ class _DisplaySettingsSheet extends StatelessWidget {
               height: 4,
               decoration: BoxDecoration(
                 color: c.border,
-                borderRadius: BorderRadius.circular(2),
+                borderRadius: BorderRadius.circular(999),
               ),
             ),
           ),

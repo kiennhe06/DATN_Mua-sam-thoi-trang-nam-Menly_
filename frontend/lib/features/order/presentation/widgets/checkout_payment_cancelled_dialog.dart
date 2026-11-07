@@ -47,7 +47,7 @@ class CheckoutPaymentCancelledDialog extends StatelessWidget {
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: Colors.amber.shade50,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(10),
               border: Border.all(color: Colors.amber.shade300),
             ),
             child: Text(

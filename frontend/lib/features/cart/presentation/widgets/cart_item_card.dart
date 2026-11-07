@@ -54,7 +54,7 @@ class CartItemCard extends StatelessWidget {
                 height: 24,
                 decoration: BoxDecoration(
                   color: selected ? c.primary : Colors.transparent,
-                  borderRadius: BorderRadius.circular(7),
+                  borderRadius: BorderRadius.circular(6),
                   border: Border.all(
                     color: selected ? c.primary : c.border,
                     width: 1.6,
@@ -173,7 +173,7 @@ class CartItemCard extends StatelessWidget {
                           margin: const EdgeInsets.symmetric(horizontal: 6),
                           decoration: BoxDecoration(
                             color: c.surfaceVariant,
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(10),
                           ),
                           child: Center(
                             child: Text(
@@ -229,7 +229,7 @@ class CartItemCard extends StatelessWidget {
         height: 28,
         decoration: BoxDecoration(
           color: c.surfaceVariant,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(10),
           border: Border.all(color: c.border),
         ),
         child: Center(

@@ -13,6 +13,7 @@ import '../../../cart/presentation/providers/cart_provider.dart';
 import '../../../voucher/presentation/widgets/voucher_select_sheet.dart';
 import '../providers/order_provider.dart';
 import 'vnpay_payment_page.dart';
+import 'package:menly_app/core/utils/format.dart';
 
 /// Man hinh Dat hang & Thanh toan (AP-DH2, AP-TT1, AP-VC1, AP-DC1)
 /// Ho tro:
@@ -386,7 +387,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                         const Text('Tổng thanh toán:',
                             style: TextStyle(fontSize: 12, color: Colors.grey)),
                         Text(
-                          '$totalAmount đ',
+                          formatPrice(totalAmount),
                           style: const TextStyle(
                             fontSize: 19,
                             fontWeight: FontWeight.bold,
@@ -531,7 +532,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               ClipRRect(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(10),
                 child: Image.network(
                   item.product.thumbnailUrl,
                   width: 55,
@@ -568,7 +569,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          '${item.product.price} đ',
+                          formatPrice(item.product.price),
                           style: const TextStyle(
                               fontWeight: FontWeight.bold, fontSize: 13),
                         ),
@@ -745,10 +746,10 @@ class _CheckoutPageState extends State<CheckoutPage> {
                             horizontal: 6, vertical: 1),
                         decoration: BoxDecoration(
                           color: Colors.green,
-                          borderRadius: BorderRadius.circular(4),
+                          borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
-                          '-$discount đ',
+                          '-${formatPrice(discount)}',
                           style: const TextStyle(
                               color: Colors.white,
                               fontSize: 11,
@@ -903,7 +904,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                                   horizontal: 6, vertical: 2),
                               decoration: BoxDecoration(
                                 color: const Color(0xFF005BAA),
-                                borderRadius: BorderRadius.circular(4),
+                                borderRadius: BorderRadius.circular(6),
                               ),
                               child: const Text('Sandbox',
                                   style: TextStyle(
@@ -949,7 +950,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
             children: [
               Text('Tổng tiền hàng:',
                   style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
-              Text('$subtotal đ',
+              Text(formatPrice(subtotal),
                   style: const TextStyle(
                       fontWeight: FontWeight.w600, fontSize: 13)),
             ],
@@ -961,7 +962,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
               Text('Phí vận chuyển:',
                   style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
               Text(
-                shippingFee == 0 ? 'Miễn phí' : '$shippingFee đ',
+                shippingFee == 0 ? 'Miễn phí' : formatPrice(shippingFee),
                 style: TextStyle(
                   color: shippingFee == 0 ? Colors.green : Colors.black87,
                   fontWeight: FontWeight.w600,
@@ -978,7 +979,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                 Text('Giảm giá voucher (${cart.appliedVoucher!.code}):',
                     style: TextStyle(
                         color: Colors.deepOrange.shade600, fontSize: 13)),
-                Text('-$discount đ',
+                Text('-${formatPrice(discount)}',
                     style: TextStyle(
                         color: Colors.deepOrange.shade600,
                         fontWeight: FontWeight.bold,
@@ -993,7 +994,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
               const Text('Tổng thanh toán:',
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
               Text(
-                '$total đ',
+                formatPrice(total),
                 style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 18,
