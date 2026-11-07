@@ -312,10 +312,16 @@ export class OrderModel {
       .single();
     if (orderError) throw new Error(orderError.message);
 
-    return {
+    const createdOrder = {
       ...order,
       discount_amount: Math.max(0, order.subtotal + order.shipping_fee - order.total),
     } as OrderRow;
+    await this.notifyOrderUser(
+      createdOrder,
+      'Đặt hàng thành công',
+      `Đơn hàng #${createdOrder.code} đã được tạo. Menly sẽ cập nhật khi đơn được xử lý.`,
+    );
+    return createdOrder;
   }
 
   /** Lấy danh sách đơn hàng của 1 user (kèm items) */
@@ -357,7 +363,13 @@ export class OrderModel {
     const { data: order, error: orderError } = await this.db.from('orders')
       .select('*, order_items(*)').eq('id', orderId).single();
     if (orderError) throw new Error(orderError.message);
-    return order as OrderRow;
+    const cancelledOrder = order as OrderRow;
+    await this.notifyOrderUser(
+      cancelledOrder,
+      'Đơn hàng đã hủy',
+      `Đơn hàng #${cancelledOrder.code} đã được hủy.`,
+    );
+    return cancelledOrder;
   }
 
   // =========== ADMIN: QUAN LY DON HANG ===========
@@ -415,7 +427,13 @@ export class OrderModel {
       const { data: order, error: orderError } = await this.db.from('orders')
         .select('*, order_items(*)').eq('id', orderId).single();
       if (orderError) throw new Error(orderError.message);
-      return order as OrderRow;
+      const cancelledOrder = order as OrderRow;
+      await this.notifyOrderUser(
+        cancelledOrder,
+        'Đơn hàng đã hủy',
+        `Đơn hàng #${cancelledOrder.code} đã được hủy.`,
+      );
+      return cancelledOrder;
     }
 
     const { data: current, error: fetchErr } = await this.db
@@ -450,6 +468,64 @@ export class OrderModel {
       console.error('Khong ghi duoc lich su trang thai don:', historyErr.message);
     }
 
-    return updated as OrderRow;
+    const updatedOrder = updated as OrderRow;
+    await this.notifyOrderUser(
+      updatedOrder,
+      this.orderStatusTitle(toStatus),
+      `Đơn hàng #${updatedOrder.code} ${this.orderStatusBody(toStatus)}`,
+    );
+    return updatedOrder;
+  }
+
+  private orderStatusTitle(status: string): string {
+    switch (status) {
+      case 'paid':
+        return 'Đã thanh toán';
+      case 'processing':
+        return 'Đơn đang được xử lý';
+      case 'shipping':
+        return 'Đơn đang giao';
+      case 'delivered':
+        return 'Đã giao hàng';
+      case 'completed':
+        return 'Đơn hàng hoàn tất';
+      case 'cancelled':
+        return 'Đơn hàng đã hủy';
+      default:
+        return 'Cập nhật đơn hàng';
+    }
+  }
+
+  private orderStatusBody(status: string): string {
+    switch (status) {
+      case 'paid':
+        return 'đã thanh toán thành công.';
+      case 'processing':
+        return 'đang được Menly xử lý.';
+      case 'shipping':
+        return 'đang được giao đến bạn.';
+      case 'delivered':
+        return 'đã giao thành công.';
+      case 'completed':
+        return 'đã hoàn tất. Cảm ơn bạn đã mua sắm tại Menly.';
+      case 'cancelled':
+        return 'đã được hủy.';
+      default:
+        return 'đã được cập nhật.';
+    }
+  }
+
+  private async notifyOrderUser(order: OrderRow, title: string, body: string): Promise<void> {
+    if (!order?.user_id) return;
+    const { error } = await this.db.from('notifications').insert({
+      user_id: order.user_id,
+      title,
+      body,
+      type: 'order',
+      data: { order_id: order.id, code: order.code },
+    });
+    if (error) {
+      console.error('Khong tao duoc thong bao don hang:', error.message);
+    }
   }
 }
