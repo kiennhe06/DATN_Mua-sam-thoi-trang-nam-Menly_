@@ -799,17 +799,22 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                       ),
                       Row(
                         children: [
-                          const Text('★ ',
+                          if (p.ratingCount > 0)
+                            const Text('★ ',
+                                style: TextStyle(
+                                    color: Colors.amber,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16)),
+                          Text(
+                              p.ratingCount <= 0
+                                  ? 'Chưa có đánh giá'
+                                  : '${p.ratingAvg.toStringAsFixed(1)} (${p.ratingCount} đánh giá)',
                               style: TextStyle(
-                                  color: Colors.amber,
                                   fontWeight: FontWeight.bold,
-                                  fontSize: 16)),
-                          Text('${p.ratingAvg}',
-                              style: const TextStyle(
-                                  fontWeight: FontWeight.bold, fontSize: 14)),
-                          Text(' (${p.ratingCount} đánh giá)',
-                              style: const TextStyle(
-                                  color: AppTheme.textSecondary, fontSize: 13)),
+                                  fontSize: 14,
+                                  color: p.ratingCount <= 0
+                                      ? AppTheme.textSecondary
+                                      : AppTheme.textPrimary)),
                         ],
                       ),
                     ],
