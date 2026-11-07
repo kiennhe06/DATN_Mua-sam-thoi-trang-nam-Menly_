@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_buttons.dart';
 import '../../../../core/widgets/product_card.dart';
-import '../../../../main.dart';
+import '../../../../core/navigation/main_navigation_shell.dart';
 import '../../../cart/presentation/providers/cart_provider.dart';
 import '../../../product/presentation/pages/product_detail_page.dart';
 import '../../../product/presentation/providers/product_provider.dart';
@@ -164,14 +164,16 @@ class WishlistPage extends StatelessWidget {
                     final cart = context.read<CartProvider>();
                     final productProv = context.read<ProductProvider>();
                     final messenger = ScaffoldMessenger.of(context);
-                    final detail =
-                        await productProv.fetchProductDetail(p.id);
+                    // Chi chon bien the con hang tu chi tiet that, khong dung bien the bia
+                    final detail = await productProv.fetchProductDetail(p.id);
                     final source = detail ?? p;
-                    final availableVariants = source.variants
-                        .where((variant) => variant.stock > 0);
+                    final availableVariants =
+                        source.variants.where((variant) => variant.stock > 0);
                     if (availableVariants.isEmpty) {
                       messenger.showSnackBar(const SnackBar(
-                          content: Text('Sản phẩm hiện không có hàng')));
+                        content: Text('Sản phẩm hiện không có hàng'),
+                        duration: Duration(seconds: 2),
+                      ));
                       return;
                     }
                     final variant = availableVariants.first;

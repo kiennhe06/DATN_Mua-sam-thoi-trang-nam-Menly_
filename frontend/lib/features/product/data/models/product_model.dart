@@ -20,6 +20,7 @@ class ProductVariantModel {
       size: json['size']?.toString() ?? '',
       color: json['color']?.toString() ?? '',
       sku: json['sku']?.toString() ?? '',
+      // Thieu ton kho thi coi nhu het hang, khong doan bua thanh con hang
       stock: (json['stock'] is num) ? (json['stock'] as num).toInt() : 0,
     );
   }
@@ -89,6 +90,9 @@ class ProductModel {
       parsedVariants.addAll(rawVariants.whereType<Map>().map(
           (v) => ProductVariantModel.fromJson(Map<String, dynamic>.from(v))));
     }
+    // Khong tu sinh bien the thay the khi may chu khong tra ve. Bien the tu bia
+    // co id khong phai UUID nen gio hang se tu choi, va ton kho bia ra lam nguoi
+    // dung tuong con hang. De trong thi man hinh hien dung "khong co hang".
 
     final parsedImages = _parseImages(json['product_images'] ?? json['images']);
 
