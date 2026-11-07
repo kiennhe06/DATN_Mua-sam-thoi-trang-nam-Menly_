@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../core/utils/app_snackbar.dart';
 import '../../../../core/widgets/app_buttons.dart';
 import 'package:menly_app/features/order/data/models/order_model.dart';
 import '../../../review/presentation/widgets/order_review_section.dart';
@@ -11,8 +13,8 @@ import '../widgets/order_recipient_card.dart';
 import '../widgets/order_items_card.dart';
 import '../widgets/order_payment_summary_card.dart';
 import '../widgets/order_cancel_dialog.dart';
-import '../widgets/order_return_request_dialog.dart';
 import 'order_invoice_page.dart';
+import 'order_return_request_page.dart';
 import 'vnpay_payment_page.dart';
 
 /// Man hinh Chi tiet don hang & Theo doi hanh trinh (AP-DH2)
@@ -108,18 +110,8 @@ class OrderDetailPage extends StatelessWidget {
             const SizedBox(height: 12),
           ],
 
-          if (o.status == OrderStatus.delivered) ...[
-            SecondaryButton(
-              label: 'Yêu cầu trả hàng',
-              icon: Icons.assignment_return_rounded,
-              foreground: c.primary,
-              onPressed: () {
-                OrderReturnRequestDialog.show(
-                  context: context,
-                  order: o,
-                );
-              },
-            ),
+          if (o.canReturn) ...[
+            _buildReturnAction(context, c, orderProv, o),
             const SizedBox(height: 12),
           ],
 
@@ -137,6 +129,71 @@ class OrderDetailPage extends StatelessWidget {
             ),
         ],
       ),
+    );
+  }
+
+  Widget _buildReturnAction(
+    BuildContext context,
+    AppColors c,
+    OrderProvider orderProv,
+    OrderModel o,
+  ) {
+    final existing = orderProv.returnForOrder(o.id);
+    if (existing != null && existing.isOpen) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: c.surface,
+          borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+          border: Border.all(color: c.border.withValues(alpha: 0.6)),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.assignment_return_rounded, color: c.primary),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Yêu cầu trả hàng',
+                    style: TextStyle(
+                      color: c.textPrimary,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    existing.statusLabel,
+                    style: TextStyle(
+                      color: c.textSecondary,
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return SecondaryButton(
+      label: 'Yêu cầu trả hàng',
+      icon: Icons.assignment_return_rounded,
+      foreground: c.primary,
+      onPressed: () async {
+        final ok = await Navigator.push<bool>(
+          context,
+          MaterialPageRoute(builder: (_) => OrderReturnRequestPage(order: o)),
+        );
+        if (ok == true && context.mounted) {
+          AppSnackBar.show(context, message: 'Đã gửi yêu cầu trả hàng');
+        }
+      },
     );
   }
 }
