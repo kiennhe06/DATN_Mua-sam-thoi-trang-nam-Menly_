@@ -1,10 +1,12 @@
 import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/network/api_client.dart';
 import 'package:menly_app/features/cart/data/models/cart_item_model.dart';
 import 'package:menly_app/features/order/data/models/order_model.dart';
+import 'package:menly_app/features/order/data/models/order_return_model.dart';
 
 /// Provider quan ly Don hang khach hang & Don hang nhan vien tren app
 /// Phu trach boi: Thanh Toan (AP-DH2, TM07, AP-QT9, AP-TT1)
@@ -16,6 +18,7 @@ import 'package:menly_app/features/order/data/models/order_model.dart';
 class OrderProvider extends ChangeNotifier {
   final ApiClient _api = ApiClient();
   List<OrderModel> _orders = [];
+  List<OrderReturnModel> _returns = [];
   bool _isLoading = false;
   String? _errorMessage;
   bool _isUnauthorized = false;
@@ -55,6 +58,7 @@ class OrderProvider extends ChangeNotifier {
   }
 
   List<OrderModel> get allOrders => _orders;
+  List<OrderReturnModel> get returnRequests => _returns;
   bool get isLoading => _isLoading;
   bool get isUnauthorized => _isUnauthorized;
   String get selectedStatusFilter => _selectedStatusFilter;
@@ -121,6 +125,7 @@ class OrderProvider extends ChangeNotifier {
     } finally {
       _isLoading = false;
       notifyListeners();
+      await loadReturnRequests();
     }
   }
 
@@ -182,6 +187,81 @@ class OrderProvider extends ChangeNotifier {
   }
 
   OrderModel? findById(String orderId) => getOrderById(orderId);
+
+  OrderReturnModel? returnForOrder(String orderId) {
+    try {
+      return _returns.firstWhere((item) => item.orderId == orderId);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  bool canRequestReturn(OrderModel order) {
+    if (!order.canReturn) return false;
+    final existing = returnForOrder(order.id);
+    return existing == null || !existing.isOpen;
+  }
+
+  Future<void> loadReturnRequests() async {
+    try {
+      final res = await _api.dio.get('/order-returns');
+      final rawList = res.data?['data'] ?? res.data;
+      if (rawList is List) {
+        _returns = rawList
+            .map((item) => OrderReturnModel.fromJson(Map<String, dynamic>.from(item)))
+            .toList();
+      }
+    } catch (_) {
+      // Giữ danh sách cũ nếu API lỗi, không chặn màn đơn hàng
+    } finally {
+      notifyListeners();
+    }
+  }
+
+  Future<OrderReturnModel> submitReturnRequest({
+    required String orderId,
+    required String reason,
+    List<XFile> images = const [],
+  }) async {
+    if (reason.trim().isEmpty) {
+      throw Exception('Vui lòng nhập lý do trả hàng');
+    }
+    if (images.isEmpty) {
+      throw Exception('Vui lòng đính kèm ít nhất 1 hình ảnh minh chứng');
+    }
+
+    final form = FormData();
+    form.fields.add(MapEntry('orderId', orderId));
+    form.fields.add(MapEntry('reason', reason.trim()));
+
+    for (final image in images.take(5)) {
+      final bytes = await image.readAsBytes();
+      form.files.add(
+        MapEntry('images', MultipartFile.fromBytes(bytes, filename: image.name)),
+      );
+    }
+
+    try {
+      final res = await _api.dio.post(
+        '/order-returns',
+        data: form,
+        options: Options(contentType: 'multipart/form-data'),
+      );
+      final data = res.data['data'] ?? res.data;
+      final created = OrderReturnModel.fromJson(Map<String, dynamic>.from(data));
+      _returns.removeWhere((item) => item.orderId == created.orderId && !item.isOpen);
+      _returns.insert(0, created);
+      _errorMessage = null;
+      notifyListeners();
+      return created;
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      if (data is Map && data['error'] != null) {
+        throw Exception(data['error'].toString());
+      }
+      throw Exception('Không thể gửi yêu cầu trả hàng. Vui lòng thử lại.');
+    }
+  }
 
   Future<bool> cancelOrderApi(String orderId,
           {String reason = 'Khách hàng yêu cầu hủy'}) =>

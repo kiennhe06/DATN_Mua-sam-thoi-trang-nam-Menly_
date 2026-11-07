@@ -1,4 +1,4 @@
-import '../../../../main.dart';
+import '../../../../core/navigation/main_navigation_shell.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 

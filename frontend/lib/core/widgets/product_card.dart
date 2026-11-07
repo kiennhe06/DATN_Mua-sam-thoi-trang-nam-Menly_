@@ -6,6 +6,7 @@ import '../theme/app_theme.dart';
 import '../utils/format.dart';
 import 'add_to_cart_button.dart';
 import 'pressable.dart';
+import 'product_rating_row.dart';
 import 'package:menly_app/features/product/data/models/product_model.dart';
 
 /// The san pham chuan UI/UX Menly:
@@ -124,6 +125,11 @@ class ProductCard extends StatelessWidget {
                         fontWeight: FontWeight.w700,
                       ),
                     ),
+                  ),
+                  const SizedBox(height: 4),
+                  ProductRatingRow(
+                    ratingAvg: product.ratingAvg,
+                    ratingCount: product.ratingCount,
                   ),
                   const SizedBox(height: 4),
                   Text(

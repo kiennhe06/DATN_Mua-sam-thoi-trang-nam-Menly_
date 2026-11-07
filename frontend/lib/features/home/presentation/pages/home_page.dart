@@ -2,15 +2,13 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:menly_app/core/theme/app_theme.dart';
-import 'package:menly_app/core/utils/app_snackbar.dart';
 import 'package:menly_app/core/widgets/category_pill.dart';
 import 'package:menly_app/core/widgets/product_card.dart';
 import 'package:menly_app/features/product/data/models/product_model.dart';
 import 'package:menly_app/features/auth/presentation/pages/login_page.dart';
 import 'package:menly_app/features/auth/presentation/pages/profile_page.dart';
 import 'package:menly_app/features/auth/presentation/providers/auth_provider.dart';
-import 'package:menly_app/features/notification/presentation/pages/notifications_page.dart';
-import 'package:menly_app/features/notification/presentation/providers/notification_provider.dart';
+import 'package:menly_app/features/notification/presentation/widgets/notification_bell_button.dart';
 import 'package:menly_app/features/cart/presentation/providers/cart_provider.dart';
 import 'package:menly_app/features/product/presentation/pages/product_detail_page.dart';
 import 'package:menly_app/features/product/presentation/pages/product_list_page.dart';
@@ -156,55 +154,7 @@ class _HomePageState extends State<HomePage> {
                     color: AppTheme.accentOrange,
                     fontSize: 13)),
           ),
-          IconButton(
-            tooltip: 'Thông báo',
-            visualDensity: VisualDensity.compact,
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const NotificationsPage()),
-            ),
-            icon: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                const Icon(
-                  Icons.notifications_outlined,
-                  color: AppTheme.textPrimary,
-                  size: 22,
-                ),
-                Consumer<NotificationProvider>(
-                  builder: (_, notifProv, __) {
-                    if (notifProv.unreadCount > 0) {
-                      return Positioned(
-                        top: -2,
-                        right: -2,
-                        child: Container(
-                          padding: const EdgeInsets.all(3),
-                          decoration: const BoxDecoration(
-                            color: AppTheme.accentRed,
-                            shape: BoxShape.circle,
-                          ),
-                          constraints: const BoxConstraints(
-                            minWidth: 14,
-                            minHeight: 14,
-                          ),
-                          child: Text(
-                            '${notifProv.unreadCount}',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 9,
-                              fontWeight: FontWeight.bold,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                      );
-                    }
-                    return const SizedBox.shrink();
-                  },
-                ),
-              ],
-            ),
-          ),
+          const NotificationBellButton(),
           IconButton(
             tooltip: 'Tài khoản',
             visualDensity: VisualDensity.compact,
@@ -429,16 +379,19 @@ class _HomePageState extends State<HomePage> {
             onToggleFavorite: () => wishlistProv.toggleFavorite(p),
             onAdd: () async {
               final cart = context.read<CartProvider>();
+              final productProv = context.read<ProductProvider>();
               final messenger = ScaffoldMessenger.of(context);
+              final detail = await productProv.fetchProductDetail(p.id);
+              final source = detail ?? p;
               final availableVariants =
-                  p.variants.where((variant) => variant.stock > 0);
+                  source.variants.where((variant) => variant.stock > 0);
               if (availableVariants.isEmpty) {
-                AppSnackBar.show(context,
-                    message: 'Sản phẩm hiện không có hàng');
+                messenger.showSnackBar(const SnackBar(
+                    content: Text('Sản phẩm hiện không có hàng')));
                 return;
               }
               final variant = availableVariants.first;
-              final added = await cart.addToCart(p,
+              final added = await cart.addToCart(source,
                   size: variant.size, color: variant.color);
               messenger.showSnackBar(SnackBar(
                 content: Text(added

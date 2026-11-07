@@ -90,6 +90,16 @@ export class NotificationModel {
     return (data ?? []) as NotificationRow[];
   }
 
+  async countUnread(userId: string): Promise<number> {
+    const { count, error } = await this.db
+      .from('notifications')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('is_read', false);
+    if (error) throw new Error(error.message);
+    return count ?? 0;
+  }
+
   async markRead(id: string, userId: string): Promise<void> {
     await this.db
       .from('notifications')

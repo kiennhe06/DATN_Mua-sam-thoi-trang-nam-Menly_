@@ -20,6 +20,7 @@ class NotificationProvider extends ChangeNotifier {
   List<NotificationModel> _notifications = [];
   bool _isLoading = false;
   String _selectedFilter = filterAll;
+  int _unreadCount = 0;
 
   NotificationProvider({bool autoLoad = true}) {
     // Khởi tạo trước với dữ liệu mẫu phong phú để giao diện luôn đầy đủ
@@ -32,6 +33,15 @@ class NotificationProvider extends ChangeNotifier {
   List<NotificationModel> get notifications => _notifications;
   bool get isLoading => _isLoading;
   String get selectedFilter => _selectedFilter;
+
+  int get unreadCount {
+    if (_notifications.isNotEmpty) {
+      return _notifications.where((n) => !n.isRead).length;
+    }
+    return _unreadCount;
+  }
+
+  String get unreadCountLabel => unreadCount > 99 ? '99+' : '$unreadCount';
 
   /// Danh sách thông báo sau khi lọc theo loại đang chọn
   List<NotificationModel> get filteredNotifications {
@@ -56,7 +66,6 @@ class NotificationProvider extends ChangeNotifier {
 
   // Thống kê số lượng theo từng loại
   int get totalCount => _notifications.length;
-  int get unreadCount => _notifications.where((n) => !n.isRead).length;
   int get orderCount => _notifications.where((n) => n.type == 'order').length;
   int get promoCount => _notifications
       .where((n) => n.type == 'promo' || n.type == 'voucher')
@@ -101,7 +110,6 @@ class NotificationProvider extends ChangeNotifier {
             .map((item) =>
                 NotificationModel.fromJson(Map<String, dynamic>.from(item)))
             .toList();
-
         if (serverItems.isNotEmpty) {
           // Kết hợp thông báo server với các thông báo hệ thống mặc định nếu chưa trùng
           final serverIds = serverItems.map((e) => e.id).toSet();
@@ -109,6 +117,10 @@ class NotificationProvider extends ChangeNotifier {
               _notifications.where((n) => !serverIds.contains(n.id)).toList();
           _notifications = [...serverItems, ...retained];
         }
+        final apiUnread = res.data['unread_count'];
+        _unreadCount = apiUnread is num
+            ? apiUnread.toInt()
+            : _notifications.where((n) => !n.isRead).length;
       }
     } catch (_) {
       // Dùng dữ liệu hiện tại nếu offline hoặc chưa đăng nhập
@@ -161,6 +173,7 @@ class NotificationProvider extends ChangeNotifier {
     final idx = _notifications.indexWhere((n) => n.id == id);
     if (idx >= 0) {
       _notifications[idx].isRead = true;
+      if (_unreadCount > 0) _unreadCount--;
       notifyListeners();
       try {
         await _api.dio.patch('/notifications/$id/read');
@@ -173,6 +186,7 @@ class NotificationProvider extends ChangeNotifier {
     for (var n in _notifications) {
       n.isRead = true;
     }
+    _unreadCount = 0;
     notifyListeners();
     try {
       await _api.dio.patch('/notifications/read-all');
@@ -181,7 +195,14 @@ class NotificationProvider extends ChangeNotifier {
 
   /// Xóa 1 thông báo (DELETE /api/v1/notifications/:id)
   Future<void> deleteNotification(String id) async {
+    final removed = _notifications.cast<NotificationItem?>().firstWhere(
+          (n) => n?.id == id,
+          orElse: () => null,
+        );
     _notifications.removeWhere((n) => n.id == id);
+    if (removed != null && !removed.isRead && _unreadCount > 0) {
+      _unreadCount--;
+    }
     notifyListeners();
     try {
       await _api.dio.delete('/notifications/$id');

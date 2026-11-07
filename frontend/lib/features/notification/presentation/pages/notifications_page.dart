@@ -10,8 +10,21 @@ import '../widgets/notification_item_card.dart';
 
 /// Màn hình danh sách và lọc thông báo của Menly (AP-TB1)
 /// Hỗ trợ lọc theo loại: Tất cả, Đơn hàng, Khuyến mãi, Hệ thống, Chưa đọc
-class NotificationsPage extends StatelessWidget {
+class NotificationsPage extends StatefulWidget {
   const NotificationsPage({super.key});
+
+  @override
+  State<NotificationsPage> createState() => _NotificationsPageState();
+}
+
+class _NotificationsPageState extends State<NotificationsPage> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<NotificationProvider>().loadNotifications();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -28,9 +41,11 @@ class NotificationsPage extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppTheme.scaffoldBackground,
       appBar: AppBar(
-        title: const Text(
-          'Thông báo',
-          style: TextStyle(fontWeight: FontWeight.bold),
+        title: Text(
+          notifProv.unreadCount > 0
+              ? 'Thông báo (${notifProv.unreadCountLabel})'
+              : 'Thông báo',
+          style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
         actions: [

@@ -10,6 +10,47 @@ function slugify(value: string) {
     .replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 }
 
+function isPlaceholderImage(url?: string | null) {
+  if (!url) return true;
+  return url.includes('picsum.photos');
+}
+
+function sizeRank(size: string) {
+  const order = ['XS', 'S', 'M', 'L', 'XL', 'XXL', '2XL', '3XL'];
+  const idx = order.indexOf(size.trim().toUpperCase());
+  if (idx >= 0) return idx;
+  const numeric = Number.parseInt(size, 10);
+  return Number.isFinite(numeric) ? 100 + numeric : 1000;
+}
+
+/** Chuan hoa san pham public: anh + bien the that, khong thay bang anh mau. */
+function normalizePublicProduct(product: any) {
+  const images = [...(product.product_images || [])]
+    .filter((image: any) => image?.url && !isPlaceholderImage(image.url))
+    .sort((a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+
+  const variants = [...(product.product_variants || product.variants || [])]
+    .filter((variant: any) => variant?.id)
+    .sort((a: any, b: any) => {
+      const bySize = sizeRank(String(a.size ?? '')) - sizeRank(String(b.size ?? ''));
+      if (bySize !== 0) return bySize;
+      return String(a.color ?? '').localeCompare(String(b.color ?? ''), 'vi');
+    });
+
+  const realThumb = isPlaceholderImage(product.thumbnail_url) ? '' : product.thumbnail_url;
+  const thumbnailUrl = realThumb || images[0]?.url || '';
+
+  return {
+    ...product,
+    category_name: product.categories?.name || product.category_name || '',
+    thumbnail_url: thumbnailUrl,
+    product_images: images,
+    product_variants: variants,
+    variants,
+    images: images.map((image: any) => image.url),
+  };
+}
+
 // Lop truy cap du lieu cho: San pham
 export class ProductModel {
   protected db = supabase;
@@ -31,13 +72,12 @@ export class ProductModel {
     const { data, error } = await query;
     if (error) throw new Error(error.message);
     return (data || []).map((p: any, idx: number) => {
-      if (!p.thumbnail_url || p.thumbnail_url.includes('picsum')) {
-        p.thumbnail_url = 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=600&auto=format&fit=crop';
+      const product = normalizePublicProduct(p);
+      if (product.is_new == null) product.is_new = idx < 10;
+      if (product.is_best_seller == null) {
+        product.is_best_seller = Boolean((idx >= 6 && idx < 18) || (product.rating_count && product.rating_count >= 10));
       }
-      p.is_new = idx < 10;
-      p.category_name = p.categories?.name || '';
-      p.is_best_seller = Boolean((idx >= 6 && idx < 18) || (p.rating_count && p.rating_count >= 10));
-      return p;
+      return product;
     });
   }
 
@@ -51,13 +91,7 @@ export class ProductModel {
       .eq('approval_status', 'approved')
       .single();
     if (error) throw new Error(error.message);
-    if (data) {
-      data.category_name = data.categories?.name || '';
-      if (!data.thumbnail_url || data.thumbnail_url.includes('picsum')) {
-      data.thumbnail_url = 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=600&auto=format&fit=crop';
-    }
-    }
-    return data;
+    return data ? normalizePublicProduct(data) : data;
   }
 
   async findAdminAll(opts: AdminProductListOptions) {

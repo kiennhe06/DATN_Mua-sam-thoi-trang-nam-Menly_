@@ -5,6 +5,7 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/format.dart';
 import 'package:menly_app/features/order/data/models/order_model.dart';
 import '../pages/order_detail_page.dart';
+import '../pages/order_return_request_page.dart';
 import 'order_cancel_dialog.dart';
 import '../providers/order_provider.dart';
 
@@ -216,6 +217,27 @@ class OrderCard extends StatelessWidget {
                         },
                       ),
                       const SizedBox(width: 6),
+                    ],
+                    if (orderProv.canRequestReturn(order)) ...[
+                      TextButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => OrderReturnRequestPage(order: order),
+                            ),
+                          );
+                        },
+                        child: Text(
+                          'Trả hàng',
+                          style: TextStyle(
+                            color: c.primary,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12.5,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 4),
                     ],
                     OutlinedButton(
                       style: OutlinedButton.styleFrom(
