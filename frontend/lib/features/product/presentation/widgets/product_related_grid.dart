@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import '../../../../core/utils/format.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/product_rating_row.dart';
 import '../../../wishlist/presentation/providers/wishlist_provider.dart';
 import '../../data/models/product_model.dart';
 import '../pages/product_detail_page.dart';
-import 'package:menly_app/core/utils/format.dart';
 
 class ProductRelatedGrid extends StatelessWidget {
   final ProductModel product;
@@ -138,6 +139,11 @@ class ProductRelatedGrid extends StatelessWidget {
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                           ),
+                          const SizedBox(height: 4),
+                          ProductRatingRow(
+                            ratingAvg: related.ratingAvg,
+                            ratingCount: related.ratingCount,
+                          ),
                           const SizedBox(height: 6),
                           Text(
                             formatPrice(related.price),
@@ -160,3 +166,4 @@ class ProductRelatedGrid extends StatelessWidget {
     );
   }
 }
+

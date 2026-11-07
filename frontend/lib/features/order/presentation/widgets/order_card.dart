@@ -5,6 +5,7 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/format.dart';
 import 'package:menly_app/features/order/data/models/order_model.dart';
 import '../pages/order_detail_page.dart';
+import '../pages/order_return_request_page.dart';
 import 'order_cancel_dialog.dart';
 import '../providers/order_provider.dart';
 
@@ -185,6 +186,55 @@ class OrderCard extends StatelessWidget {
                               color: c.danger,
                               fontWeight: FontWeight.bold,
                               fontSize: 12.5),
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                    ],
+                    if (order.status != OrderStatus.canceled &&
+                        order.status != OrderStatus.expired &&
+                        order.status != OrderStatus.pendingPayment) ...[
+                      ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: c.secondary,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 8),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8)),
+                          elevation: 0,
+                        ),
+                        icon: const Icon(Icons.star_rate_rounded, size: 15),
+                        label: const Text('Đánh giá',
+                            style: TextStyle(
+                                fontSize: 12, fontWeight: FontWeight.bold)),
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => OrderDetailPage(order: order),
+                            ),
+                          );
+                        },
+                      ),
+                      const SizedBox(width: 6),
+                    ],
+                    if (orderProv.canRequestReturn(order)) ...[
+                      TextButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => OrderReturnRequestPage(order: order),
+                            ),
+                          );
+                        },
+                        child: Text(
+                          'Trả hàng',
+                          style: TextStyle(
+                            color: c.primary,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12.5,
+                          ),
                         ),
                       ),
                       const SizedBox(width: 4),

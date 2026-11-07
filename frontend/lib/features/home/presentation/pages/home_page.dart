@@ -1,13 +1,13 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:menly_app/core/navigation/main_navigation_shell.dart';
 import 'package:menly_app/core/theme/app_theme.dart';
-import 'package:menly_app/core/utils/app_snackbar.dart';
 import 'package:menly_app/core/widgets/category_tab.dart';
 import 'package:menly_app/core/widgets/product_card.dart';
-import 'package:menly_app/main.dart';
 import 'package:menly_app/features/product/presentation/pages/search_page.dart';
 import 'package:menly_app/features/product/data/models/product_model.dart';
+import 'package:menly_app/features/notification/presentation/widgets/notification_bell_button.dart';
 import 'package:menly_app/features/cart/presentation/providers/cart_provider.dart';
 import 'package:menly_app/features/product/presentation/pages/product_detail_page.dart';
 import 'package:menly_app/features/product/presentation/pages/product_list_page.dart';
@@ -119,6 +119,7 @@ class _HomePageState extends State<HomePage> {
           ),
         ),
         actions: [
+          const NotificationBellButton(),
           Consumer<CartProvider>(
             builder: (_, cart, __) => IconButton(
               tooltip: 'Giỏ hàng',
@@ -334,16 +335,19 @@ class _HomePageState extends State<HomePage> {
             onToggleFavorite: () => wishlistProv.toggleFavorite(p),
             onAdd: () async {
               final cart = context.read<CartProvider>();
+              final productProv = context.read<ProductProvider>();
               final messenger = ScaffoldMessenger.of(context);
+              final detail = await productProv.fetchProductDetail(p.id);
+              final source = detail ?? p;
               final availableVariants =
-                  p.variants.where((variant) => variant.stock > 0);
+                  source.variants.where((variant) => variant.stock > 0);
               if (availableVariants.isEmpty) {
-                AppSnackBar.show(context,
-                    message: 'Sản phẩm hiện không có hàng');
+                messenger.showSnackBar(const SnackBar(
+                    content: Text('Sản phẩm hiện không có hàng')));
                 return;
               }
               final variant = availableVariants.first;
-              final added = await cart.addToCart(p,
+              final added = await cart.addToCart(source,
                   size: variant.size, color: variant.color);
               messenger.showSnackBar(SnackBar(
                 content: Text(added

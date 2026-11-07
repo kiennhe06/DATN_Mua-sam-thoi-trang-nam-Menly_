@@ -15,7 +15,7 @@ String formatPrice(num amount) {
   return '${formatNumber(amount)} đ';
 }
 
-/// Formats an integer VND amount as "1.200.000đ".
-String formatVnd(int amount) {
+/// Formats an integer or double VND amount as "1.200.000đ".
+String formatVnd(num amount) {
   return '${formatNumber(amount)}đ';
 }

@@ -89,3 +89,4 @@ class CheckoutPaymentCancelledDialog extends StatelessWidget {
     );
   }
 }
+

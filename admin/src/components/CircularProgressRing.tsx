@@ -14,10 +14,19 @@ export interface CircularProgressRingProps {
   badge?: string;
 }
 
+function getDisplayTextClass(text?: string) {
+  if (!text) return 'text-xl sm:text-2xl font-mono font-extrabold';
+  if (text.length > 18) return 'text-[11px] sm:text-xs font-bold';
+  if (text.length > 14) return 'text-xs sm:text-sm font-bold';
+  if (text.length > 10) return 'text-sm sm:text-base font-extrabold';
+  if (text.length > 6) return 'text-base sm:text-lg font-extrabold';
+  return 'text-xl sm:text-2xl font-mono font-extrabold';
+}
+
 export function CircularProgressRing({
   value,
-  size = 140,
-  strokeWidth = 12,
+  size = 148,
+  strokeWidth = 11,
   title,
   subtitle,
   valueDisplay,
@@ -87,7 +96,12 @@ export function CircularProgressRing({
 
         {/* Center Text */}
         <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-2">
-          <span className="text-xl sm:text-2xl font-extrabold text-ink tracking-tight font-mono truncate max-w-full">
+          <span
+            className={`text-ink tracking-tight whitespace-nowrap leading-none select-all ${getDisplayTextClass(
+              valueDisplay
+            )}`}
+            title={valueDisplay || `${Math.round(clampedValue)}%`}
+          >
             {valueDisplay || `${Math.round(clampedValue)}%`}
           </span>
         </div>

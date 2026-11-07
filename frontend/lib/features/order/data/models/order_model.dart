@@ -176,9 +176,49 @@ class OrderModel {
     this.cancelReason,
   });
 
+  OrderModel copyWith({
+    String? id,
+    String? code,
+    OrderStatus? status,
+    String? paymentMethod,
+    bool? isPaid,
+    int? subtotal,
+    int? discountAmount,
+    int? shippingFee,
+    int? total,
+    String? shipName,
+    String? shipPhone,
+    String? shipAddress,
+    DateTime? createdAt,
+    List<OrderItemModel>? items,
+    String? cancelReason,
+  }) {
+    return OrderModel(
+      id: id ?? this.id,
+      code: code ?? this.code,
+      status: status ?? this.status,
+      paymentMethod: paymentMethod ?? this.paymentMethod,
+      isPaid: isPaid ?? this.isPaid,
+      subtotal: subtotal ?? this.subtotal,
+      discountAmount: discountAmount ?? this.discountAmount,
+      shippingFee: shippingFee ?? this.shippingFee,
+      total: total ?? this.total,
+      shipName: shipName ?? this.shipName,
+      shipPhone: shipPhone ?? this.shipPhone,
+      shipAddress: shipAddress ?? this.shipAddress,
+      createdAt: createdAt ?? this.createdAt,
+      items: items ?? this.items,
+      cancelReason: cancelReason ?? this.cancelReason,
+    );
+  }
+
   /// Co the huy don khong? (Chi cho phep huy khi con o trang thai cho thanh toan hoac dang xu ly)
   bool get canCancel =>
       status == OrderStatus.pendingPayment || status == OrderStatus.processing;
+
+  /// Co the gui yeu cau tra hang khi don da giao / hoan tat
+  bool get canReturn =>
+      status == OrderStatus.delivered || status == OrderStatus.completed;
 
   factory OrderModel.fromJson(Map<String, dynamic> json) {
     var rawItems = json['items'] ?? json['order_items'];

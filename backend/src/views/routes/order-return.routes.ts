@@ -1,21 +1,40 @@
 import { Router } from 'express';
-import { requireAdmin, requireAuth, requireStaffOrAdmin } from '../../middlewares/auth.js';
+import type { Request } from 'express';
+import { requireAuth, requireStaffOrAdmin } from '../../middlewares/auth.js';
+import { uploadMultipleImagesMiddleware } from '../../middlewares/upload.js';
 import { OrderReturnViewModel } from '../../viewmodels/order-return.viewmodel.js';
 
 // Tra hang routes
 const router = Router();
 const vm = new OrderReturnViewModel();
 
-// POST /api/v1/order-returns - tao yeu cau tra hang
-router.post('/', requireAuth, async (req, res) => {
+function getUploadedFiles(req: Request): Express.Multer.File[] {
+  return Array.isArray(req.files) ? (req.files as Express.Multer.File[]) : [];
+}
+
+function parseImages(value: unknown): string[] {
+  if (Array.isArray(value)) return value.map(String).filter(Boolean);
+  if (typeof value === 'string' && value.trim()) {
+    try {
+      const parsed = JSON.parse(value);
+      if (Array.isArray(parsed)) return parsed.map(String).filter(Boolean);
+    } catch {
+      return [value];
+    }
+    return [value];
+  }
+  return [];
+}
+
+// POST /api/v1/order-returns - tao yeu cau tra hang (JSON hoac multipart anh)
+router.post('/', requireAuth, uploadMultipleImagesMiddleware('images', 5), async (req, res) => {
   try {
     const orderId = String(req.body?.orderId ?? req.body?.order_id ?? '').trim();
     const reason = String(req.body?.reason ?? '').trim();
-    const proofImages = Array.isArray(req.body?.proofImages)
-      ? req.body.proofImages.map((v: unknown) => String(v))
-      : Array.isArray(req.body?.proof_images)
-        ? req.body.proof_images.map((v: unknown) => String(v))
-        : [];
+    const proofImages = [
+      ...parseImages(req.body?.proofImages),
+      ...parseImages(req.body?.proof_images),
+    ];
     const refundAmount = Number(req.body?.refundAmount ?? req.body?.refund_amount ?? 0);
 
     if (!orderId) {
@@ -27,6 +46,7 @@ router.post('/', requireAuth, async (req, res) => {
       userId: req.user!.id,
       reason,
       proofImages,
+      files: getUploadedFiles(req),
       refundAmount,
     });
 

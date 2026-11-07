@@ -48,13 +48,15 @@ router.get('/mine', requireAuth, async (req, res) => {
 async function createReview(req: Request, res: Response) {
   try {
     const { orderItemId, rating, comment } = req.body ?? {};
-    const productId = String(req.params.productId ?? req.body?.productId ?? '');
+    const rawProductId = String(req.params.productId ?? req.body?.productId ?? '').trim();
+    const productId = rawProductId || undefined;
+    const cleanOrderItemId = orderItemId ? String(orderItemId).trim() : undefined;
     const images = parseImages(req.body?.images);
 
     const data = await vm.create({
       userId: req.user!.id,
       productId,
-      orderItemId: String(orderItemId ?? ''),
+      orderItemId: cleanOrderItemId,
       rating: Number(rating),
       comment: typeof comment === 'string' ? comment : undefined,
       files: getUploadedFiles(req),

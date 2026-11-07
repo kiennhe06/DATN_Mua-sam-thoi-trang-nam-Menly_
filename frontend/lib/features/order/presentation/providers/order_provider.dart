@@ -1,8 +1,12 @@
+import 'dart:convert';
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/network/api_client.dart';
 import 'package:menly_app/features/cart/data/models/cart_item_model.dart';
 import 'package:menly_app/features/order/data/models/order_model.dart';
-import 'package:menly_app/core/network/api_error.dart';
+import 'package:menly_app/features/order/data/models/order_return_model.dart';
 
 /// Provider quan ly Don hang khach hang & Don hang nhan vien tren app
 /// Phu trach boi: Thanh Toan (AP-DH2, TM07, AP-QT9, AP-TT1)
@@ -14,8 +18,10 @@ import 'package:menly_app/core/network/api_error.dart';
 class OrderProvider extends ChangeNotifier {
   final ApiClient _api = ApiClient();
   List<OrderModel> _orders = [];
+  List<OrderReturnModel> _returns = [];
   bool _isLoading = false;
   String? _errorMessage;
+  bool _isUnauthorized = false;
   String _selectedStatusFilter =
       'all'; // 'all', 'pending_payment', 'processing', 'shipping', 'delivered', 'canceled'
 
@@ -24,15 +30,74 @@ class OrderProvider extends ChangeNotifier {
   String _staffSearchQuery = '';
 
   OrderProvider() {
-    loadOrders();
+    _loadFromLocalCache().then((_) => loadOrders());
+  }
+
+  Future<void> _loadFromLocalCache() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final savedStr = prefs.getString('cached_orders');
+      if (savedStr != null && savedStr.isNotEmpty) {
+        final decoded = jsonDecode(savedStr);
+        if (decoded is List && decoded.isNotEmpty) {
+          _orders = decoded
+              .map((item) => OrderModel.fromJson(Map<String, dynamic>.from(item)))
+              .toList();
+          notifyListeners();
+        }
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _saveToLocalCache() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final encoded = jsonEncode(_orders.map((o) => o.toJson()).toList());
+      await prefs.setString('cached_orders', encoded);
+    } catch (_) {}
   }
 
   List<OrderModel> get allOrders => _orders;
+  List<OrderReturnModel> get returnRequests => _returns;
   bool get isLoading => _isLoading;
+  bool get isUnauthorized => _isUnauthorized;
   String get selectedStatusFilter => _selectedStatusFilter;
   String get staffStatusFilter => _staffStatusFilter;
   String get staffSearchQuery => _staffSearchQuery;
   String? get errorMessage => _errorMessage;
+
+  String _parseDioError(dynamic error, {String? defaultMsg, bool isStaff = false}) {
+    if (error is DioException) {
+      final statusCode = error.response?.statusCode;
+      String? serverMsg;
+      final data = error.response?.data;
+      if (data is Map && data['error'] != null) {
+        serverMsg = data['error'].toString();
+      }
+      if (serverMsg != null && serverMsg.isNotEmpty) {
+        if (statusCode == 401) _isUnauthorized = true;
+        return serverMsg;
+      }
+      if (statusCode == 401) {
+        _isUnauthorized = true;
+        return isStaff
+            ? 'Vui lòng đăng nhập với tài khoản Quản trị viên (Admin) hoặc Nhân viên.'
+            : 'Vui lòng đăng nhập để xem danh sách đơn hàng của bạn.';
+      }
+      if (statusCode == 403) {
+        return 'Tài khoản của bạn không có quyền xem danh sách đơn hàng nhân viên.';
+      }
+      if (statusCode == 404) {
+        return 'Không tìm thấy dữ liệu đơn hàng.';
+      }
+      if (error.type == DioExceptionType.connectionTimeout ||
+          error.type == DioExceptionType.receiveTimeout ||
+          error.type == DioExceptionType.connectionError) {
+        return 'Không thể kết nối đến máy chủ. Vui lòng kiểm tra lại mạng.';
+      }
+    }
+    return defaultMsg ?? 'Đã xảy ra lỗi khi tải dữ liệu đơn hàng.';
+  }
 
   // =================== AP-DH2 & TM07: ĐƠN CỦA TÔI ===================
 
@@ -40,6 +105,7 @@ class OrderProvider extends ChangeNotifier {
   Future<void> loadOrders() async {
     _isLoading = true;
     _errorMessage = null;
+    _isUnauthorized = false;
     notifyListeners();
 
     try {
@@ -51,20 +117,22 @@ class OrderProvider extends ChangeNotifier {
               .map((item) =>
                   OrderModel.fromJson(Map<String, dynamic>.from(item)))
               .toList();
+          _saveToLocalCache();
         }
       }
     } catch (error) {
-      _errorMessage = friendlyErrorMessage(error,
-          fallback: 'Không tải được đơn hàng, vui lòng thử lại.');
+      _errorMessage = _parseDioError(error, defaultMsg: 'Không thể tải đơn hàng. Vui lòng thử lại sau.');
     } finally {
       _isLoading = false;
       notifyListeners();
+      await loadReturnRequests();
     }
   }
 
   Future<void> loadStaffOrders() async {
     _isLoading = true;
     _errorMessage = null;
+    _isUnauthorized = false;
     notifyListeners();
     try {
       final response = await _api.dio.get('/orders/staff');
@@ -76,8 +144,7 @@ class OrderProvider extends ChangeNotifier {
           .map((item) => OrderModel.fromJson(Map<String, dynamic>.from(item)))
           .toList();
     } catch (error) {
-      _errorMessage = friendlyErrorMessage(error,
-          fallback: 'Không tải được danh sách đơn hàng, vui lòng thử lại.');
+      _errorMessage = _parseDioError(error, defaultMsg: 'Không thể tải danh sách đơn hàng nhân viên.', isStaff: true);
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -121,6 +188,81 @@ class OrderProvider extends ChangeNotifier {
 
   OrderModel? findById(String orderId) => getOrderById(orderId);
 
+  OrderReturnModel? returnForOrder(String orderId) {
+    try {
+      return _returns.firstWhere((item) => item.orderId == orderId);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  bool canRequestReturn(OrderModel order) {
+    if (!order.canReturn) return false;
+    final existing = returnForOrder(order.id);
+    return existing == null || !existing.isOpen;
+  }
+
+  Future<void> loadReturnRequests() async {
+    try {
+      final res = await _api.dio.get('/order-returns');
+      final rawList = res.data?['data'] ?? res.data;
+      if (rawList is List) {
+        _returns = rawList
+            .map((item) => OrderReturnModel.fromJson(Map<String, dynamic>.from(item)))
+            .toList();
+      }
+    } catch (_) {
+      // Giữ danh sách cũ nếu API lỗi, không chặn màn đơn hàng
+    } finally {
+      notifyListeners();
+    }
+  }
+
+  Future<OrderReturnModel> submitReturnRequest({
+    required String orderId,
+    required String reason,
+    List<XFile> images = const [],
+  }) async {
+    if (reason.trim().isEmpty) {
+      throw Exception('Vui lòng nhập lý do trả hàng');
+    }
+    if (images.isEmpty) {
+      throw Exception('Vui lòng đính kèm ít nhất 1 hình ảnh minh chứng');
+    }
+
+    final form = FormData();
+    form.fields.add(MapEntry('orderId', orderId));
+    form.fields.add(MapEntry('reason', reason.trim()));
+
+    for (final image in images.take(5)) {
+      final bytes = await image.readAsBytes();
+      form.files.add(
+        MapEntry('images', MultipartFile.fromBytes(bytes, filename: image.name)),
+      );
+    }
+
+    try {
+      final res = await _api.dio.post(
+        '/order-returns',
+        data: form,
+        options: Options(contentType: 'multipart/form-data'),
+      );
+      final data = res.data['data'] ?? res.data;
+      final created = OrderReturnModel.fromJson(Map<String, dynamic>.from(data));
+      _returns.removeWhere((item) => item.orderId == created.orderId && !item.isOpen);
+      _returns.insert(0, created);
+      _errorMessage = null;
+      notifyListeners();
+      return created;
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      if (data is Map && data['error'] != null) {
+        throw Exception(data['error'].toString());
+      }
+      throw Exception('Không thể gửi yêu cầu trả hàng. Vui lòng thử lại.');
+    }
+  }
+
   Future<bool> cancelOrderApi(String orderId,
           {String reason = 'Khách hàng yêu cầu hủy'}) =>
       cancelOrder(orderId, reason: reason);
@@ -142,11 +284,11 @@ class OrderProvider extends ChangeNotifier {
           _orders[index] =
               OrderModel.fromJson(Map<String, dynamic>.from(rawOrder));
           _errorMessage = null;
+          _saveToLocalCache();
           notifyListeners();
           return true;
         } catch (error) {
-          _errorMessage = friendlyErrorMessage(error,
-              fallback: 'Không hủy được đơn hàng, vui lòng thử lại.');
+          _errorMessage = _parseDioError(error, defaultMsg: 'Không thể hủy đơn hàng. Vui lòng thử lại.');
           notifyListeners();
           return false;
         }
@@ -203,6 +345,7 @@ class OrderProvider extends ChangeNotifier {
     }
     _orders.insert(0, createdOrder);
     _errorMessage = null;
+    _saveToLocalCache();
     notifyListeners();
     return createdOrder;
   }
@@ -226,8 +369,7 @@ class OrderProvider extends ChangeNotifier {
       }
       _errorMessage = null;
     } catch (error) {
-      _errorMessage = friendlyErrorMessage(error,
-          fallback: 'Không làm mới được trạng thái đơn hàng.');
+      _errorMessage = _parseDioError(error, defaultMsg: 'Không thể làm mới trạng thái đơn hàng.');
     } finally {
       notifyListeners();
     }
@@ -285,8 +427,7 @@ class OrderProvider extends ChangeNotifier {
         notifyListeners();
         return true;
       } catch (error) {
-        _errorMessage = friendlyErrorMessage(error,
-            fallback: 'Không cập nhật được trạng thái đơn hàng.');
+        _errorMessage = _parseDioError(error, defaultMsg: 'Không thể cập nhật trạng thái đơn hàng.', isStaff: true);
         notifyListeners();
       }
     }

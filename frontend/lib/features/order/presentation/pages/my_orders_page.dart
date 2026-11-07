@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/state_views.dart';
+import 'package:menly_app/features/auth/presentation/pages/login_page.dart';
 import '../providers/order_provider.dart';
 import '../widgets/order_card.dart';
 import '../widgets/order_status_tabs.dart';
@@ -62,11 +63,34 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
                           children: [
                             const SizedBox(height: 80),
                             StatusView(
-                              title: orderProv.errorMessage == null
-                                  ? 'Không có đơn hàng nào'
-                                  : 'Không tải được đơn hàng',
+                              icon: orderProv.isUnauthorized
+                                  ? Icons.lock_outline
+                                  : (orderProv.errorMessage != null
+                                      ? Icons.error_outline
+                                      : Icons.receipt_long_outlined),
+                              title: orderProv.isUnauthorized
+                                  ? 'Bạn chưa đăng nhập'
+                                  : (orderProv.errorMessage == null
+                                      ? 'Không có đơn hàng nào'
+                                      : 'Không tải được đơn hàng'),
                               message: orderProv.errorMessage ??
                                   'Bạn chưa có đơn hàng nào ở trạng thái này.',
+                              actionLabel: orderProv.isUnauthorized
+                                  ? 'Đăng nhập ngay'
+                                  : (orderProv.errorMessage != null ? 'Thử lại' : null),
+                              onAction: orderProv.isUnauthorized
+                                  ? () async {
+                                      await Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) => const LoginPage(),
+                                        ),
+                                      );
+                                      if (mounted) orderProv.loadOrders();
+                                    }
+                                  : (orderProv.errorMessage != null
+                                      ? () => orderProv.loadOrders()
+                                      : null),
                             ),
                           ],
                         )

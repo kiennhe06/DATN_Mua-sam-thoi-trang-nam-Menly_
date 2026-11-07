@@ -5,7 +5,10 @@ import 'package:menly_app/core/network/api_client.dart';
 import 'package:menly_app/features/auth/presentation/pages/forgot_password_page.dart';
 import 'package:menly_app/features/auth/presentation/pages/register_page.dart';
 import 'package:menly_app/features/auth/presentation/providers/auth_provider.dart';
-import 'package:menly_app/main.dart';
+import 'package:menly_app/core/navigation/main_navigation_shell.dart';
+import 'package:menly_app/features/cart/presentation/providers/cart_provider.dart';
+import 'package:menly_app/features/notification/presentation/providers/notification_provider.dart';
+import 'package:menly_app/features/order/presentation/providers/order_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginPage extends StatefulWidget {
@@ -60,7 +63,11 @@ class _LoginPageState extends State<LoginPage> {
               UserModel.fromJson(Map<String, dynamic>.from(userJson)),
             );
         if (!mounted) return;
+        await context.read<NotificationProvider>().loadNotifications();
+        if (!mounted) return;
       }
+      context.read<CartProvider>().loadCartFromApi();
+      context.read<OrderProvider>().loadOrders();
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Đăng nhập thành công.'),

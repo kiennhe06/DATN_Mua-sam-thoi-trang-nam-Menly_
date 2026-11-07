@@ -6,6 +6,7 @@ import '../theme/app_theme.dart';
 import '../utils/format.dart';
 import 'add_to_cart_button.dart';
 import 'pressable.dart';
+import 'product_rating_row.dart';
 import 'package:menly_app/features/product/data/models/product_model.dart';
 
 /// The san pham chuan cua Menly.
@@ -73,6 +74,12 @@ class ProductCard extends StatelessWidget {
                       letterSpacing: 0.2,
                     ),
                   ),
+                ),
+                const SizedBox(height: 3),
+                // Hang sao danh gia that tu backend (nhanh hung them vao)
+                ProductRatingRow(
+                  ratingAvg: product.ratingAvg,
+                  ratingCount: product.ratingCount,
                 ),
                 const SizedBox(height: 3),
                 Text(

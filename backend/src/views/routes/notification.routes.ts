@@ -38,8 +38,21 @@ router.post('/', async (req, res) => {
 // GET /api/v1/notifications - danh sach thong bao cua toi
 router.get('/', async (req, res) => {
   try {
-    const data = await vm.list(req.user!.id);
-    return res.json({ data });
+    const [data, unreadCount] = await Promise.all([
+      vm.list(req.user!.id),
+      vm.unreadCount(req.user!.id),
+    ]);
+    return res.json({ data, unread_count: unreadCount });
+  } catch (e) {
+    return res.status(500).json({ error: e instanceof Error ? e.message : 'Loi' });
+  }
+});
+
+// GET /api/v1/notifications/unread-count - so thong bao chua doc
+router.get('/unread-count', async (req, res) => {
+  try {
+    const unreadCount = await vm.unreadCount(req.user!.id);
+    return res.json({ data: { unread_count: unreadCount } });
   } catch (e) {
     return res.status(500).json({ error: e instanceof Error ? e.message : 'Loi' });
   }

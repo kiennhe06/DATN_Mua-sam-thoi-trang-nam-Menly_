@@ -396,7 +396,9 @@ class ProfilePage extends StatelessWidget {
                   ProfileMenuItem(
                     title: 'Thông báo',
                     subtitle: 'Xem khuyến mãi, tin tức và thông báo từ shop',
-                    badge: '${context.watch<NotificationProvider>().unreadCount}',
+                    badge: context.watch<NotificationProvider>().unreadCount > 0
+                        ? context.watch<NotificationProvider>().unreadCountLabel
+                        : null,
                     onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationsPage())),
                   ),
                   const Divider(height: 1),

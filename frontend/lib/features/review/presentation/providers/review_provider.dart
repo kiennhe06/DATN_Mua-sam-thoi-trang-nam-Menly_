@@ -75,13 +75,19 @@ class ReviewProvider extends ChangeNotifier {
   }
 
   Future<ReviewModel> submitReview({
-    required String orderItemId,
+    String? orderItemId,
+    String? productId,
     required int rating,
     String? comment,
     List<XFile> images = const [],
   }) async {
     final form = FormData();
-    form.fields.add(MapEntry('orderItemId', orderItemId));
+    if (orderItemId != null && orderItemId.isNotEmpty) {
+      form.fields.add(MapEntry('orderItemId', orderItemId));
+    }
+    if (productId != null && productId.isNotEmpty) {
+      form.fields.add(MapEntry('productId', productId));
+    }
     form.fields.add(MapEntry('rating', rating.toString()));
     if (comment != null && comment.trim().isNotEmpty) {
       form.fields.add(MapEntry('comment', comment.trim()));
@@ -104,7 +110,9 @@ class ReviewProvider extends ChangeNotifier {
       final data = res.data['data'] ?? res.data;
       final review = ReviewModel.fromJson(Map<String, dynamic>.from(data));
 
-      _reviewByOrderItem[orderItemId] = review;
+      if (review.orderItemId.isNotEmpty) {
+        _reviewByOrderItem[review.orderItemId] = review;
+      }
       final productReviews =
           _reviewsByProduct[review.productId] ?? const <ReviewModel>[];
       _reviewsByProduct[review.productId] = [review, ...productReviews];

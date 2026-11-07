@@ -1,3 +1,5 @@
+import 'package:dio/dio.dart';
+import 'package:menly_app/core/utils/format.dart';
 import 'package:menly_app/features/order/data/models/order_model.dart';
 import '../widgets/checkout_payment_cancelled_dialog.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -13,7 +15,7 @@ import '../../../cart/presentation/providers/cart_provider.dart';
 import '../../../voucher/presentation/widgets/voucher_select_sheet.dart';
 import '../providers/order_provider.dart';
 import 'vnpay_payment_page.dart';
-import 'package:menly_app/core/utils/format.dart';
+import 'package:menly_app/features/notification/presentation/providers/notification_provider.dart';
 
 /// Man hinh Dat hang & Thanh toan (AP-DH2, AP-TT1, AP-VC1, AP-DC1)
 /// Ho tro:
@@ -207,24 +209,35 @@ class _CheckoutPageState extends State<CheckoutPage> {
         voucherCode: cart.appliedVoucher?.code,
       );
 
-      // Xoa cac mon da mua khoi gio hang neu dat tu gio
-      if (widget.customItems == null) {
-        await cart.clearSelectedItems();
-      }
+      // Xóa các món vừa đặt hàng khỏi giỏ hàng
+      await cart.removePurchasedItems(items);
 
       if (!mounted) return;
       setState(() => _isSubmitting = false);
 
       if (_paymentMethod == 'vnpay') {
+        final orderForPayment = (createdOrder.total == total && createdOrder.discountAmount == discount)
+            ? createdOrder
+            : createdOrder.copyWith(
+                total: total,
+                discountAmount: discount,
+                shippingFee: shippingFee,
+              );
         final paymentSuccess = await Navigator.push<bool>(
           context,
           MaterialPageRoute(
-            builder: (_) => VNPayPaymentPage(order: createdOrder),
+            builder: (_) => VNPayPaymentPage(order: orderForPayment),
           ),
         );
         if (!mounted) return;
 
         if (paymentSuccess == true) {
+          context.read<NotificationProvider>().addNotification(
+            title: 'Thanh toán VNPay thành công #${createdOrder.code}',
+            body: 'Giao dịch thanh toán trực tuyến ${formatPrice(createdOrder.total)} cho đơn hàng #${createdOrder.code} qua VNPay đã thành công.',
+            type: 'order',
+            data: {'orderId': createdOrder.id, 'orderCode': createdOrder.code},
+          );
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
@@ -234,9 +247,21 @@ class _CheckoutPageState extends State<CheckoutPage> {
         } else {
           // Nguoi dung huy thanh toan hoac thanh toan that bai:
           // KHONG chuyen den trang thanh toan thanh cong!
+          context.read<NotificationProvider>().addNotification(
+            title: 'Chưa hoàn tất thanh toán #${createdOrder.code}',
+            body: 'Giao dịch qua VNPay chưa hoàn tất. Đơn hàng #${createdOrder.code} đang ở trạng thái chờ thanh toán.',
+            type: 'order',
+            data: {'orderId': createdOrder.id, 'orderCode': createdOrder.code},
+          );
           _showPaymentCancelledDialog(createdOrder);
         }
       } else {
+        context.read<NotificationProvider>().addNotification(
+          title: 'Đặt hàng thành công #${createdOrder.code}',
+          body: 'Đơn hàng gồm ${createdOrder.items.length} sản phẩm trị giá ${formatPrice(createdOrder.total)} đã được ghi nhận. Menly đang chuẩn bị đơn cho bạn.',
+          type: 'order',
+          data: {'orderId': createdOrder.id, 'orderCode': createdOrder.code},
+        );
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
@@ -247,9 +272,25 @@ class _CheckoutPageState extends State<CheckoutPage> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _isSubmitting = false);
+      String errorMessage = 'Không thể đặt hàng, vui lòng thử lại sau.';
+      if (e is DioException) {
+        final serverMsg = e.response?.data is Map ? e.response?.data['error']?.toString() : null;
+        if (serverMsg != null && serverMsg.isNotEmpty) {
+          errorMessage = serverMsg;
+        } else if (e.response?.statusCode == 401) {
+          errorMessage = 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.';
+        } else if (e.response?.statusCode == 400) {
+          errorMessage = 'Thông tin đặt hàng không hợp lệ. Vui lòng kiểm tra lại.';
+        }
+      } else {
+        errorMessage = e.toString();
+      }
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-            content: Text('Lỗi đặt hàng: $e'), backgroundColor: Colors.red),
+          content: Text('Lỗi đặt hàng: $errorMessage'),
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }
@@ -270,6 +311,12 @@ class _CheckoutPageState extends State<CheckoutPage> {
     );
     if (!mounted) return;
     if (success == true) {
+      context.read<NotificationProvider>().addNotification(
+        title: 'Thanh toán VNPay thành công #${order.code}',
+        body: 'Giao dịch thanh toán trực tuyến cho đơn hàng #${order.code} qua cổng VNPay đã thành công.',
+        type: 'order',
+        data: {'orderId': order.id, 'orderCode': order.code},
+      );
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(

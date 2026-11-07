@@ -10,13 +10,15 @@ import '../../../../core/utils/app_snackbar.dart';
 import '../providers/review_provider.dart';
 
 class ReviewFormPage extends StatefulWidget {
-  final String orderItemId;
+  final String? orderItemId;
+  final String? productId;
   final String productName;
   final String thumbnailUrl;
 
   const ReviewFormPage({
     super.key,
-    required this.orderItemId,
+    this.orderItemId,
+    this.productId,
     required this.productName,
     this.thumbnailUrl = '',
   });
@@ -78,6 +80,7 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
     try {
       await context.read<ReviewProvider>().submitReview(
             orderItemId: widget.orderItemId,
+            productId: widget.productId,
             rating: _rating,
             comment: _commentController.text,
             images: _images,
