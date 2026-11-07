@@ -8,6 +8,7 @@ import 'package:menly_app/features/address/presentation/pages/address_page.dart'
 import 'package:menly_app/features/auth/presentation/pages/change_password_page.dart';
 import 'package:menly_app/features/auth/presentation/pages/login_page.dart';
 import 'package:menly_app/features/auth/presentation/providers/auth_provider.dart';
+import 'package:menly_app/features/auth/presentation/widgets/profile_avatar.dart';
 import 'package:menly_app/features/notification/presentation/pages/notifications_page.dart';
 import 'package:menly_app/features/notification/presentation/providers/notification_provider.dart';
 import 'package:menly_app/features/order/presentation/pages/my_orders_page.dart';
@@ -28,14 +29,14 @@ class ProfilePage extends StatelessWidget {
     final user = auth.user;
     final nameCtrl = TextEditingController(text: user?.fullName ?? '');
     final phoneCtrl = TextEditingController(text: user?.phone ?? '');
-    final avatarCtrl = TextEditingController(text: user?.avatarUrl ?? '');
+    final selectedPreset = AvatarPreset.find(user?.avatarUrl);
+    final avatarCtrl = TextEditingController(
+      text: selectedPreset == null ? user?.avatarUrl ?? '' : '',
+    );
+    String? selectedPresetId = selectedPreset?.id;
+    var isSaving = false;
 
-    final avatarPresets = [
-      'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=300&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=300&auto=format&fit=crop&q=80',
-    ];
+    const avatarPresets = AvatarPreset.presets;
 
     showModalBottomSheet(
       context: context,
@@ -74,45 +75,46 @@ class ProfilePage extends StatelessWidget {
                     ),
                     const SizedBox(height: 16),
 
-                    // Chon Avatar
-                    const Text('Ảnh đại diện (Avatar):', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                    const Text('Chọn ảnh đại diện:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                     const SizedBox(height: 8),
                     Row(
                       children: [
-                        CircleAvatar(
+                        ProfileAvatar(
+                          avatarUrl: selectedPresetId ??
+                              (avatarCtrl.text.trim().isEmpty ? null : avatarCtrl.text.trim()),
                           radius: 30,
-                          backgroundColor: Colors.grey.shade200,
-                          backgroundImage: avatarCtrl.text.isNotEmpty ? NetworkImage(avatarCtrl.text) : null,
-                          child: avatarCtrl.text.isEmpty
-                              ? const Text('Avatar', style: TextStyle(fontSize: 10, color: Colors.grey))
-                              : null,
+                          fallbackText: user?.fullName ?? 'M',
                         ),
                         const SizedBox(width: 14),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text('Chọn ảnh mẫu có sẵn:', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                              const Text('Ảnh có sẵn, sử dụng không cần mạng:', style: TextStyle(fontSize: 11, color: Colors.grey)),
                               const SizedBox(height: 6),
-                              Row(
-                                children: avatarPresets.map((url) {
-                                  final isSelected = avatarCtrl.text == url;
-                                  return GestureDetector(
-                                    onTap: () {
-                                      setModalState(() => avatarCtrl.text = url);
-                                    },
-                                    child: Container(
-                                      margin: const EdgeInsets.only(right: 8),
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        border: Border.all(
-                                          color: isSelected ? AppTheme.primary : Colors.transparent,
-                                          width: 2,
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: avatarPresets.map((preset) {
+                                  final isSelected = selectedPresetId == preset.id;
+                                  return Tooltip(
+                                    message: preset.label,
+                                    child: InkWell(
+                                      customBorder: const CircleBorder(),
+                                      onTap: () => setModalState(() {
+                                        selectedPresetId = preset.id;
+                                        avatarCtrl.clear();
+                                      }),
+                                      child: Container(
+                                        padding: const EdgeInsets.all(2),
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          border: Border.all(
+                                            color: isSelected ? AppTheme.primary : Colors.transparent,
+                                            width: 2,
+                                          ),
                                         ),
-                                      ),
-                                      child: CircleAvatar(
-                                        radius: 16,
-                                        backgroundImage: NetworkImage(url),
+                                        child: ProfileAvatar(avatarUrl: preset.id, radius: 19),
                                       ),
                                     ),
                                   );
@@ -127,11 +129,13 @@ class ProfilePage extends StatelessWidget {
                     TextField(
                       controller: avatarCtrl,
                       decoration: const InputDecoration(
-                        labelText: 'Hoặc dán liên kết URL ảnh đại diện',
+                        labelText: 'Hoặc nhập URL ảnh đại diện',
                         border: OutlineInputBorder(),
                         isDense: true,
                       ),
-                      onChanged: (_) => setModalState(() {}),
+                      onChanged: (_) => setModalState(() {
+                        selectedPresetId = null;
+                      }),
                     ),
                     const SizedBox(height: 16),
 
@@ -167,7 +171,7 @@ class ProfilePage extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                         ),
-                        onPressed: () async {
+                        onPressed: isSaving ? null : () async {
                           if (nameCtrl.text.trim().isEmpty) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(content: Text('Họ tên không được để trống')),
@@ -175,13 +179,24 @@ class ProfilePage extends StatelessWidget {
                             return;
                           }
 
-                          await auth.updateProfile(
+                          setModalState(() => isSaving = true);
+                          final updated = await auth.updateProfile(
                             fullName: nameCtrl.text,
                             phone: phoneCtrl.text,
-                            avatarUrl: avatarCtrl.text.isNotEmpty ? avatarCtrl.text : null,
+                            avatarUrl: selectedPresetId ?? avatarCtrl.text.trim(),
                           );
 
                           if (context.mounted) {
+                            if (!updated) {
+                              setModalState(() => isSaving = false);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(auth.profileUpdateError ?? 'Không thể cập nhật hồ sơ'),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                              return;
+                            }
                             Navigator.pop(ctx);
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
@@ -191,7 +206,13 @@ class ProfilePage extends StatelessWidget {
                             );
                           }
                         },
-                        child: const Text('Lưu thông tin', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                        child: isSaving
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                              )
+                            : const Text('Lưu thông tin', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
                       ),
                     ),
                   ],
@@ -242,18 +263,10 @@ class ProfilePage extends StatelessWidget {
                           shape: BoxShape.circle,
                           border: Border.all(color: AppTheme.primary, width: 2),
                         ),
-                        child: CircleAvatar(
+                        child: ProfileAvatar(
+                          avatarUrl: user?.avatarUrl,
                           radius: 36,
-                          backgroundColor: Colors.grey.shade100,
-                          backgroundImage: (user?.avatarUrl != null && user!.avatarUrl!.isNotEmpty)
-                              ? NetworkImage(user.avatarUrl!)
-                              : null,
-                          child: (user?.avatarUrl == null || user!.avatarUrl!.isEmpty)
-                              ? Text(
-                                  user?.fullName.isNotEmpty == true ? user!.fullName.substring(0, 1).toUpperCase() : 'M',
-                                  style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: AppTheme.primary),
-                                )
-                              : null,
+                          fallbackText: user?.fullName ?? 'M',
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -524,4 +537,3 @@ class ProfilePage extends StatelessWidget {
     );
   }
 }
-

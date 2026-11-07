@@ -2,12 +2,43 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:menly_app/features/auth/presentation/pages/login_page.dart';
+import 'package:menly_app/features/auth/presentation/providers/auth_provider.dart';
+import 'package:menly_app/features/auth/presentation/widgets/profile_avatar.dart';
 import 'package:menly_app/features/notification/presentation/pages/notifications_page.dart';
 import 'package:menly_app/features/notification/presentation/providers/notification_provider.dart';
 import 'package:menly_app/features/voucher/presentation/pages/voucher_list_page.dart';
 import 'package:menly_app/features/voucher/presentation/providers/voucher_provider.dart';
 
 void main() {
+  test('Avatar co cac lua chon co san va co the xoa avatar', () {
+    final user = UserModel(
+      id: 'user-1',
+      email: 'member@example.com',
+      fullName: 'Menly Member',
+      avatarUrl: AvatarPreset.presets.first.id,
+    );
+
+    expect(AvatarPreset.presets, hasLength(6));
+    expect(user.copyWith(clearAvatar: true).avatarUrl, isNull);
+  });
+
+  testWidgets('Avatar mau co san hien thi duoc khong can mang', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Wrap(
+            children: AvatarPreset.presets
+                .map((preset) => ProfileAvatar(avatarUrl: preset.id, radius: 32))
+                .toList(),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.byType(ProfileAvatar), findsNWidgets(6));
+    expect(tester.takeException(), isNull);
+  });
+
   test('Kho voucher fallback phai co du lieu khong rong', () {
     final vouchers = VoucherProvider.fallbackVouchers;
 

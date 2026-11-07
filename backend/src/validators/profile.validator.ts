@@ -1,5 +1,19 @@
 import { z } from 'zod';
 
+const avatarUrlSchema = z
+  .string()
+  .trim()
+  .url('URL ảnh không hợp lệ')
+  .or(z.enum([
+    'menly-avatar:classic',
+    'menly-avatar:bright',
+    'menly-avatar:calm',
+    'menly-avatar:urban',
+    'menly-avatar:classic-light',
+    'menly-avatar:night',
+  ]))
+  .or(z.literal(''));
+
 export const updateProfileSchema = z
   .object({
     fullName: z
@@ -20,18 +34,8 @@ export const updateProfileSchema = z
       .regex(/^(0|\+84)[3|5|7|8|9][0-9]{8}$/, 'Số điện thoại không hợp lệ (đầu số 03, 05, 07, 08, 09 và 10 số)')
       .optional()
       .or(z.literal('')),
-    avatarUrl: z
-      .string()
-      .trim()
-      .url('URL ảnh không hợp lệ')
-      .optional()
-      .or(z.literal('')),
-    avatar_url: z
-      .string()
-      .trim()
-      .url('URL ảnh không hợp lệ')
-      .optional()
-      .or(z.literal('')),
+    avatarUrl: avatarUrlSchema.optional(),
+    avatar_url: avatarUrlSchema.optional(),
   })
   .refine(
     (data) => Boolean(data.fullName || data.full_name || data.phone || data.avatarUrl || data.avatar_url),
