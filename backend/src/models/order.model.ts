@@ -202,22 +202,30 @@ export class OrderModel {
     };
   }
 
-  /** Lam giau thong tin don hang: gan anh san pham va dong bo format */
+  private static readonly ORDER_WITH_ITEMS_SELECT =
+    '*, order_items(*, product_variants(size, color, products(name, thumbnail_url)))';
+
+  private realImageUrl(url: unknown): string {
+    const value = String(url ?? '').trim();
+    if (!value) return '';
+    if (/unsplash|picsum|placeholder/i.test(value)) return '';
+    return value;
+  }
+
+  /** Lam giau thong tin don hang: gan anh/size/mau that, khong dung anh gia */
   private enrichOrders(rows: any[]): OrderRow[] {
     return (rows || []).map((order) => {
       const items = (order.order_items || []).map((it: any) => {
-        const prod = it.product_variants?.products;
-        const thumbnail =
-          prod?.thumbnail_url ||
-          it.thumbnail_url ||
-          'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=500&auto=format&fit=crop';
+        const variant = it.product_variants;
+        const prod = variant?.products;
+        const thumbnail = this.realImageUrl(prod?.thumbnail_url) || this.realImageUrl(it.thumbnail_url);
         return {
           id: it.id,
           order_id: it.order_id,
           variant_id: it.variant_id,
-          product_name: it.product_name || prod?.name || 'Sản phẩm Menly',
-          size: it.size || 'M',
-          color: it.color || 'Đen',
+          product_name: it.product_name || prod?.name || '',
+          size: it.size || variant?.size || '',
+          color: it.color || variant?.color || '',
           unit_price: it.unit_price,
           quantity: it.quantity,
           thumbnail_url: thumbnail,
@@ -380,12 +388,8 @@ export class OrderModel {
       }
     }
 
-    const { data: order, error: orderError } = await this.db
-      .from('orders')
-      .select('*, order_items(*)')
-      .eq('id', rpcOrder.id)
-      .single();
-    if (orderError) throw new Error(orderError.message);
+    const order = await this.loadEnrichedOrder(rpcOrder.id);
+    if (!order) throw new Error('Không tải được đơn hàng vừa tạo');
 
     const createdOrder = {
       ...order,
@@ -403,25 +407,25 @@ export class OrderModel {
   async getOrdersByUser(userId: string): Promise<OrderRow[]> {
     const { data, error } = await this.db
       .from('orders')
-      .select('*, order_items(*)')
+      .select(OrderModel.ORDER_WITH_ITEMS_SELECT)
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
 
     if (error) throw new Error(error.message);
-    return (data ?? []) as OrderRow[];
+    return this.enrichOrders(data ?? []);
   }
 
   /** Lấy chi tiết 1 đơn hàng (kèm items), kiểm tra quyền sở hữu */
   async getOrderById(orderId: string, userId: string): Promise<OrderRow | null> {
-    const { data, error } = await this.db
-      .from('orders')
-      .select('*, order_items(*)')
-      .eq('id', orderId)
-      .eq('user_id', userId)
-      .single();
+    return this.loadEnrichedOrder(orderId, userId);
+  }
 
+  private async loadEnrichedOrder(orderId: string, userId?: string): Promise<OrderRow | null> {
+    let query = this.db.from('orders').select(OrderModel.ORDER_WITH_ITEMS_SELECT).eq('id', orderId);
+    if (userId) query = query.eq('user_id', userId);
+    const { data, error } = await query.maybeSingle();
     if (error || !data) return null;
-    return data as OrderRow;
+    return this.enrichOrders([data])[0] ?? null;
   }
 
   /** Hủy đơn hàng (chỉ khi status là processing hoặc pending_payment) */
@@ -435,10 +439,8 @@ export class OrderModel {
     if (error) throw new Error(error.message);
     const cancelled = Array.isArray(data) ? data[0] : data;
     if (!cancelled?.id) throw new Error('Backend không trả về đơn hàng đã hủy');
-    const { data: order, error: orderError } = await this.db.from('orders')
-      .select('*, order_items(*)').eq('id', orderId).single();
-    if (orderError) throw new Error(orderError.message);
-    const cancelledOrder = order as OrderRow;
+    const cancelledOrder = await this.loadEnrichedOrder(orderId);
+    if (!cancelledOrder) throw new Error('Không tải được đơn hàng đã hủy');
     await this.notifyOrderUser(
       cancelledOrder,
       'Đơn hàng đã hủy',

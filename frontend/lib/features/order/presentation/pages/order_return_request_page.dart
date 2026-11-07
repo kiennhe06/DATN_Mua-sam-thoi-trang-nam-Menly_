@@ -32,6 +32,17 @@ class _OrderReturnRequestPageState extends State<OrderReturnRequestPage> {
 
   String _selectedReason = 'Sản phẩm không đúng mô tả';
   bool _submitting = false;
+  bool _loadingOrder = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      setState(() => _loadingOrder = true);
+      await context.read<OrderProvider>().fetchOrderById(widget.order.id);
+      if (mounted) setState(() => _loadingOrder = false);
+    });
+  }
 
   final _reasons = const [
     'Sản phẩm không đúng mô tả',
@@ -47,7 +58,7 @@ class _OrderReturnRequestPageState extends State<OrderReturnRequestPage> {
     super.dispose();
   }
 
-  Future<void> _pickImages() async {
+  Future<void> _pickImages({bool fromCamera = false}) async {
     final remaining = _maxImages - _images.length;
     if (remaining <= 0) {
       AppSnackBar.show(context, message: 'Chỉ được đính kèm tối đa $_maxImages ảnh');
@@ -55,7 +66,13 @@ class _OrderReturnRequestPageState extends State<OrderReturnRequestPage> {
     }
 
     try {
-      final picked = await _picker.pickMultiImage(imageQuality: 75, limit: remaining);
+      final List<XFile> picked;
+      if (fromCamera) {
+        final shot = await _picker.pickImage(source: ImageSource.camera, imageQuality: 75);
+        picked = shot == null ? const [] : [shot];
+      } else {
+        picked = await _picker.pickMultiImage(imageQuality: 75, limit: remaining);
+      }
       if (!mounted || picked.isEmpty) return;
 
       final existingPaths = _images.map((image) => image.path).toSet();
@@ -114,7 +131,8 @@ class _OrderReturnRequestPageState extends State<OrderReturnRequestPage> {
   @override
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
-    final order = widget.order;
+    final order =
+        context.watch<OrderProvider>().findById(widget.order.id) ?? widget.order;
 
     return Scaffold(
       backgroundColor: c.background,
@@ -128,6 +146,11 @@ class _OrderReturnRequestPageState extends State<OrderReturnRequestPage> {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
         children: [
+          if (_loadingOrder)
+            const Padding(
+              padding: EdgeInsets.only(bottom: 12),
+              child: LinearProgressIndicator(minHeight: 2),
+            ),
           _buildOrderCard(c, order),
           const SizedBox(height: 16),
           Text(
@@ -226,6 +249,11 @@ class _OrderReturnRequestPageState extends State<OrderReturnRequestPage> {
             style: TextStyle(color: c.textSecondary, fontSize: 12.5, fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 12),
+          if (order.items.isEmpty)
+            Text(
+              'Đơn chưa có dòng sản phẩm từ máy chủ.',
+              style: TextStyle(color: c.textMuted, fontSize: 12.5),
+            ),
           for (final item in order.items.take(3))
             Padding(
               padding: const EdgeInsets.only(bottom: 8),
@@ -248,7 +276,7 @@ class _OrderReturnRequestPageState extends State<OrderReturnRequestPage> {
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      '${item.productName} (${item.size}, ${item.color}) x${item.quantity}',
+                      _itemLabel(item),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(color: c.textPrimary, fontSize: 13, fontWeight: FontWeight.w600),
@@ -304,9 +332,47 @@ class _OrderReturnRequestPageState extends State<OrderReturnRequestPage> {
     );
   }
 
+  String _itemLabel(OrderItemModel item) {
+    final variant = [
+      if (item.size.trim().isNotEmpty) item.size.trim(),
+      if (item.color.trim().isNotEmpty) item.color.trim(),
+    ].join(', ');
+    final name = item.productName.trim().isEmpty ? 'Sản phẩm' : item.productName.trim();
+    return variant.isEmpty ? '$name x${item.quantity}' : '$name ($variant) x${item.quantity}';
+  }
+
   Widget _buildAddImageButton(AppColors c) {
     return InkWell(
-      onTap: _pickImages,
+      onTap: () async {
+        await showModalBottomSheet<void>(
+          context: context,
+          builder: (ctx) {
+            return SafeArea(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ListTile(
+                    leading: const Icon(Icons.photo_library_outlined),
+                    title: const Text('Chọn từ thư viện'),
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      _pickImages();
+                    },
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.photo_camera_outlined),
+                    title: const Text('Chụp ảnh minh chứng'),
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      _pickImages(fromCamera: true);
+                    },
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
       borderRadius: BorderRadius.circular(AppTheme.radiusSm),
       child: Container(
         width: 84,

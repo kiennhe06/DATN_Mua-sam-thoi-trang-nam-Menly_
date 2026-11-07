@@ -99,10 +99,14 @@ class OrderItemsCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 3),
-              Text(
-                'Size: ${item.size} · Màu: ${item.color}',
-                style: TextStyle(color: c.textMuted, fontSize: 12),
-              ),
+              if (item.size.trim().isNotEmpty || item.color.trim().isNotEmpty)
+                Text(
+                  [
+                    if (item.size.trim().isNotEmpty) 'Size: ${item.size.trim()}',
+                    if (item.color.trim().isNotEmpty) 'Màu: ${item.color.trim()}',
+                  ].join(' · '),
+                  style: TextStyle(color: c.textMuted, fontSize: 12),
+                ),
               const SizedBox(height: 4),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,

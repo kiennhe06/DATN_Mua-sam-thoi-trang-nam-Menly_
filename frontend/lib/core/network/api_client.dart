@@ -59,6 +59,10 @@ class ApiClient {
               options.headers['Authorization'] = 'Bearer $token';
             }
           } catch (_) {}
+          if (options.data is FormData) {
+            options.headers.remove('Content-Type');
+            options.headers.remove('content-type');
+          }
           return handler.next(options);
         },
         onError: (DioException error, handler) async {
