@@ -290,7 +290,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                           height: 4,
                           decoration: BoxDecoration(
                             color: Colors.grey.shade300,
-                            borderRadius: BorderRadius.circular(2),
+                            borderRadius: BorderRadius.circular(999),
                           ),
                         ),
                       ),
@@ -337,7 +337,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                                   color: isTopsTab
                                       ? AppTheme.primary
                                       : Colors.grey.shade100,
-                                  borderRadius: BorderRadius.circular(8),
+                                  borderRadius: BorderRadius.circular(10),
                                 ),
                                 alignment: Alignment.center,
                                 child: Text(
@@ -364,7 +364,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                                   color: !isTopsTab
                                       ? AppTheme.primary
                                       : Colors.grey.shade100,
-                                  borderRadius: BorderRadius.circular(8),
+                                  borderRadius: BorderRadius.circular(10),
                                 ),
                                 alignment: Alignment.center,
                                 child: Text(
@@ -497,7 +497,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
                           color: Colors.amber.shade50,
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(10),
                           border: Border.all(color: Colors.amber.shade200),
                         ),
                         child: Column(
@@ -977,7 +977,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                       Container(
                         decoration: BoxDecoration(
                           border: Border.all(color: AppTheme.border),
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(10),
                         ),
                         child: Row(
                           children: [

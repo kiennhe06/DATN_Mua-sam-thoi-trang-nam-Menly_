@@ -98,60 +98,60 @@ export function ProductDetailModal({ product, onClose, onStockAdjusted }: Produc
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
-      <div className="bg-[#150b29] border border-[#3b1a6a] rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl text-white p-6 space-y-5">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/40 backdrop-blur-md">
+      <div className="bg-panel border border-line rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-panel-lg text-ink p-6 space-y-5">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-[#2d1554] pb-3">
+        <div className="flex items-center justify-between border-b border-line pb-3">
           <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-cyan-400"></span>
-            <h3 className="text-base font-bold text-white">Chi tiết Sản phẩm & Phân loại Tồn kho</h3>
+            <span className="w-2.5 h-2.5 rounded-full bg-camel"></span>
+            <h3 className="text-base font-bold text-ink">Chi tiết Sản phẩm & Phân loại Tồn kho</h3>
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-full bg-[#241242] text-slate-400 hover:text-white flex items-center justify-center cursor-pointer"
+            className="w-8 h-8 rounded-full bg-tint text-ink-muted hover:text-ink flex items-center justify-center cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Product Basic Info Card */}
-        <div className="flex flex-col sm:flex-row gap-4 bg-[#1e0f39]/80 border border-[#371b63] p-4 rounded-2xl">
+        <div className="flex flex-col sm:flex-row gap-4 bg-tint border border-line p-4 rounded-2xl">
           <img
             src={product.thumbnailUrl || undefined}
             alt={product.name}
-            className="w-20 h-28 object-cover rounded-xl border border-[#3b1a6a] shrink-0 bg-slate-950"
+            className="w-20 h-28 object-cover rounded-xl border border-line shrink-0 bg-panel"
           />
           <div className="space-y-1.5 flex-1 min-w-0">
-            <h4 className="text-sm font-bold text-white line-clamp-1">{product.name}</h4>
+            <h4 className="text-sm font-bold text-ink line-clamp-1">{product.name}</h4>
             <div className="flex items-center gap-3 text-xs">
-              <span className="font-mono text-cyan-400 font-bold">{product.price.toLocaleString('vi-VN')} đ</span>
-              <span className="bg-[#2a134d] px-2 py-0.5 rounded text-slate-300 font-mono text-[10px]">
-                Tổng tồn: <strong className="text-emerald-400">{totalStock}</strong>
+              <span className="font-mono text-camel-dark font-bold">{product.price.toLocaleString('vi-VN')} đ</span>
+              <span className="bg-panel border border-line px-2 py-0.5 rounded-md text-ink-mid font-mono text-[10px]">
+                Tổng tồn: <strong className="text-ok">{totalStock}</strong>
               </span>
             </div>
-            <p className="text-xs text-slate-400 line-clamp-2">
+            <p className="text-xs text-ink-muted line-clamp-2">
               {product.description || 'Chất liệu thời trang cao cấp, form tôn dáng nam tính.'}
             </p>
           </div>
         </div>
 
         {/* Interactive Classification Box (Two-tiered: Size on top, Color below) */}
-        <div className="bg-[#1a0c33] border border-[#3b1a6a] p-4 rounded-2xl space-y-4">
+        <div className="bg-tint border border-line p-4 rounded-2xl space-y-4">
           {/* Top Section: KÍCH THƯỚC (SIZE) */}
           <div className="space-y-2">
-            <div className="flex items-center justify-between text-xs font-semibold text-slate-300">
+            <div className="flex items-center justify-between text-xs font-semibold text-ink-mid">
               <span className="flex items-center gap-1.5">
-                <SlidersHorizontal className="w-3.5 h-3.5 text-cyan-400" />
+                <SlidersHorizontal className="w-3.5 h-3.5 text-camel-dark" />
                 <span>Kích thước:</span>
                 {selectedSize && (
-                  <span className="text-cyan-400 font-bold ml-1">({selectedSize})</span>
+                  <span className="text-camel-dark font-bold ml-1">({selectedSize})</span>
                 )}
               </span>
               {selectedSize && (
                 <button
                   type="button"
                   onClick={() => setSelectedSize(null)}
-                  className="text-[11px] text-cyan-400 hover:underline cursor-pointer"
+                  className="text-[11px] text-camel-dark hover:underline cursor-pointer"
                 >
                   Tất cả kích thước
                 </button>
@@ -164,8 +164,8 @@ export function ProductDetailModal({ product, onClose, onStockAdjusted }: Produc
                 onClick={() => setSelectedSize(null)}
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
                   selectedSize === null
-                    ? 'bg-cyan-500 text-slate-950 border-cyan-400 shadow-md font-extrabold'
-                    : 'bg-[#150b29] text-slate-400 border-[#321759] hover:border-slate-600'
+                    ? 'bg-camel text-ink border-camel shadow-sm font-extrabold'
+                    : 'bg-panel text-ink-muted border-line hover:border-line-strong'
                 }`}
               >
                 Tất cả ({variants.length})
@@ -178,16 +178,16 @@ export function ProductDetailModal({ product, onClose, onStockAdjusted }: Produc
                   onClick={() => setSelectedSize(selectedSize === s.size ? null : s.size)}
                   className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 border transition-all cursor-pointer ${
                     selectedSize === s.size
-                      ? 'bg-cyan-500 text-slate-950 border-cyan-400 shadow-md font-extrabold'
-                      : 'bg-[#150b29] text-slate-200 border-[#3b1a6a] hover:border-cyan-500/50'
+                      ? 'bg-camel text-ink border-camel shadow-sm font-extrabold'
+                      : 'bg-panel text-ink border-line hover:border-camel/40'
                   }`}
                 >
                   <span>Size {s.size}</span>
                   <span
-                    className={`px-1.5 py-0.5 rounded text-[10px] font-mono ${
+                    className={`px-1.5 py-0.5 rounded-md text-[10px] font-mono ${
                       selectedSize === s.size
-                        ? 'bg-slate-950 text-cyan-400'
-                        : 'bg-[#2b1452] text-emerald-400'
+                        ? 'bg-panel text-camel-dark'
+                        : 'bg-ok-bg text-ok'
                     }`}
                   >
                     {s.stock}
@@ -199,20 +199,20 @@ export function ProductDetailModal({ product, onClose, onStockAdjusted }: Produc
 
           {/* Bottom Section: MÀU SẮC (COLOR) */}
           {uniqueColors.length > 0 && (
-            <div className="space-y-2 pt-2 border-t border-[#2a134d]">
-              <div className="flex items-center justify-between text-xs font-semibold text-slate-300">
+            <div className="space-y-2 pt-2 border-t border-line-strong">
+              <div className="flex items-center justify-between text-xs font-semibold text-ink-mid">
                 <span className="flex items-center gap-1.5">
-                  <Palette className="w-3.5 h-3.5 text-cyan-400" />
+                  <Palette className="w-3.5 h-3.5 text-camel-dark" />
                   <span>Màu sắc:</span>
                   {selectedColor && (
-                    <span className="text-cyan-400 font-bold ml-1">({selectedColor})</span>
+                    <span className="text-camel-dark font-bold ml-1">({selectedColor})</span>
                   )}
                 </span>
                 {selectedColor && (
                   <button
                     type="button"
                     onClick={() => setSelectedColor(null)}
-                    className="text-[11px] text-cyan-400 hover:underline cursor-pointer"
+                    className="text-[11px] text-camel-dark hover:underline cursor-pointer"
                   >
                     Tất cả màu
                   </button>
@@ -225,8 +225,8 @@ export function ProductDetailModal({ product, onClose, onStockAdjusted }: Produc
                   onClick={() => setSelectedColor(null)}
                   className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
                     selectedColor === null
-                      ? 'bg-cyan-500 text-slate-950 border-cyan-400 shadow-md font-extrabold'
-                      : 'bg-[#150b29] text-slate-400 border-[#321759] hover:border-slate-600'
+                      ? 'bg-camel text-ink border-camel shadow-sm font-extrabold'
+                      : 'bg-panel text-ink-muted border-line hover:border-line-strong'
                   }`}
                 >
                   Tất cả màu
@@ -239,20 +239,20 @@ export function ProductDetailModal({ product, onClose, onStockAdjusted }: Produc
                     onClick={() => setSelectedColor(selectedColor === c.color ? null : c.color)}
                     className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 border transition-all cursor-pointer ${
                       selectedColor === c.color
-                        ? 'bg-cyan-500 text-slate-950 border-cyan-400 shadow-md font-extrabold'
-                        : 'bg-[#150b29] text-slate-200 border-[#3b1a6a] hover:border-cyan-500/50'
+                        ? 'bg-camel text-ink border-camel shadow-sm font-extrabold'
+                        : 'bg-panel text-ink border-line hover:border-camel/40'
                     }`}
                   >
                     <span
-                      className="w-2.5 h-2.5 rounded-full border border-white/30 shrink-0"
+                      className="w-2.5 h-2.5 rounded-full border border-line shrink-0"
                       style={{ backgroundColor: getColorHex(c.color) }}
                     />
                     <span>{c.color}</span>
                     <span
-                      className={`px-1.5 py-0.5 rounded text-[10px] font-mono ${
+                      className={`px-1.5 py-0.5 rounded-md text-[10px] font-mono ${
                         selectedColor === c.color
-                          ? 'bg-slate-950 text-cyan-400'
-                          : 'bg-[#2b1452] text-slate-300'
+                          ? 'bg-panel text-camel-dark'
+                          : 'bg-tint-strong text-ink-mid'
                       }`}
                     >
                       {c.stock}
@@ -266,9 +266,9 @@ export function ProductDetailModal({ product, onClose, onStockAdjusted }: Produc
 
         {/* Variants Breakdown Table */}
         <div className="space-y-2">
-          <div className="flex items-center justify-between text-xs font-semibold text-slate-300 uppercase tracking-wider">
+          <div className="flex items-center justify-between text-xs font-semibold text-ink-mid uppercase tracking-wider">
             <h5 className="flex items-center gap-1.5">
-              <Boxes className="w-3.5 h-3.5 text-cyan-400" />
+              <Boxes className="w-3.5 h-3.5 text-camel-dark" />
               Chi tiết biến thể ({filteredVariants.length} phân loại)
             </h5>
             {(selectedSize || selectedColor) && (
@@ -278,40 +278,40 @@ export function ProductDetailModal({ product, onClose, onStockAdjusted }: Produc
                   setSelectedSize(null);
                   setSelectedColor(null);
                 }}
-                className="text-[11px] text-cyan-400 hover:underline cursor-pointer lowercase"
+                className="text-[11px] text-camel-dark hover:underline cursor-pointer lowercase"
               >
                 xem toàn bộ ({variants.length})
               </button>
             )}
           </div>
 
-          <div className="border border-[#321759] rounded-2xl overflow-hidden divide-y divide-[#2d1554]">
+          <div className="border border-line rounded-2xl overflow-hidden divide-y divide-line">
             {filteredVariants.length === 0 ? (
-              <div className="p-6 text-center text-slate-400 text-xs">
+              <div className="p-6 text-center text-ink-muted text-xs">
                 Không tìm thấy biến thể nào phù hợp với Size {selectedSize || ''} và Màu {selectedColor || ''}.
               </div>
             ) : (
               filteredVariants.map((v) => (
                 <div
                   key={v.id}
-                  className="p-3 bg-[#1b0d34]/90 flex items-center justify-between gap-3 hover:bg-[#20103d] transition-colors"
+                  className="p-3 bg-panel flex items-center justify-between gap-3 hover:bg-tint transition-colors"
                 >
                   <div className="flex items-center gap-3">
-                    <span className="w-9 h-9 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 text-slate-950 font-black text-xs flex items-center justify-center shadow-sm">
+                    <span className="w-9 h-9 rounded-xl bg-gradient-to-tr from-camel to-camel-dark text-ink font-black text-xs flex items-center justify-center shadow-sm">
                       {v.size}
                     </span>
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="font-mono text-xs font-bold text-white">{v.sku}</span>
-                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-[#2a134d] border border-[#3b1a6a] text-[10px] text-slate-200">
+                        <span className="font-mono text-xs font-bold text-ink">{v.sku}</span>
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-tint border border-line text-[10px] text-ink">
                           <span
-                            className="w-2 h-2 rounded-full border border-white/20"
+                            className="w-2 h-2 rounded-full border border-line"
                             style={{ backgroundColor: getColorHex(v.color) }}
                           />
                           {v.color || 'Tiêu chuẩn'}
                         </span>
                       </div>
-                      <div className="text-[10px] text-slate-400 font-mono mt-0.5">
+                      <div className="text-[10px] text-ink-muted font-mono mt-0.5">
                         ID: {v.id.slice(0, 18)}...
                       </div>
                     </div>
@@ -319,10 +319,10 @@ export function ProductDetailModal({ product, onClose, onStockAdjusted }: Produc
 
                   <div className="flex items-center gap-3">
                     <span
-                      className={`text-xs font-bold font-mono px-2 py-0.5 rounded border ${
+                      className={`text-xs font-bold font-mono px-2 py-0.5 rounded-md border ${
                         v.stock > 20
-                          ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
-                          : 'bg-amber-500/10 text-amber-400 border-amber-500/30'
+                          ? 'bg-ok-bg text-ok border-ok-line'
+                          : 'bg-warn-bg text-warn border-warn-line'
                       }`}
                     >
                       {v.stock} cái
@@ -334,7 +334,7 @@ export function ProductDetailModal({ product, onClose, onStockAdjusted }: Produc
                         setDeltaAmount(10);
                         setFeedback(null);
                       }}
-                      className="px-2.5 py-1 rounded-lg bg-[#28134d] hover:bg-cyan-500 hover:text-slate-950 text-slate-300 text-xs font-bold border border-[#3b1a6a] transition-all cursor-pointer"
+                      className="px-2.5 py-1 rounded-lg bg-tint hover:bg-camel hover:text-ink text-ink-mid text-xs font-bold border border-line transition-all cursor-pointer"
                     >
                       Chỉnh kho
                     </button>
@@ -349,38 +349,38 @@ export function ProductDetailModal({ product, onClose, onStockAdjusted }: Produc
         {adjustingVariant && (
           <form
             onSubmit={handleAdjustSubmit}
-            className="p-4 rounded-2xl bg-[#1b0d34] border border-cyan-500/40 space-y-3"
+            className="p-4 rounded-2xl bg-camel-tint border border-camel/30 space-y-3"
           >
             <div className="flex items-center justify-between">
-              <h6 className="font-bold text-xs text-cyan-400 uppercase flex items-center gap-1.5">
+              <h6 className="font-bold text-xs text-camel-dark uppercase flex items-center gap-1.5">
                 <Sparkles className="w-3.5 h-3.5" /> Chỉnh kho Size {adjustingVariant.size} - Màu{' '}
                 {adjustingVariant.color || 'Tiêu chuẩn'} ({adjustingVariant.sku})
               </h6>
               <button
                 type="button"
                 onClick={() => setAdjustingVariant(null)}
-                className="text-xs text-slate-400 hover:text-white cursor-pointer"
+                className="text-xs text-ink-muted hover:text-ink cursor-pointer"
               >
                 Hủy
               </button>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-[10px] text-slate-300 block mb-1">Số lượng thay đổi (+/-)</label>
+                <label className="text-[10px] text-ink-mid block mb-1">Số lượng thay đổi (+/-)</label>
                 <input
                   type="number"
                   required
                   value={deltaAmount}
                   onChange={(e) => setDeltaAmount(Number(e.target.value))}
-                  className="w-full px-2.5 py-1.5 bg-slate-950 border border-[#3b1a6a] rounded-lg text-xs text-white font-mono focus:outline-none focus:border-cyan-400"
+                  className="w-full px-2.5 py-1.5 bg-panel border border-line-strong rounded-lg text-xs text-ink font-mono focus:outline-none focus:border-camel"
                 />
               </div>
               <div>
-                <label className="text-[10px] text-slate-300 block mb-1">Lý do</label>
+                <label className="text-[10px] text-ink-mid block mb-1">Lý do</label>
                 <select
                   value={adjustReason}
                   onChange={(e) => setAdjustReason(e.target.value as 'admin_restock' | 'admin_correction')}
-                  className="w-full px-2.5 py-1.5 bg-slate-950 border border-[#3b1a6a] rounded-lg text-xs text-white focus:outline-none focus:border-cyan-400"
+                  className="w-full px-2.5 py-1.5 bg-panel border border-line-strong rounded-lg text-xs text-ink focus:outline-none focus:border-camel"
                 >
                   <option value="admin_restock">Nhập thêm hàng</option>
                   <option value="admin_correction">Hiệu chỉnh kiểm kê</option>
@@ -391,8 +391,8 @@ export function ProductDetailModal({ product, onClose, onStockAdjusted }: Produc
               <div
                 className={`p-2.5 rounded-lg text-xs flex items-center gap-2 ${
                   feedback.success
-                    ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/20'
-                    : 'bg-rose-500/10 text-rose-300 border border-rose-500/20'
+                    ? 'bg-ok-bg text-ok border border-ok-line'
+                    : 'bg-danger-bg text-danger border border-danger-line'
                 }`}
               >
                 {feedback.success ? <CheckCircle2 className="w-3.5 h-3.5" /> : <AlertCircle className="w-3.5 h-3.5" />}
@@ -402,7 +402,7 @@ export function ProductDetailModal({ product, onClose, onStockAdjusted }: Produc
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 font-bold text-xs shadow-md hover:opacity-90 transition-opacity cursor-pointer disabled:opacity-50"
+              className="w-full py-2.5 rounded-xl bg-gradient-to-r from-camel to-camel-dark text-ink font-bold text-xs shadow-md hover:opacity-90 transition-opacity cursor-pointer disabled:opacity-50"
             >
               {loading
                 ? 'Đang lưu...'

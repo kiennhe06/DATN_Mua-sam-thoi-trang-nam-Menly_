@@ -416,7 +416,7 @@ class AddressPage extends StatelessWidget {
                                 decoration: BoxDecoration(
                                   color: Colors.red.shade50,
                                   border: Border.all(color: Colors.redAccent),
-                                  borderRadius: BorderRadius.circular(4),
+                                  borderRadius: BorderRadius.circular(6),
                                 ),
                                 child: const Text(
                                   'Mặc định',

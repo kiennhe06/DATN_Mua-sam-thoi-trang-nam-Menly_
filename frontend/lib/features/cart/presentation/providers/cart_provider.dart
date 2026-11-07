@@ -5,6 +5,7 @@ import 'package:menly_app/core/network/api_client.dart';
 import 'package:menly_app/features/cart/data/models/cart_item_model.dart';
 import 'package:menly_app/features/product/data/models/product_model.dart';
 import 'package:menly_app/features/voucher/data/models/voucher_model.dart';
+import 'package:menly_app/core/network/api_error.dart';
 
 /// Provider quan ly Gio hang va Ap dung ma giam gia
 /// Ket noi truc tiep cac API backend moi nhat (AP-GH1, AP-VC1):
@@ -252,7 +253,8 @@ class CartProvider extends ChangeNotifier {
       } else {
         _items.removeWhere((item) => item.variantId == variantId);
       }
-      _errorMessage = 'Không thể đồng bộ giỏ hàng: $error';
+      _errorMessage = friendlyErrorMessage(error,
+          fallback: 'Không thêm được vào giỏ hàng, vui lòng thử lại.');
       notifyListeners();
       return false;
     }

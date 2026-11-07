@@ -39,7 +39,7 @@ class HomeFilterTab extends StatelessWidget {
               width: 28,
               decoration: BoxDecoration(
                 color: active ? AppTheme.primary : Colors.transparent,
-                borderRadius: BorderRadius.circular(2),
+                borderRadius: BorderRadius.circular(999),
               ),
             ),
           ],

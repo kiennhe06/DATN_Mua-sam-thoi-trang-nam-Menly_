@@ -100,7 +100,7 @@ class NotificationFilterBar extends StatelessWidget {
                       color: isSelected
                           ? Colors.white
                           : (opt.highlightUnread && opt.count > 0
-                              ? AppTheme.accentOrange
+                              ? AppTheme.primaryAccent
                               : Colors.grey.shade700),
                     ),
                     const SizedBox(width: 6),
@@ -119,10 +119,10 @@ class NotificationFilterBar extends StatelessWidget {
                         decoration: BoxDecoration(
                           color: isSelected
                               ? (opt.highlightUnread
-                                  ? AppTheme.accentOrange
+                                  ? AppTheme.primaryAccent
                                   : Colors.white.withValues(alpha: 0.25))
                               : (opt.highlightUnread
-                                  ? AppTheme.accentOrange.withValues(alpha: 0.15)
+                                  ? AppTheme.primaryAccent.withValues(alpha: 0.15)
                                   : Colors.grey.shade200),
                           borderRadius: BorderRadius.circular(10),
                         ),
@@ -134,7 +134,7 @@ class NotificationFilterBar extends StatelessWidget {
                             color: isSelected
                                 ? Colors.white
                                 : (opt.highlightUnread
-                                    ? AppTheme.accentOrange
+                                    ? AppTheme.primaryAccent
                                     : Colors.grey.shade800),
                           ),
                         ),

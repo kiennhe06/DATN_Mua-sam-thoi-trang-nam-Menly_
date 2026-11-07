@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/network/api_client.dart';
@@ -75,24 +76,40 @@ class AuthProvider extends ChangeNotifier {
   Future<void> loadProfile() async {
     try {
       final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('access_token');
+
+      // Ho so trong bo nho dem chi la ban sao de hien nhanh, no khong thay the
+      // duoc phien dang nhap. Khong co token thi dung coi la da dang nhap, neu
+      // khong man hinh se hien ten nguoi dung trong khi moi yeu cau deu bi 401.
+      if (token == null || token.isEmpty) {
+        await _clearSession(prefs);
+        return;
+      }
+
       final userStr = prefs.getString('user_profile');
       if (userStr != null) {
         _user = UserModel.fromJson(jsonDecode(userStr));
         notifyListeners();
       }
 
-      final token = prefs.getString('access_token');
-      if (token != null) {
-        try {
-          final res = await _api.dio.get('/auth/me');
-          if (res.statusCode == 200 &&
-              res.data != null &&
-              res.data['data'] != null) {
-            _user = UserModel.fromJson(res.data['data']);
-            await prefs.setString('user_profile', jsonEncode(_user!.toJson()));
-            notifyListeners();
-          }
-        } catch (_) {}
+      try {
+        final res = await _api.dio.get('/auth/me');
+        if (res.statusCode == 200 &&
+            res.data != null &&
+            res.data['data'] != null) {
+          _user = UserModel.fromJson(res.data['data']);
+          await prefs.setString('user_profile', jsonEncode(_user!.toJson()));
+          notifyListeners();
+        }
+      } on DioException catch (error) {
+        final status = error.response?.statusCode;
+        if (status == 401 || status == 403) {
+          // Token het han hoac bi thu hoi: phai dang xuat that su, de nguoi dung
+          // biet ma dang nhap lai thay vi loay hoay khong them duoc vao gio.
+          await _clearSession(prefs);
+          return;
+        }
+        // Loi mang hoac may chu: giu ho so dem de app con dung duoc tam thoi.
       }
       // Bo sung ten hoac so dien thoai tu bo nho dem neu profile server chua kip dong bo
       if (_user != null) {
@@ -158,6 +175,11 @@ class AuthProvider extends ChangeNotifier {
 
   Future<void> logout() async {
     final prefs = await SharedPreferences.getInstance();
+    await _clearSession(prefs);
+  }
+
+  /// Xoa sach dau vet phien dang nhap va bao giao dien ve trang thai khach.
+  Future<void> _clearSession(SharedPreferences prefs) async {
     await prefs.remove('access_token');
     await prefs.remove('refresh_token');
     await prefs.remove('user_profile');

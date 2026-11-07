@@ -45,37 +45,37 @@ export function EditUserModal({ user, isOpen, onClose, onSubmit }: EditUserModal
     <Modal isOpen={isOpen} onClose={onClose} title="Chỉnh Sửa Thông Tin Người Dùng">
       <form onSubmit={handleSubmit} className="space-y-4 text-xs">
         {err && (
-          <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400">
+          <div className="p-3 rounded-xl bg-danger-bg border border-danger-line text-danger">
             {err}
           </div>
         )}
         <div>
-          <label className="block text-slate-300 font-semibold mb-1">Họ và tên</label>
+          <label className="block text-ink-mid font-semibold mb-1">Họ và tên</label>
           <input
             type="text"
             required
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white text-xs"
+            className="w-full px-3 py-2 bg-panel border border-line rounded-xl text-ink text-xs shadow-panel"
           />
         </div>
         <div>
-          <label className="block text-slate-300 font-semibold mb-1">Địa chỉ Email</label>
+          <label className="block text-ink-mid font-semibold mb-1">Địa chỉ Email</label>
           <input
             type="email"
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white text-xs"
+            className="w-full px-3 py-2 bg-panel border border-line rounded-xl text-ink text-xs shadow-panel"
           />
         </div>
         <div>
-          <label className="block text-slate-300 font-semibold mb-1">Vai trò</label>
+          <label className="block text-ink-mid font-semibold mb-1">Vai trò</label>
           <select
             value={role}
             disabled={user?.email === 'admin@gmail.com'}
             onChange={(e) => setRole(e.target.value as 'admin' | 'staff' | 'user' | 'seller')}
-            className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white text-xs disabled:opacity-50"
+            className="w-full px-3 py-2 bg-panel border border-line rounded-xl text-ink text-xs disabled:opacity-50 shadow-panel"
           >
             <option value="user">Khách hàng (User)</option>
             <option value="staff">Nhân viên (Staff)</option>
@@ -87,14 +87,14 @@ export function EditUserModal({ user, isOpen, onClose, onSubmit }: EditUserModal
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 rounded-xl text-slate-400 hover:text-white"
+            className="px-4 py-2 rounded-xl text-ink-muted hover:text-ink"
           >
             Hủy
           </button>
           <button
             type="submit"
             disabled={submitting}
-            className="px-4 py-2 bg-amber-500 text-slate-950 rounded-xl font-bold hover:bg-amber-400 transition-colors disabled:opacity-50"
+            className="px-4 py-2 bg-camel text-ink rounded-xl font-bold hover:bg-camel-hover transition-colors disabled:opacity-50"
           >
             {submitting ? 'Đang lưu...' : 'Lưu thay đổi'}
           </button>

@@ -31,8 +31,8 @@ export function DashboardCircularSection({
       <div>
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-amber-400" />
-            <h2 className="text-base font-bold text-white tracking-tight">
+            <Sparkles className="w-4 h-4 text-camel-dark" />
+            <h2 className="text-base font-bold text-ink tracking-tight">
               Chỉ số Xử lý Đơn & Doanh thu {dateLabel ? `(${dateLabel})` : ''}
             </h2>
           </div>
@@ -49,8 +49,8 @@ export function DashboardCircularSection({
                 ? `${completedOrProcessing}/${totalOrdersCount} đơn đã xử lý / hoàn tất`
                 : '0/0 đơn hàng'
             }
-            gradientFrom="#3b82f6"
-            gradientTo="#6366f1"
+            gradientFrom="#1f5c8b"
+            gradientTo="#3b82f6"
           />
 
           <CircularProgressRing
@@ -60,8 +60,8 @@ export function DashboardCircularSection({
             title={dateLabel ? `Doanh thu (${dateLabel})` : 'Doanh thu Ngày'}
             subtitle={`Tổng thực thu: ${fullRevenueVnd}`}
             valueDisplay={fullRevenueVnd}
-            gradientFrom="#f59e0b"
-            gradientTo="#fbbf24"
+            gradientFrom="#b8824a"
+            gradientTo="#d4a373"
           />
         </div>
       </div>
@@ -78,11 +78,11 @@ export function DashboardCircularSection({
             thickness={24}
           />
         ) : (
-          <div className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800 shadow-lg">
-            <h3 className="font-bold text-white text-base">
+          <div className="p-6 rounded-2xl bg-panel border border-line shadow-panel">
+            <h3 className="font-bold text-ink text-base">
               Phân bổ Cơ cấu Danh mục (Donut Chart)
             </h3>
-            <p className="mt-8 mb-6 text-center text-sm text-slate-400">
+            <p className="mt-8 mb-6 text-center text-sm text-ink-muted">
               Chưa có dữ liệu sản phẩm theo danh mục.
             </p>
           </div>

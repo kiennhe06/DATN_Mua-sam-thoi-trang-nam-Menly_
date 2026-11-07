@@ -203,7 +203,7 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
       child: Row(
         children: [
           ClipRRect(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(10),
             child: SizedBox(
               width: 56,
               height: 56,

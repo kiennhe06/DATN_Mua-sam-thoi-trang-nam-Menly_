@@ -579,7 +579,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               ClipRRect(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(10),
                 child: Image.network(
                   item.product.thumbnailUrl,
                   width: 55,
@@ -793,7 +793,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                             horizontal: 6, vertical: 1),
                         decoration: BoxDecoration(
                           color: Colors.green,
-                          borderRadius: BorderRadius.circular(4),
+                          borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
                           '-${formatPrice(discount)}',
@@ -951,7 +951,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                                   horizontal: 6, vertical: 2),
                               decoration: BoxDecoration(
                                 color: const Color(0xFF005BAA),
-                                borderRadius: BorderRadius.circular(4),
+                                borderRadius: BorderRadius.circular(6),
                               ),
                               child: const Text('Sandbox',
                                   style: TextStyle(

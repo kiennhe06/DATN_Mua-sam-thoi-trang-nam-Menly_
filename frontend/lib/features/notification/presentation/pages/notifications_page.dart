@@ -55,7 +55,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
               child: const Text(
                 'Đã đọc tất cả',
                 style: TextStyle(
-                  color: AppTheme.accentOrange,
+                  color: AppTheme.primaryAccent,
                   fontWeight: FontWeight.bold,
                   fontSize: 13,
                 ),
@@ -295,7 +295,7 @@ class _VoucherPromoBanner extends StatelessWidget {
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.white,
-              foregroundColor: AppTheme.accentOrange,
+              foregroundColor: AppTheme.primaryAccent,
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),

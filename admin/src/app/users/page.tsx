@@ -103,8 +103,8 @@ export default function UsersPage() {
           <div
             className={`p-3.5 rounded-xl text-xs font-semibold flex items-center gap-2 ${
               msg.type === 'success'
-                ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
-                : 'bg-rose-500/10 text-rose-400 border border-rose-500/30'
+                ? 'bg-ok-bg text-ok border border-ok-line'
+                : 'bg-danger-bg text-danger border border-danger-line'
             }`}
           >
             {msg.type === 'success' ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
@@ -113,22 +113,22 @@ export default function UsersPage() {
         )}
 
         {/* Filters */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-slate-900/60 p-4 rounded-2xl border border-slate-800">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-panel p-4 rounded-2xl border border-line shadow-panel">
           <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
             <div className="relative flex-1 sm:w-64">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+              <Search className="w-4 h-4 text-ink-muted absolute left-3 top-2.5" />
               <input
                 type="text"
                 placeholder="Tìm tên hoặc email..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-9 pr-3 py-1.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-amber-500"
+                className="w-full pl-9 pr-3 py-1.5 bg-panel border border-line rounded-xl text-xs text-ink placeholder:text-ink-muted focus:outline-none focus:border-camel shadow-panel"
               />
             </div>
             <select
               value={roleFilter}
               onChange={(e) => setRoleFilter(e.target.value as 'all' | 'admin' | 'staff' | 'user' | 'seller')}
-              className="px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-300"
+              className="px-3 py-1.5 bg-panel border border-line rounded-xl text-xs text-ink-mid shadow-panel"
             >
               <option value="all">Tất cả vai trò</option>
               <option value="admin">Quản trị viên (Admin)</option>
@@ -139,7 +139,7 @@ export default function UsersPage() {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as 'all' | 'active' | 'locked')}
-              className="px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-300"
+              className="px-3 py-1.5 bg-panel border border-line rounded-xl text-xs text-ink-mid shadow-panel"
             >
               <option value="all">Tất cả trạng thái</option>
               <option value="active">Đang hoạt động</option>

@@ -190,7 +190,7 @@ class _StaffOrderManagementPageState extends State<StaffOrderManagementPage> {
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(10),
                       border: Border.all(color: Colors.grey.shade300),
                     ),
                     child: Column(
@@ -211,7 +211,7 @@ class _StaffOrderManagementPageState extends State<StaffOrderManagementPage> {
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(10),
                       border: Border.all(color: Colors.grey.shade300),
                     ),
                     child: Column(
@@ -234,7 +234,7 @@ class _StaffOrderManagementPageState extends State<StaffOrderManagementPage> {
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(10),
                       border: Border.all(color: Colors.grey.shade300),
                     ),
                     child: Column(
@@ -346,7 +346,7 @@ class _StaffOrderManagementPageState extends State<StaffOrderManagementPage> {
                                   decoration: BoxDecoration(
                                     color: _getStatusColor(order.status)
                                         .withValues(alpha: 0.12),
-                                    borderRadius: BorderRadius.circular(4),
+                                    borderRadius: BorderRadius.circular(6),
                                   ),
                                   child: Text(
                                     order.status.label,

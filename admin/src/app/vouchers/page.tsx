@@ -200,8 +200,8 @@ export default function VouchersPage() {
           <div
             className={`p-3.5 rounded-xl text-xs font-semibold flex items-center justify-between gap-2 shadow-sm ${
               msg.type === 'success'
-                ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
-                : 'bg-rose-500/10 text-rose-400 border border-rose-500/30'
+                ? 'bg-ok-bg text-ok border border-ok-line'
+                : 'bg-danger-bg text-danger border border-danger-line'
             }`}
           >
             <div className="flex items-center gap-2">
@@ -214,7 +214,7 @@ export default function VouchersPage() {
             </div>
             <button
               onClick={() => setMsg(null)}
-              className="text-slate-400 hover:text-white"
+              className="text-ink-muted hover:text-ink"
             >
               <X className="w-3.5 h-3.5" />
             </button>
@@ -223,55 +223,55 @@ export default function VouchersPage() {
 
         {/* Overview Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
+          <div className="bg-panel border border-line rounded-2xl p-5 flex items-center gap-4 shadow-panel">
+            <div className="w-12 h-12 rounded-xl bg-camel-tint border border-camel/25 flex items-center justify-center text-camel-dark">
               <Ticket className="w-6 h-6" />
             </div>
             <div>
-              <p className="text-xs text-slate-400 font-medium">Tổng số voucher</p>
-              <h3 className="text-2xl font-bold text-white mt-0.5">{totalCount}</h3>
+              <p className="text-xs text-ink-muted font-medium">Tổng số voucher</p>
+              <h3 className="text-2xl font-bold text-ink mt-0.5">{totalCount}</h3>
             </div>
           </div>
 
-          <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+          <div className="bg-panel border border-line rounded-2xl p-5 flex items-center gap-4 shadow-panel">
+            <div className="w-12 h-12 rounded-xl bg-ok-bg border border-ok-line flex items-center justify-center text-ok">
               <Sparkles className="w-6 h-6" />
             </div>
             <div>
-              <p className="text-xs text-slate-400 font-medium">Đang hiệu lực</p>
-              <h3 className="text-2xl font-bold text-white mt-0.5">{activeCount}</h3>
+              <p className="text-xs text-ink-muted font-medium">Đang hiệu lực</p>
+              <h3 className="text-2xl font-bold text-ink mt-0.5">{activeCount}</h3>
             </div>
           </div>
 
-          <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-400">
+          <div className="bg-panel border border-line rounded-2xl p-5 flex items-center gap-4 shadow-panel">
+            <div className="w-12 h-12 rounded-xl bg-sky-50 border border-sky-200 flex items-center justify-center text-sky-700">
               <Layers className="w-6 h-6" />
             </div>
             <div>
-              <p className="text-xs text-slate-400 font-medium">Lượt đã sử dụng</p>
-              <h3 className="text-2xl font-bold text-white mt-0.5">{totalUsed}</h3>
+              <p className="text-xs text-ink-muted font-medium">Lượt đã sử dụng</p>
+              <h3 className="text-2xl font-bold text-ink mt-0.5">{totalUsed}</h3>
             </div>
           </div>
         </div>
 
         {/* Filter and Actions Bar */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-slate-900/60 p-4 rounded-2xl border border-slate-800">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-panel p-4 rounded-2xl border border-line shadow-panel">
           <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto flex-1">
             <div className="relative flex-1 sm:w-64">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+              <Search className="w-4 h-4 text-ink-muted absolute left-3 top-2.5" />
               <input
                 type="text"
                 placeholder="Tìm mã hoặc tiêu đề..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-9 pr-3 py-1.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-amber-500 transition-colors"
+                className="w-full pl-9 pr-3 py-1.5 bg-panel border border-line rounded-xl text-xs text-ink placeholder:text-ink-muted focus:outline-none focus:border-camel transition-colors shadow-panel"
               />
             </div>
 
             <select
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value as 'all' | DiscountType)}
-              className="px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-300 focus:outline-none focus:border-amber-500"
+              className="px-3 py-1.5 bg-panel border border-line rounded-xl text-xs text-ink-mid focus:outline-none focus:border-camel shadow-panel"
             >
               <option value="all">Tất cả loại giảm</option>
               <option value="percentage">Phần trăm (%)</option>
@@ -281,7 +281,7 @@ export default function VouchersPage() {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as 'all' | 'active' | 'inactive')}
-              className="px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-300 focus:outline-none focus:border-amber-500"
+              className="px-3 py-1.5 bg-panel border border-line rounded-xl text-xs text-ink-mid focus:outline-none focus:border-camel shadow-panel"
             >
               <option value="all">Tất cả trạng thái</option>
               <option value="active">Đang kích hoạt</option>
@@ -291,7 +291,7 @@ export default function VouchersPage() {
 
           <button
             onClick={openCreateModal}
-            className="w-full sm:w-auto px-4 py-2 bg-amber-500 text-slate-950 rounded-xl font-bold text-xs hover:bg-amber-400 transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-md shrink-0"
+            className="w-full sm:w-auto px-4 py-2 bg-camel text-ink rounded-xl font-bold text-xs hover:bg-camel-hover transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-md shrink-0"
           >
             <Plus className="w-4 h-4" />
             Tạo mã giảm giá mới
@@ -299,18 +299,18 @@ export default function VouchersPage() {
         </div>
 
         {/* Vouchers Table */}
-        <div className="bg-slate-900/60 border border-slate-800 rounded-2xl overflow-hidden shadow-sm">
+        <div className="bg-panel border border-line rounded-2xl overflow-hidden shadow-sm">
           {loading ? (
-            <div className="p-12 text-center text-slate-400 text-sm">Đang tải danh sách mã giảm giá...</div>
+            <div className="p-12 text-center text-ink-muted text-sm">Đang tải danh sách mã giảm giá...</div>
           ) : filteredVouchers.length === 0 ? (
-            <div className="p-12 text-center text-slate-500 text-sm">
+            <div className="p-12 text-center text-ink-muted text-sm">
               Không tìm thấy mã giảm giá nào phù hợp.
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="border-b border-slate-800 bg-slate-950/40 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                  <tr className="border-b border-line bg-tint text-[11px] font-semibold uppercase tracking-wider text-ink-muted">
                     <th className="py-3.5 px-4">Mã Voucher</th>
                     <th className="py-3.5 px-4">Chương trình / Tiêu đề</th>
                     <th className="py-3.5 px-4">Mức giảm</th>
@@ -321,41 +321,41 @@ export default function VouchersPage() {
                     <th className="py-3.5 px-4 text-right">Thao tác</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800/60 text-xs text-slate-300">
+                <tbody className="divide-y divide-line text-xs text-ink-mid">
                   {filteredVouchers.map((v) => (
-                    <tr key={v.id} className="hover:bg-slate-800/30 transition-colors">
+                    <tr key={v.id} className="hover:bg-tint/60 transition-colors">
                       <td className="py-3.5 px-4">
                         <div className="flex items-center gap-2">
-                          <span className="font-mono font-bold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-lg">
+                          <span className="font-mono font-bold text-camel-dark bg-camel-tint border border-camel/25 px-2.5 py-1 rounded-lg">
                             {v.code}
                           </span>
                         </div>
                       </td>
 
-                      <td className="py-3.5 px-4 font-medium text-white max-w-xs">
+                      <td className="py-3.5 px-4 font-medium text-ink max-w-xs">
                         {v.title}
                       </td>
 
                       <td className="py-3.5 px-4">
                         {v.discountType === 'percentage' ? (
-                          <div className="flex items-center gap-1.5 text-rose-400 font-semibold">
+                          <div className="flex items-center gap-1.5 text-danger font-semibold">
                             <Percent className="w-3.5 h-3.5" />
                             <span>{v.discountValue}%</span>
                             {v.maxDiscount && (
-                              <span className="text-[10px] text-slate-400 font-normal">
+                              <span className="text-[10px] text-ink-muted font-normal">
                                 (Tối đa {v.maxDiscount.toLocaleString('vi-VN')}đ)
                               </span>
                             )}
                           </div>
                         ) : (
-                          <div className="flex items-center gap-1.5 text-emerald-400 font-semibold">
+                          <div className="flex items-center gap-1.5 text-ok font-semibold">
                             <DollarSign className="w-3.5 h-3.5" />
                             <span>-{v.discountValue.toLocaleString('vi-VN')}đ</span>
                           </div>
                         )}
                       </td>
 
-                      <td className="py-3.5 px-4 text-slate-300">
+                      <td className="py-3.5 px-4 text-ink-mid">
                         {v.minOrderValue > 0
                           ? `${v.minOrderValue.toLocaleString('vi-VN')}đ`
                           : '0đ (Không giới hạn)'}
@@ -363,23 +363,23 @@ export default function VouchersPage() {
 
                       <td className="py-3.5 px-4">
                         <div className="flex items-center gap-2">
-                          <div className="w-16 bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                          <div className="w-16 bg-tint rounded-full h-1.5 overflow-hidden">
                             <div
-                              className="bg-amber-500 h-1.5 rounded-full"
+                              className="bg-camel h-1.5 rounded-full"
                               style={{
                                 width: `${Math.min(100, ((v.usedCount || 0) / v.usageLimit) * 100)}%`,
                               }}
                             />
                           </div>
-                          <span className="text-[11px] text-slate-400 font-mono">
+                          <span className="text-[11px] text-ink-muted font-mono">
                             {v.usedCount || 0}/{v.usageLimit}
                           </span>
                         </div>
                       </td>
 
-                      <td className="py-3.5 px-4 text-slate-400 text-[11px]">
+                      <td className="py-3.5 px-4 text-ink-muted text-[11px]">
                         <div className="flex items-center gap-1">
-                          <Calendar className="w-3 h-3 text-slate-500 shrink-0" />
+                          <Calendar className="w-3 h-3 text-ink-muted shrink-0" />
                           <span>
                             {new Date(v.startDate).toLocaleDateString('vi-VN')} -{' '}
                             {new Date(v.endDate).toLocaleDateString('vi-VN')}
@@ -394,13 +394,13 @@ export default function VouchersPage() {
                           className="inline-flex items-center justify-center cursor-pointer transition-transform active:scale-95"
                         >
                           {v.isActive ? (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                              <ToggleRight className="w-4 h-4 text-emerald-400" />
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-ok-bg text-ok border border-ok-line">
+                              <ToggleRight className="w-4 h-4 text-ok" />
                               Đang bật
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-slate-800 text-slate-400 border border-slate-700">
-                              <ToggleLeft className="w-4 h-4 text-slate-500" />
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-tint text-ink-muted border border-line-strong">
+                              <ToggleLeft className="w-4 h-4 text-ink-muted" />
                               Tạm dừng
                             </span>
                           )}
@@ -411,14 +411,14 @@ export default function VouchersPage() {
                         <div className="flex items-center justify-end gap-1.5">
                           <button
                             onClick={() => openEditModal(v)}
-                            className="p-1.5 rounded-lg text-slate-400 hover:text-amber-400 hover:bg-slate-800 transition-colors"
+                            className="p-1.5 rounded-lg text-ink-muted hover:text-camel-dark hover:bg-tint transition-colors"
                             title="Sửa voucher"
                           >
                             <Edit2 className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => handleDelete(v)}
-                            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-slate-800 transition-colors"
+                            className="p-1.5 rounded-lg text-ink-muted hover:text-danger hover:bg-tint transition-colors"
                             title="Xóa voucher"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -436,18 +436,18 @@ export default function VouchersPage() {
 
       {/* Modal Add / Edit Voucher */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-            <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/50 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-panel border border-line rounded-2xl w-full max-w-lg shadow-panel-lg overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="px-6 py-4 border-b border-line flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Ticket className="w-5 h-5 text-amber-400" />
-                <h3 className="font-bold text-white text-base">
+                <Ticket className="w-5 h-5 text-camel-dark" />
+                <h3 className="font-bold text-ink text-base">
                   {editingVoucher ? 'Cập nhật mã giảm giá' : 'Tạo mã giảm giá mới'}
                 </h3>
               </div>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="text-slate-400 hover:text-white p-1 rounded-lg"
+                className="text-ink-muted hover:text-ink p-1 rounded-lg"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -455,8 +455,8 @@ export default function VouchersPage() {
 
             <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto flex-1">
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1.5 uppercase tracking-wider">
-                  Mã Voucher (Code) <span className="text-rose-400">*</span>
+                <label className="block text-xs font-semibold text-ink-mid mb-1.5 uppercase tracking-wider">
+                  Mã Voucher (Code) <span className="text-danger">*</span>
                 </label>
                 <input
                   type="text"
@@ -464,13 +464,13 @@ export default function VouchersPage() {
                   placeholder="VD: MENLY20, FREESHIP, TET2026"
                   value={formData.code}
                   onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
-                  className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm font-mono font-bold text-amber-400 placeholder:text-slate-600 focus:outline-none focus:border-amber-500"
+                  className="w-full px-3.5 py-2 bg-panel border border-line rounded-xl text-sm font-mono font-bold text-camel-dark placeholder:text-ink-muted focus:outline-none focus:border-camel shadow-panel"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1.5 uppercase tracking-wider">
-                  Tiêu đề / Mô tả chương trình <span className="text-rose-400">*</span>
+                <label className="block text-xs font-semibold text-ink-mid mb-1.5 uppercase tracking-wider">
+                  Tiêu đề / Mô tả chương trình <span className="text-danger">*</span>
                 </label>
                 <input
                   type="text"
@@ -478,13 +478,13 @@ export default function VouchersPage() {
                   placeholder="VD: Giảm ngay 50.000đ cho đơn hàng từ 300.000đ"
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-amber-500"
+                  className="w-full px-3.5 py-2 bg-panel border border-line rounded-xl text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:border-camel shadow-panel"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1.5 uppercase tracking-wider">
+                  <label className="block text-xs font-semibold text-ink-mid mb-1.5 uppercase tracking-wider">
                     Loại khuyến mãi
                   </label>
                   <select
@@ -492,7 +492,7 @@ export default function VouchersPage() {
                     onChange={(e) =>
                       setFormData({ ...formData, discountType: e.target.value as DiscountType })
                     }
-                    className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-slate-200 focus:outline-none focus:border-amber-500"
+                    className="w-full px-3.5 py-2 bg-panel border border-line rounded-xl text-sm text-ink focus:outline-none focus:border-camel shadow-panel"
                   >
                     <option value="percentage">Phần trăm (%)</option>
                     <option value="fixed_amount">Số tiền cố định (đ)</option>
@@ -500,9 +500,9 @@ export default function VouchersPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1.5 uppercase tracking-wider">
+                  <label className="block text-xs font-semibold text-ink-mid mb-1.5 uppercase tracking-wider">
                     Mức giảm {formData.discountType === 'percentage' ? '(%)' : '(VNĐ)'}{' '}
-                    <span className="text-rose-400">*</span>
+                    <span className="text-danger">*</span>
                   </label>
                   <input
                     type="number"
@@ -512,14 +512,14 @@ export default function VouchersPage() {
                     onChange={(e) =>
                       setFormData({ ...formData, discountValue: Number(e.target.value) })
                     }
-                    className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-amber-500"
+                    className="w-full px-3.5 py-2 bg-panel border border-line rounded-xl text-sm text-ink focus:outline-none focus:border-camel shadow-panel"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1.5 uppercase tracking-wider">
+                  <label className="block text-xs font-semibold text-ink-mid mb-1.5 uppercase tracking-wider">
                     Đơn hàng tối thiểu (đ)
                   </label>
                   <input
@@ -529,13 +529,13 @@ export default function VouchersPage() {
                     onChange={(e) =>
                       setFormData({ ...formData, minOrderValue: Number(e.target.value) })
                     }
-                    className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-amber-500"
+                    className="w-full px-3.5 py-2 bg-panel border border-line rounded-xl text-sm text-ink focus:outline-none focus:border-camel shadow-panel"
                   />
                 </div>
 
                 {formData.discountType === 'percentage' ? (
                   <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-1.5 uppercase tracking-wider">
+                    <label className="block text-xs font-semibold text-ink-mid mb-1.5 uppercase tracking-wider">
                       Giảm tối đa (đ)
                     </label>
                     <input
@@ -549,12 +549,12 @@ export default function VouchersPage() {
                           maxDiscount: e.target.value ? Number(e.target.value) : null,
                         })
                       }
-                      className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-amber-500"
+                      className="w-full px-3.5 py-2 bg-panel border border-line rounded-xl text-sm text-ink focus:outline-none focus:border-camel shadow-panel"
                     />
                   </div>
                 ) : (
                   <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-1.5 uppercase tracking-wider">
+                    <label className="block text-xs font-semibold text-ink-mid mb-1.5 uppercase tracking-wider">
                       Giới hạn lượt dùng
                     </label>
                     <input
@@ -564,7 +564,7 @@ export default function VouchersPage() {
                       onChange={(e) =>
                         setFormData({ ...formData, usageLimit: Number(e.target.value) })
                       }
-                      className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-amber-500"
+                      className="w-full px-3.5 py-2 bg-panel border border-line rounded-xl text-sm text-ink focus:outline-none focus:border-camel shadow-panel"
                     />
                   </div>
                 )}
@@ -572,7 +572,7 @@ export default function VouchersPage() {
 
               {formData.discountType === 'percentage' && (
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1.5 uppercase tracking-wider">
+                  <label className="block text-xs font-semibold text-ink-mid mb-1.5 uppercase tracking-wider">
                     Giới hạn lượt dùng
                   </label>
                   <input
@@ -582,14 +582,14 @@ export default function VouchersPage() {
                     onChange={(e) =>
                       setFormData({ ...formData, usageLimit: Number(e.target.value) })
                     }
-                    className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-amber-500"
+                    className="w-full px-3.5 py-2 bg-panel border border-line rounded-xl text-sm text-ink focus:outline-none focus:border-camel shadow-panel"
                   />
                 </div>
               )}
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1.5 uppercase tracking-wider">
+                  <label className="block text-xs font-semibold text-ink-mid mb-1.5 uppercase tracking-wider">
                     Ngày bắt đầu
                   </label>
                   <input
@@ -597,12 +597,12 @@ export default function VouchersPage() {
                     required
                     value={formData.startDate}
                     onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                    className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-amber-500"
+                    className="w-full px-3.5 py-2 bg-panel border border-line rounded-xl text-sm text-ink focus:outline-none focus:border-camel shadow-panel"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1.5 uppercase tracking-wider">
+                  <label className="block text-xs font-semibold text-ink-mid mb-1.5 uppercase tracking-wider">
                     Ngày kết thúc
                   </label>
                   <input
@@ -610,7 +610,7 @@ export default function VouchersPage() {
                     required
                     value={formData.endDate}
                     onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                    className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-amber-500"
+                    className="w-full px-3.5 py-2 bg-panel border border-line rounded-xl text-sm text-ink focus:outline-none focus:border-camel shadow-panel"
                   />
                 </div>
               </div>
@@ -621,25 +621,25 @@ export default function VouchersPage() {
                   id="isActiveCheck"
                   checked={formData.isActive}
                   onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-                  className="w-4 h-4 rounded border-slate-800 bg-slate-950 text-amber-500 focus:ring-0 focus:ring-offset-0"
+                  className="w-4 h-4 rounded-md border-line bg-panel text-camel-dark focus:ring-0 focus:ring-offset-0"
                 />
-                <label htmlFor="isActiveCheck" className="text-xs font-semibold text-slate-200">
+                <label htmlFor="isActiveCheck" className="text-xs font-semibold text-ink">
                   Kích hoạt mã voucher ngay lập tức
                 </label>
               </div>
 
-              <div className="pt-4 flex items-center justify-end gap-3 border-t border-slate-800">
+              <div className="pt-4 flex items-center justify-end gap-3 border-t border-line">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 bg-slate-800 text-slate-300 rounded-xl text-xs font-medium hover:bg-slate-700 transition-colors"
+                  className="px-4 py-2 bg-tint text-ink-mid rounded-xl text-xs font-medium hover:bg-tint-strong transition-colors"
                 >
                   Hủy bỏ
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="px-5 py-2 bg-amber-500 text-slate-950 rounded-xl text-xs font-bold hover:bg-amber-400 transition-colors disabled:opacity-50 flex items-center gap-1.5"
+                  className="px-5 py-2 bg-camel text-ink rounded-xl text-xs font-bold hover:bg-camel-hover transition-colors disabled:opacity-50 flex items-center gap-1.5"
                 >
                   {submitting ? 'Đang lưu...' : editingVoucher ? 'Lưu thay đổi' : 'Tạo voucher'}
                 </button>

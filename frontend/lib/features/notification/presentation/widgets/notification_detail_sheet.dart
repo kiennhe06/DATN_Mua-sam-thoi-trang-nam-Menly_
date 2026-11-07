@@ -42,7 +42,7 @@ class NotificationDetailSheet extends StatelessWidget {
       categoryName = 'Đơn hàng';
       categoryIcon = Icons.local_shipping_rounded;
     } else if (isPromo) {
-      categoryColor = AppTheme.accentOrange;
+      categoryColor = AppTheme.primaryAccent;
       categoryName = 'Khuyến mãi & Ưu đãi';
       categoryIcon = Icons.local_offer_rounded;
     } else {
@@ -181,7 +181,7 @@ class NotificationDetailSheet extends StatelessWidget {
               height: 48,
               child: ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.accentOrange,
+                  backgroundColor: AppTheme.primaryAccent,
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),

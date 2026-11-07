@@ -54,7 +54,7 @@ class NotificationItemCard extends StatelessWidget {
       typeTag = 'Đơn hàng';
     } else if (isPromo) {
       iconBgColor = const Color(0xFFFFF7ED);
-      iconColor = AppTheme.accentOrange;
+      iconColor = AppTheme.primaryAccent;
       iconData = Icons.local_offer_rounded;
       typeTag = 'Khuyến mãi';
     } else {

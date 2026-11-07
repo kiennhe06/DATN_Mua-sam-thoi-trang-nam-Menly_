@@ -2,15 +2,17 @@ import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_theme.dart';
 
-/// Base soft-rounded button with ripple, a subtle press scale and an optional
-/// soft shadow — the single source of truth for the app's button language.
+/// Base rounded button with ripple and a subtle press scale — the single
+/// source of truth for the app's button language.
+///
+/// Flat by design: the system has no shadows on cards or buttons, so depth
+/// comes from the ink fill alone.
 class _SoftButton extends StatefulWidget {
   final Widget child;
   final VoidCallback? onPressed;
   final Color background;
   final Color foreground;
   final BorderSide? side;
-  final bool elevated;
   final bool expanded;
   final double height;
 
@@ -20,7 +22,6 @@ class _SoftButton extends StatefulWidget {
     required this.background,
     required this.foreground,
     this.side,
-    this.elevated = false,
     this.expanded = true,
     this.height = 54,
   });
@@ -35,7 +36,7 @@ class _SoftButtonState extends State<_SoftButton> {
   @override
   Widget build(BuildContext context) {
     final enabled = widget.onPressed != null;
-    final radius = BorderRadius.circular(AppTheme.radiusLg);
+    final radius = BorderRadius.circular(AppTheme.radiusCard);
 
     Widget content = AnimatedScale(
       scale: _down ? 0.97 : 1.0,
@@ -47,15 +48,6 @@ class _SoftButtonState extends State<_SoftButton> {
         child: DecoratedBox(
           decoration: BoxDecoration(
             borderRadius: radius,
-            boxShadow: (widget.elevated && enabled)
-                ? [
-                    BoxShadow(
-                      color: widget.background.withValues(alpha: 0.28),
-                      blurRadius: 16,
-                      offset: const Offset(0, 6),
-                    ),
-                  ]
-                : null,
           ),
           child: Material(
             color: widget.background,
@@ -132,7 +124,6 @@ class PrimaryButton extends StatelessWidget {
       onPressed: loading ? null : onPressed,
       background: bg,
       foreground: fg,
-      elevated: true,
       expanded: expanded,
       height: height,
       child: loading
@@ -295,7 +286,6 @@ class DestructiveButton extends StatelessWidget {
     return _SoftButton(
       background: c.danger,
       foreground: Colors.white,
-      elevated: false,
       expanded: expanded,
       height: height,
       onPressed: onPressed,
