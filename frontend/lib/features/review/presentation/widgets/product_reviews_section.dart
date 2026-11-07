@@ -3,14 +3,25 @@ import 'package:provider/provider.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/utils/app_snackbar.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../auth/presentation/pages/login_page.dart';
 import '../../data/models/review_model.dart';
+import '../pages/review_form_page.dart';
 import '../providers/review_provider.dart';
 import 'review_image_gallery.dart';
 
 class ProductReviewsSection extends StatefulWidget {
   final String productId;
+  final String? productName;
+  final String? thumbnailUrl;
 
-  const ProductReviewsSection({super.key, required this.productId});
+  const ProductReviewsSection({
+    super.key,
+    required this.productId,
+    this.productName,
+    this.thumbnailUrl,
+  });
 
   @override
   State<ProductReviewsSection> createState() => _ProductReviewsSectionState();
@@ -39,6 +50,40 @@ class _ProductReviewsSectionState extends State<ProductReviewsSection> {
     }
   }
 
+  Future<void> _openReviewForm(BuildContext context) async {
+    final auth = context.read<AuthProvider>();
+    if (!auth.isLoggedIn) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Vui lòng đăng nhập để viết đánh giá sản phẩm.')),
+      );
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const LoginPage()),
+      );
+      return;
+    }
+
+    final submitted = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ReviewFormPage(
+          productId: widget.productId,
+          productName: widget.productName ?? 'Sản phẩm',
+          thumbnailUrl: widget.thumbnailUrl ?? '',
+        ),
+      ),
+    );
+
+    if (submitted == true && context.mounted) {
+      context.read<ReviewProvider>().loadProductReviews(widget.productId);
+      AppSnackBar.show(
+        context,
+        message: 'Cảm ơn bạn đã gửi đánh giá sản phẩm!',
+        icon: Icons.check_circle_outline,
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
@@ -64,13 +109,29 @@ class _ProductReviewsSectionState extends State<ProductReviewsSection> {
                 ),
               ),
             ),
-            if (reviews.isNotEmpty)
-              Text(
-                '${reviews.length} đánh giá',
-                style: TextStyle(color: c.textMuted, fontSize: 12.5),
+            OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                visualDensity: VisualDensity.compact,
+                side: BorderSide(color: c.secondary),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               ),
+              icon: Icon(Icons.rate_review_rounded, size: 15, color: c.secondary),
+              label: Text(
+                'Viết đánh giá',
+                style: TextStyle(color: c.secondary, fontSize: 12, fontWeight: FontWeight.bold),
+              ),
+              onPressed: () => _openReviewForm(context),
+            ),
           ],
         ),
+        if (reviews.isNotEmpty) ...[
+          const SizedBox(height: 4),
+          Text(
+            '${reviews.length} đánh giá đã xác thực',
+            style: TextStyle(color: c.textMuted, fontSize: 12.5),
+          ),
+        ],
         const SizedBox(height: 10),
         if (provider.isLoadingProductFor(widget.productId) && reviews.isEmpty)
           const Padding(

@@ -906,7 +906,11 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                         color: AppTheme.textSecondary),
                   ),
                   const SizedBox(height: 30),
-                  ProductReviewsSection(productId: p.id),
+                  ProductReviewsSection(
+                    productId: p.id,
+                    productName: p.name,
+                    thumbnailUrl: p.thumbnailUrl,
+                  ),
                   const SizedBox(height: 26),
                   ProductRelatedGrid(
                     product: _product,

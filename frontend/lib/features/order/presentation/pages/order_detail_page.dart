@@ -71,7 +71,9 @@ class OrderDetailPage extends StatelessWidget {
           OrderItemsCard(order: o),
           const SizedBox(height: 12),
 
-          if (o.status == OrderStatus.delivered) ...[
+          if (o.status != OrderStatus.canceled &&
+              o.status != OrderStatus.expired &&
+              o.status != OrderStatus.pendingPayment) ...[
             OrderReviewSection(order: o),
             const SizedBox(height: 12),
           ],
