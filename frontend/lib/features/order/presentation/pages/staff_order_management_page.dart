@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:menly_app/features/order/data/models/order_model.dart';
 import '../providers/order_provider.dart';
 import 'order_detail_page.dart';
+import 'order_invoice_page.dart';
 
 /// Man quan ly don hang cho nhan vien tren app (AP-QT9)
 class StaffOrderManagementPage extends StatefulWidget {
@@ -291,6 +292,19 @@ class _StaffOrderManagementPageState extends State<StaffOrderManagementPage> {
                                     );
                                   },
                                   child: const Text('Xem đơn',
+                                      style: TextStyle(fontSize: 12)),
+                                ),
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) =>
+                                            OrderInvoicePage(order: order),
+                                      ),
+                                    );
+                                  },
+                                  child: const Text('Hóa đơn',
                                       style: TextStyle(fontSize: 12)),
                                 ),
                                 const SizedBox(width: 8),

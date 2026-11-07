@@ -1,10 +1,29 @@
 import { Router } from 'express';
+import type { Request, Response } from 'express';
 import { requireAuth } from '../../middlewares/auth.js';
+import { uploadMultipleImagesMiddleware } from '../../middlewares/upload.js';
 import { ReviewViewModel } from '../../viewmodels/review.viewmodel.js';
 
-// Danh gia routes
 const router = Router();
 const vm = new ReviewViewModel();
+
+function getUploadedFiles(req: Request): Express.Multer.File[] {
+  return Array.isArray(req.files) ? (req.files as Express.Multer.File[]) : [];
+}
+
+function parseImages(value: unknown): string[] {
+  if (Array.isArray(value)) return value.map(String).filter(Boolean);
+  if (typeof value === 'string' && value.trim()) {
+    try {
+      const parsed = JSON.parse(value);
+      if (Array.isArray(parsed)) return parsed.map(String).filter(Boolean);
+    } catch {
+      return [value];
+    }
+    return [value];
+  }
+  return [];
+}
 
 // GET /api/v1/reviews/product/:productId - danh sach danh gia cua san pham (cong khai)
 router.get('/product/:productId', async (req, res) => {
@@ -16,22 +35,42 @@ router.get('/product/:productId', async (req, res) => {
   }
 });
 
-// POST /api/v1/reviews/:productId - viet danh gia { orderItemId, rating, comment }
-router.post('/:productId', requireAuth, async (req, res) => {
+// GET /api/v1/reviews/mine - danh sach danh gia cua toi
+router.get('/mine', requireAuth, async (req, res) => {
+  try {
+    const data = await vm.listMine(req.user!.id);
+    res.json({ data });
+  } catch (e) {
+    res.status(500).json({ error: e instanceof Error ? e.message : 'Loi' });
+  }
+});
+
+async function createReview(req: Request, res: Response) {
   try {
     const { orderItemId, rating, comment } = req.body ?? {};
+    const productId = String(req.params.productId ?? req.body?.productId ?? '');
+    const images = parseImages(req.body?.images);
+
     const data = await vm.create({
       userId: req.user!.id,
-      productId: req.params.productId,
-      orderItemId,
+      productId,
+      orderItemId: String(orderItemId ?? ''),
       rating: Number(rating),
-      comment,
+      comment: typeof comment === 'string' ? comment : undefined,
+      files: getUploadedFiles(req),
+      images,
     });
     res.status(201).json({ data });
   } catch (e) {
-    res.status(400).json({ error: e instanceof Error ? e.message : 'Loi' });
+    res.status(400).json({ error: e instanceof Error ? e.message : 'Loi tao danh gia' });
   }
-});
+}
+
+// POST /api/v1/reviews - viet danh gia kem anh (multipart: orderItemId, rating, comment, images[])
+router.post('/', requireAuth, uploadMultipleImagesMiddleware('images', 5), createReview);
+
+// POST /api/v1/reviews/:productId - tuong thich cu, cung ho tro dinh kem anh
+router.post('/:productId', requireAuth, uploadMultipleImagesMiddleware('images', 5), createReview);
 
 // DELETE /api/v1/reviews/:reviewId - xoa danh gia cua minh
 router.delete('/:reviewId', requireAuth, async (req, res) => {
