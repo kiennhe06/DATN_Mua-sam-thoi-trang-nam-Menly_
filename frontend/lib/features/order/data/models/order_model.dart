@@ -180,6 +180,10 @@ class OrderModel {
   bool get canCancel =>
       status == OrderStatus.pendingPayment || status == OrderStatus.processing;
 
+  /// Co the gui yeu cau tra hang khi don da giao / hoan tat
+  bool get canReturn =>
+      status == OrderStatus.delivered || status == OrderStatus.completed;
+
   factory OrderModel.fromJson(Map<String, dynamic> json) {
     var rawItems = json['items'] ?? json['order_items'];
     List<OrderItemModel> parsedItems = [];
