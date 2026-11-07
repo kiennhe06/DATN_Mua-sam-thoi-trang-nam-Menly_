@@ -116,15 +116,23 @@ class ProductModel {
           (json['categories'] is Map
               ? (json['categories']['name']?.toString() ?? '')
               : ''),
-      ratingAvg:
-          (json['rating_avg'] is num) ? (json['rating_avg'] as num).toDouble() : 0,
-      ratingCount:
-          (json['rating_count'] is num) ? (json['rating_count'] as num).toInt() : 0,
+      ratingAvg: _toDouble(json['rating_avg']),
+      ratingCount: _toInt(json['rating_count']),
       isNew: json['is_new'] == true || json['is_new'] == 1,
       isBestSeller: json['is_best_seller'] == true || json['is_best_seller'] == 1,
       variants: parsedVariants,
       images: parsedImages,
     );
+  }
+
+  static double _toDouble(dynamic value) {
+    if (value is num) return value.toDouble();
+    return double.tryParse(value?.toString() ?? '') ?? 0;
+  }
+
+  static int _toInt(dynamic value) {
+    if (value is num) return value.toInt();
+    return int.tryParse(value?.toString() ?? '') ?? 0;
   }
 
   static List<String> _parseImages(dynamic raw) {
