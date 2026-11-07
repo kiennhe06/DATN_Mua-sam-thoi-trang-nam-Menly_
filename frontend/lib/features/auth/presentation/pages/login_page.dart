@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -24,6 +26,53 @@ class _LoginPageState extends State<LoginPage> {
   final _passwordController = TextEditingController();
   bool _isSubmitting = false;
   bool _obscurePassword = true;
+  bool _rememberMe = false;
+
+  static const String _rememberKey = 'remember_me';
+  static const String _savedEmailKey = 'saved_email';
+  static const String _savedPasswordKey = 'saved_password';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedCredentials();
+  }
+
+  Future<void> _loadSavedCredentials() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!(prefs.getBool(_rememberKey) ?? false)) return;
+
+    final email = prefs.getString(_savedEmailKey) ?? '';
+    final encodedPassword = prefs.getString(_savedPasswordKey) ?? '';
+    String password = '';
+    if (encodedPassword.isNotEmpty) {
+      try {
+        password = utf8.decode(base64Decode(encodedPassword));
+      } catch (_) {
+        password = '';
+      }
+    }
+
+    if (!mounted) return;
+    setState(() {
+      _rememberMe = true;
+      _emailController.text = email;
+      _passwordController.text = password;
+    });
+  }
+
+  Future<void> _persistCredentials(String email, String password) async {
+    final prefs = await SharedPreferences.getInstance();
+    if (_rememberMe) {
+      await prefs.setBool(_rememberKey, true);
+      await prefs.setString(_savedEmailKey, email);
+      await prefs.setString(_savedPasswordKey, base64Encode(utf8.encode(password)));
+    } else {
+      await prefs.remove(_rememberKey);
+      await prefs.remove(_savedEmailKey);
+      await prefs.remove(_savedPasswordKey);
+    }
+  }
 
   Future<void> _submitLogin() async {
     if (!(_formKey.currentState?.validate() ?? false)) {
@@ -52,6 +101,11 @@ class _LoginPageState extends State<LoginPage> {
           await prefs.setString('refresh_token', refreshToken.toString());
         }
       }
+
+      await _persistCredentials(
+        _emailController.text.trim(),
+        _passwordController.text,
+      );
 
       if (!mounted) return;
 
@@ -169,16 +223,30 @@ class _LoginPageState extends State<LoginPage> {
                       },
                     ),
                     const SizedBox(height: 12),
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: TextButton(
-                        onPressed: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(builder: (_) => const ForgotPasswordPage()),
-                          );
-                        },
-                        child: const Text('Quên mật khẩu?', style: TextStyle(color: Colors.black87)),
-                      ),
+                    Row(
+                      children: [
+                        Checkbox(
+                          value: _rememberMe,
+                          visualDensity: VisualDensity.compact,
+                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          onChanged: (value) =>
+                              setState(() => _rememberMe = value ?? false),
+                        ),
+                        GestureDetector(
+                          onTap: () =>
+                              setState(() => _rememberMe = !_rememberMe),
+                          child: const Text('Nhớ mật khẩu'),
+                        ),
+                        const Spacer(),
+                        TextButton(
+                          onPressed: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(builder: (_) => const ForgotPasswordPage()),
+                            );
+                          },
+                          child: const Text('Quên mật khẩu?', style: TextStyle(color: Colors.black87)),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 8),
                     FilledButton(
