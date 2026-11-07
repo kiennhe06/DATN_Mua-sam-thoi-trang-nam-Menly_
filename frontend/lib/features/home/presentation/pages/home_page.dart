@@ -1,22 +1,23 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:menly_app/core/navigation/main_navigation_shell.dart';
 import 'package:menly_app/core/theme/app_theme.dart';
-import 'package:menly_app/core/widgets/category_pill.dart';
+import 'package:menly_app/core/widgets/category_tab.dart';
 import 'package:menly_app/core/widgets/product_card.dart';
+import 'package:menly_app/features/product/presentation/pages/search_page.dart';
 import 'package:menly_app/features/product/data/models/product_model.dart';
 import 'package:menly_app/features/auth/presentation/pages/login_page.dart';
 import 'package:menly_app/features/auth/presentation/pages/profile_page.dart';
 import 'package:menly_app/features/auth/presentation/providers/auth_provider.dart';
+import 'package:menly_app/features/auth/presentation/widgets/profile_avatar.dart';
 import 'package:menly_app/features/notification/presentation/widgets/notification_bell_button.dart';
 import 'package:menly_app/features/cart/presentation/providers/cart_provider.dart';
 import 'package:menly_app/features/product/presentation/pages/product_detail_page.dart';
 import 'package:menly_app/features/product/presentation/pages/product_list_page.dart';
 import 'package:menly_app/features/product/presentation/providers/product_provider.dart';
-import 'package:menly_app/features/voucher/presentation/pages/voucher_list_page.dart';
 import 'package:menly_app/features/wishlist/presentation/providers/wishlist_provider.dart';
 import '../widgets/home_banner_slider.dart';
-import '../widgets/home_search_bar.dart';
 import '../widgets/home_filter_tab.dart';
 import '../widgets/home_info_footer.dart';
 import '../widgets/home_recently_viewed.dart';
@@ -95,66 +96,53 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       backgroundColor: AppTheme.scaffoldBackground,
       appBar: AppBar(
-        titleSpacing: 16,
-        backgroundColor: Colors.white,
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              decoration: BoxDecoration(
-                color: AppTheme.primary,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Text(
-                'MENLY',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w900,
-                  fontSize: 16,
-                  letterSpacing: 2.0,
+        backgroundColor: AppTheme.scaffoldBackground,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        centerTitle: true,
+        titleSpacing: 0,
+        leading: IconButton(
+          tooltip: 'Tìm kiếm',
+          onPressed: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const SearchPage()),
+          ),
+          icon: const Icon(Icons.search, color: AppTheme.textPrimary, size: 22),
+        ),
+        // Khoang dem trai bu lai khoang cach chu cuoi, de chu nam dung giua
+        title: const Padding(
+          padding: EdgeInsets.only(left: 5.5),
+          child: Text(
+            'MENLY',
+            style: TextStyle(
+              color: AppTheme.textPrimary,
+              fontSize: 17,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 5.5,
+            ),
+          ),
+        ),
+        actions: [
+          const NotificationBellButton(),
+          Consumer<CartProvider>(
+            builder: (_, cart, __) => IconButton(
+              tooltip: 'Giỏ hàng',
+              onPressed: () => const TabSwitchNotification(2).dispatch(context),
+              icon: Badge.count(
+                count: cart.totalItemCount,
+                isLabelVisible: cart.totalItemCount > 0,
+                backgroundColor: AppTheme.accentRed,
+                textColor: Colors.white,
+                textStyle:
+                    const TextStyle(fontSize: 9.5, fontWeight: FontWeight.w700),
+                child: const Icon(
+                  Icons.shopping_bag_outlined,
+                  color: AppTheme.textPrimary,
+                  size: 22,
                 ),
               ),
             ),
-            const SizedBox(width: 10),
-            Flexible(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'FASHION FOR MEN',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 1.2,
-                      color: AppTheme.textSecondary,
-                    ),
-                  ),
-                  Text(
-                    'Chuẩn mực phái mạnh',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const VoucherListPage()),
-            ),
-            child: const Text('Voucher',
-                style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.accentOrange,
-                    fontSize: 13)),
           ),
-          const NotificationBellButton(),
           IconButton(
             tooltip: 'Tài khoản',
             visualDensity: VisualDensity.compact,
@@ -171,12 +159,11 @@ class _HomePageState extends State<HomePage> {
             },
             icon: Consumer<AuthProvider>(
               builder: (_, auth, __) {
-                if (auth.isLoggedIn &&
-                    auth.user?.avatarUrl != null &&
-                    auth.user!.avatarUrl!.isNotEmpty) {
-                  return CircleAvatar(
+                if (auth.isLoggedIn) {
+                  return ProfileAvatar(
+                    avatarUrl: auth.user?.avatarUrl,
                     radius: 12,
-                    backgroundImage: NetworkImage(auth.user!.avatarUrl!),
+                    fallbackText: auth.user?.fullName ?? 'M',
                   );
                 }
                 return const Icon(
@@ -189,6 +176,10 @@ class _HomePageState extends State<HomePage> {
           ),
           const SizedBox(width: 8),
         ],
+        bottom: const PreferredSize(
+          preferredSize: Size.fromHeight(1),
+          child: Divider(height: 1, thickness: 1, color: AppTheme.border),
+        ),
       ),
       body: RefreshIndicator(
         onRefresh: () => productProv.init(),
@@ -196,9 +187,6 @@ class _HomePageState extends State<HomePage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 1. THANH TIM KIEM TINH GON
-              const HomeSearchBar(),
-
               // 2. HERO BANNER THIET KE NHO GON
               HomeBannerSlider(
                 controller: _bannerController,
@@ -217,11 +205,11 @@ class _HomePageState extends State<HomePage> {
                     scrollDirection: Axis.horizontal,
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     itemCount: productProv.categories.length,
-                    separatorBuilder: (_, __) => const SizedBox(width: 8),
+                    separatorBuilder: (_, __) => const SizedBox(width: 20),
                     itemBuilder: (ctx, i) {
                       final cat = productProv.categories[i];
                       final isSelected = currentCategory == cat;
-                      return CategoryPill(
+                      return CategoryTab(
                         label: cat,
                         selected: isSelected,
                         onTap: () => productProv.setCategory(cat),
@@ -242,14 +230,15 @@ class _HomePageState extends State<HomePage> {
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         Text(
-                          currentCategory == 'Tất cả'
-                              ? 'Tất cả sản phẩm'
-                              : currentCategory,
+                          (currentCategory == 'Tất cả'
+                                  ? 'Tất cả sản phẩm'
+                                  : currentCategory)
+                              .toUpperCase(),
                           style: const TextStyle(
-                            fontWeight: FontWeight.w800,
-                            fontSize: 16,
-                            color: AppTheme.textPrimary,
-                            letterSpacing: -0.2,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 10.5,
+                            color: AppTheme.textSecondary,
+                            letterSpacing: 2,
                           ),
                         ),
                         InkWell(
@@ -267,9 +256,11 @@ class _HomePageState extends State<HomePage> {
                             child: Text(
                               'Xem tất cả',
                               style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w700,
-                                color: AppTheme.accentOrange,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                                color: AppTheme.textPrimary,
+                                decoration: TextDecoration.underline,
+                                decorationColor: AppTheme.border,
                               ),
                             ),
                           ),
@@ -311,7 +302,7 @@ class _HomePageState extends State<HomePage> {
               // 7. FOOTER THONG TIN MENLY
               const HomeInfoFooter(),
 
-              // Khoang cach duoi tranh bi che boi AppPillNav noi
+              // Khoang tho cuoi trang
               const SizedBox(height: 24),
             ],
           ),
@@ -354,7 +345,7 @@ class _HomePageState extends State<HomePage> {
         physics: const NeverScrollableScrollPhysics(),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2,
-          childAspectRatio: 0.65,
+          childAspectRatio: 0.5,
           crossAxisSpacing: 12,
           mainAxisSpacing: 12,
         ),

@@ -3,12 +3,12 @@ import { supabase } from '../config/supabase.js';
 export interface AddressRow {
   id: string;
   user_id: string;
-  full_name: string;
+  recipient_name: string;
   phone: string;
   province: string;
   district: string;
   ward: string;
-  detail: string;
+  detail_address: string;
   is_default: boolean;
   created_at?: string;
 }
@@ -19,7 +19,7 @@ export class AddressModel {
 
   async findByUser(userId: string): Promise<AddressRow[]> {
     const { data, error } = await this.db
-      .from('addresses')
+      .from('user_addresses')
       .select('*')
       .eq('user_id', userId)
       .order('is_default', { ascending: false })
@@ -31,10 +31,10 @@ export class AddressModel {
   async create(userId: string, body: Omit<AddressRow, 'id' | 'user_id' | 'created_at'>): Promise<AddressRow> {
     // Nếu set làm mặc định, bỏ mặc định cũ trước
     if (body.is_default) {
-      await this.db.from('addresses').update({ is_default: false }).eq('user_id', userId);
+      await this.db.from('user_addresses').update({ is_default: false }).eq('user_id', userId);
     }
     const { data, error } = await this.db
-      .from('addresses')
+      .from('user_addresses')
       .insert({ ...body, user_id: userId })
       .select()
       .single();
@@ -44,10 +44,10 @@ export class AddressModel {
 
   async update(id: string, userId: string, body: Partial<AddressRow>): Promise<AddressRow> {
     if (body.is_default) {
-      await this.db.from('addresses').update({ is_default: false }).eq('user_id', userId);
+      await this.db.from('user_addresses').update({ is_default: false }).eq('user_id', userId);
     }
     const { data, error } = await this.db
-      .from('addresses')
+      .from('user_addresses')
       .update(body)
       .eq('id', id)
       .eq('user_id', userId)
@@ -59,7 +59,7 @@ export class AddressModel {
 
   async delete(id: string, userId: string): Promise<void> {
     const { error } = await this.db
-      .from('addresses')
+      .from('user_addresses')
       .delete()
       .eq('id', id)
       .eq('user_id', userId);
@@ -67,9 +67,9 @@ export class AddressModel {
   }
 
   async setDefault(id: string, userId: string): Promise<AddressRow> {
-    await this.db.from('addresses').update({ is_default: false }).eq('user_id', userId);
+    await this.db.from('user_addresses').update({ is_default: false }).eq('user_id', userId);
     const { data, error } = await this.db
-      .from('addresses')
+      .from('user_addresses')
       .update({ is_default: true })
       .eq('id', id)
       .eq('user_id', userId)

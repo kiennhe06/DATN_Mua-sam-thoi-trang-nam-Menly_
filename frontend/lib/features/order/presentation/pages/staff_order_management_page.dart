@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:menly_app/core/utils/format.dart';
 import 'package:menly_app/features/order/data/models/order_model.dart';
+import 'package:menly_app/features/auth/presentation/providers/auth_provider.dart';
+import 'package:menly_app/features/auth/presentation/pages/login_page.dart';
 import '../providers/order_provider.dart';
 import 'order_detail_page.dart';
 import 'order_invoice_page.dart';
@@ -21,7 +24,12 @@ class _StaffOrderManagementPageState extends State<StaffOrderManagementPage> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<OrderProvider>().loadStaffOrders();
+      final auth = context.read<AuthProvider>();
+      final isStaffOrAdmin = auth.isLoggedIn &&
+          (auth.user?.role == 'admin' || auth.user?.role == 'staff');
+      if (isStaffOrAdmin) {
+        context.read<OrderProvider>().loadStaffOrders();
+      }
     });
   }
 
@@ -54,6 +62,83 @@ class _StaffOrderManagementPageState extends State<StaffOrderManagementPage> {
 
   @override
   Widget build(BuildContext context) {
+    final auth = context.watch<AuthProvider>();
+    final isStaffOrAdmin = auth.isLoggedIn &&
+        (auth.user?.role == 'admin' || auth.user?.role == 'staff');
+
+    if (!isStaffOrAdmin) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Quản lý đơn hàng (Nhân viên)'),
+          centerTitle: true,
+        ),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.shade50,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.admin_panel_settings_outlined,
+                    size: 64,
+                    color: Colors.amber.shade800,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  !auth.isLoggedIn
+                      ? 'Yêu cầu đăng nhập tài khoản Quản trị'
+                      : 'Không có quyền truy cập',
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  !auth.isLoggedIn
+                      ? 'Tính năng Quản lý đơn hàng nội bộ chỉ dành cho Quản trị viên và Nhân viên cửa hàng.\n\nVui lòng đăng nhập với tài khoản Quản trị để tiếp tục.'
+                      : 'Tài khoản hiện tại (${auth.user?.email}) là tài khoản Khách hàng, không thể quản lý đơn hàng.\n\nVui lòng đăng nhập với tài khoản Quản trị viên (admin@gmail.com / 123456).',
+                  style: TextStyle(fontSize: 14, color: Colors.grey.shade700, height: 1.4),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 28),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.black87,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    icon: const Icon(Icons.login),
+                    label: Text(!auth.isLoggedIn ? 'Đăng nhập ngay' : 'Đăng nhập tài khoản Quản trị'),
+                    onPressed: () async {
+                      await Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const LoginPage()),
+                      );
+                      if (!context.mounted) return;
+                      final updatedAuth = context.read<AuthProvider>();
+                      if (updatedAuth.isLoggedIn &&
+                          (updatedAuth.user?.role == 'admin' || updatedAuth.user?.role == 'staff')) {
+                        context.read<OrderProvider>().loadStaffOrders();
+                      }
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     final orderProv = context.watch<OrderProvider>();
     final stats = orderProv.staffStatistics;
     final orders = orderProv.staffOrders;
@@ -67,12 +152,31 @@ class _StaffOrderManagementPageState extends State<StaffOrderManagementPage> {
         children: [
           if (orderProv.errorMessage != null)
             MaterialBanner(
-              content: Text(orderProv.errorMessage!),
+              backgroundColor: Colors.red.shade50,
+              leading: const Icon(Icons.info_outline, color: Colors.red),
+              content: Text(
+                orderProv.errorMessage!,
+                style: const TextStyle(color: Colors.red),
+              ),
               actions: [
-                TextButton(
-                  onPressed: orderProv.loadStaffOrders,
-                  child: const Text('Thử lại'),
-                ),
+                if (orderProv.isUnauthorized)
+                  TextButton(
+                    onPressed: () async {
+                      await Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const LoginPage()),
+                      );
+                      if (context.mounted) {
+                        orderProv.loadStaffOrders();
+                      }
+                    },
+                    child: const Text('Đăng nhập', style: TextStyle(fontWeight: FontWeight.bold)),
+                  )
+                else
+                  TextButton(
+                    onPressed: orderProv.loadStaffOrders,
+                    child: const Text('Thử lại', style: TextStyle(fontWeight: FontWeight.bold)),
+                  ),
               ],
             ),
           // Thong ke nhanh danh cho nhan vien
@@ -86,7 +190,7 @@ class _StaffOrderManagementPageState extends State<StaffOrderManagementPage> {
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(10),
                       border: Border.all(color: Colors.grey.shade300),
                     ),
                     child: Column(
@@ -107,7 +211,7 @@ class _StaffOrderManagementPageState extends State<StaffOrderManagementPage> {
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(10),
                       border: Border.all(color: Colors.grey.shade300),
                     ),
                     child: Column(
@@ -130,7 +234,7 @@ class _StaffOrderManagementPageState extends State<StaffOrderManagementPage> {
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(10),
                       border: Border.all(color: Colors.grey.shade300),
                     ),
                     child: Column(
@@ -242,7 +346,7 @@ class _StaffOrderManagementPageState extends State<StaffOrderManagementPage> {
                                   decoration: BoxDecoration(
                                     color: _getStatusColor(order.status)
                                         .withValues(alpha: 0.12),
-                                    borderRadius: BorderRadius.circular(4),
+                                    borderRadius: BorderRadius.circular(6),
                                   ),
                                   child: Text(
                                     order.status.label,
@@ -267,7 +371,7 @@ class _StaffOrderManagementPageState extends State<StaffOrderManagementPage> {
                                     fontSize: 12, color: Colors.grey.shade700)),
                             const SizedBox(height: 6),
                             Text(
-                              'Tổng thu: ${order.total} đ (${order.paymentMethod.toUpperCase()} • ${order.isPaid ? 'Đã thanh toán' : 'Thu tiền khi giao'})',
+                              'Tổng thu: ${formatPrice(order.total)} (${order.paymentMethod.toUpperCase()} • ${order.isPaid ? 'Đã thanh toán' : 'Thu tiền khi giao'})',
                               style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.bold,

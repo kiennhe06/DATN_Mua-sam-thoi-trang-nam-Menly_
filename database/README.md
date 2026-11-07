@@ -9,6 +9,7 @@ Chạy lần lượt trên Supabase (SQL Editor) theo đúng thứ tự:
 5. `05_indexes.sql` — tạo index giúp truy vấn nhanh hơn.
 6. `06_triggers.sql` — trigger tự tạo hồ sơ khi đăng ký, tự tính điểm đánh giá.
 7. `07_policies.sql` — phân quyền truy cập (RLS) cho các bảng.
+8. `08_support_chat.sql` — tạo hội thoại CSKH và tin nhắn giữa khách hàng với nhân viên.
 
 Lưu ý: tài khoản người dùng (admin/nhân viên/khách) được tạo qua Supabase Auth,
 không ghi sẵn mật khẩu trong file SQL.

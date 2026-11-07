@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:menly_app/core/utils/format.dart';
 import 'package:menly_app/core/network/api_client.dart';
 import 'package:menly_app/features/order/data/models/order_model.dart';
 
@@ -191,7 +192,7 @@ class _OrderTrackPageState extends State<OrderTrackPage> {
                         _infoRow('Mã đơn', _order!.code),
                         _infoRow('Người nhận', _order!.shipName),
                         _infoRow('SĐT', _order!.shipPhone),
-                        _infoRow('Tổng tiền', '${_order!.total.toString().replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (m) => ',')}đ'),
+                        _infoRow('Tổng tiền', formatPrice(_order!.total)),
                         _infoRow('Ngày đặt', _formatDate(_order!.createdAt)),
                         _infoRow('Địa chỉ', _order!.shipAddress),
                         const SizedBox(height: 16),

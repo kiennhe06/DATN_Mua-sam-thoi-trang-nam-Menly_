@@ -1,8 +1,11 @@
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:menly_app/core/network/api_client.dart';
 import 'package:menly_app/features/cart/data/models/cart_item_model.dart';
 import 'package:menly_app/features/product/data/models/product_model.dart';
 import 'package:menly_app/features/voucher/data/models/voucher_model.dart';
+import 'package:menly_app/core/network/api_error.dart';
 
 /// Provider quan ly Gio hang va Ap dung ma giam gia
 /// Ket noi truc tiep cac API backend moi nhat (AP-GH1, AP-VC1):
@@ -26,7 +29,34 @@ class CartProvider extends ChangeNotifier {
       r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$');
 
   CartProvider() {
-    loadCartFromApi();
+    _loadFromLocalCache().then((_) => loadCartFromApi());
+  }
+
+  Future<void> _loadFromLocalCache() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final savedStr = prefs.getString('cached_cart_items');
+      if (savedStr != null && savedStr.isNotEmpty) {
+        final decoded = jsonDecode(savedStr);
+        if (decoded is List && decoded.isNotEmpty) {
+          _items.clear();
+          for (final item in decoded) {
+            if (item is Map) {
+              _items.add(CartItemModel.fromJson(Map<String, dynamic>.from(item)));
+            }
+          }
+          notifyListeners();
+        }
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _saveToLocalCache() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final encoded = jsonEncode(_items.map((i) => i.toJson()).toList());
+      await prefs.setString('cached_cart_items', encoded);
+    } catch (_) {}
   }
 
   List<CartItemModel> get items => _items;
@@ -134,6 +164,7 @@ class CartProvider extends ChangeNotifier {
             _items.add(
                 CartItemModel.fromBackendJson(Map<String, dynamic>.from(item)));
           }
+          _saveToLocalCache();
         }
       }
     } catch (_) {
@@ -206,12 +237,14 @@ class CartProvider extends ChangeNotifier {
         'quantity': quantity,
       });
       final rawList = res.data?['data'];
-      if (rawList is! List)
+      if (rawList is! List) {
         throw StateError('Backend trả về giỏ hàng không hợp lệ');
+      }
       _items
         ..clear()
         ..addAll(rawList.map((item) =>
             CartItemModel.fromBackendJson(Map<String, dynamic>.from(item))));
+      _saveToLocalCache();
       notifyListeners();
       return true;
     } catch (error) {
@@ -220,7 +253,8 @@ class CartProvider extends ChangeNotifier {
       } else {
         _items.removeWhere((item) => item.variantId == variantId);
       }
-      _errorMessage = 'Không thể đồng bộ giỏ hàng: $error';
+      _errorMessage = friendlyErrorMessage(error,
+          fallback: 'Không thêm được vào giỏ hàng, vui lòng thử lại.');
       notifyListeners();
       return false;
     }
@@ -232,6 +266,7 @@ class CartProvider extends ChangeNotifier {
     if (index >= 0 && _items[index].quantity < 20) {
       _items[index].quantity++;
       final item = _items[index];
+      _saveToLocalCache();
       notifyListeners();
 
       if (_uuidRegex.hasMatch(item.variantId)) {
@@ -251,6 +286,7 @@ class CartProvider extends ChangeNotifier {
       if (_items[index].quantity > 1) {
         _items[index].quantity--;
         final item = _items[index];
+        _saveToLocalCache();
         notifyListeners();
 
         if (_uuidRegex.hasMatch(item.variantId)) {
@@ -273,6 +309,7 @@ class CartProvider extends ChangeNotifier {
       final variantId = _items[index].variantId;
       _items.removeAt(index);
       _checkVoucherEligibility();
+      _saveToLocalCache();
       notifyListeners();
 
       if (_uuidRegex.hasMatch(variantId)) {
@@ -303,6 +340,30 @@ class CartProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Xóa các sản phẩm đã mua thành công ra khỏi giỏ hàng (cả ở state cục bộ, cache và máy chủ)
+  Future<void> removePurchasedItems(List<CartItemModel> purchasedItems) async {
+    final purchasedVariantIds = purchasedItems.map((e) => e.variantId).toSet();
+    final toRemove = _items.where((i) => purchasedVariantIds.contains(i.variantId)).toList();
+    if (toRemove.isEmpty) {
+      toRemove.addAll(_items.where((i) => i.isSelected));
+    }
+    _items.removeWhere((i) => toRemove.contains(i) || purchasedVariantIds.contains(i.variantId));
+    _appliedVoucher = null;
+    _shippingFeeFromApi = null;
+    _shippingNote = null;
+    _saveToLocalCache();
+    notifyListeners();
+
+    for (var item in toRemove) {
+      if (_uuidRegex.hasMatch(item.variantId)) {
+        try {
+          await _api.dio.delete('/cart/items/${item.variantId}');
+        } catch (_) {}
+      }
+    }
+    await loadCartFromApi();
+  }
+
   /// Xoa cac mon da duoc tick chon sau khi dat hang thanh cong
   Future<void> clearSelectedItems() async {
     final toRemove = _items.where((i) => i.isSelected).toList();
@@ -310,6 +371,7 @@ class CartProvider extends ChangeNotifier {
     _appliedVoucher = null;
     _shippingFeeFromApi = null;
     _shippingNote = null;
+    _saveToLocalCache();
     notifyListeners();
 
     for (var item in toRemove) {
@@ -327,6 +389,7 @@ class CartProvider extends ChangeNotifier {
     _appliedVoucher = null;
     _shippingFeeFromApi = null;
     _shippingNote = null;
+    _saveToLocalCache();
     notifyListeners();
 
     try {

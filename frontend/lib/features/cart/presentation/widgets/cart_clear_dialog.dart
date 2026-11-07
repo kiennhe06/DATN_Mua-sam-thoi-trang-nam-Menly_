@@ -11,7 +11,7 @@ class CartClearDialog {
       context: context,
       backgroundColor: c.surface,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (_) => Padding(
         padding: EdgeInsets.fromLTRB(
@@ -29,7 +29,7 @@ class CartClearDialog {
                 height: 4,
                 decoration: BoxDecoration(
                   color: c.border,
-                  borderRadius: BorderRadius.circular(2),
+                  borderRadius: BorderRadius.circular(999),
                 ),
               ),
             ),

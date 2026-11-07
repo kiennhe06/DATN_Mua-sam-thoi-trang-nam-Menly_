@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../widgets/app_pill_nav.dart';
+import '../widgets/app_bottom_nav.dart';
 import '../../features/auth/presentation/pages/profile_page.dart';
 import '../../features/cart/presentation/pages/cart_page.dart';
 import '../../features/cart/presentation/providers/cart_provider.dart';
@@ -12,7 +12,8 @@ class TabSwitchNotification extends Notification {
   const TabSwitchNotification(this.targetIndex);
 }
 
-/// Khung dieu huong chinh voi thanh Tab AppPillNav noi (4 tab: Trang chu, Yeu thich, Gio hang, Ca nhan)
+/// Khung dieu huong chinh voi thanh AppBottomNav (4 tab: Trang chu, Yeu thich,
+/// Gio hang, Ca nhan)
 class MainNavigationShell extends StatefulWidget {
   const MainNavigationShell({super.key});
 
@@ -44,29 +45,25 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
           index: _currentIndex,
           children: _pages,
         ),
-        bottomNavigationBar: AppPillNav(
+        bottomNavigationBar: AppBottomNav(
           currentIndex: _currentIndex,
           onTap: (idx) => setState(() => _currentIndex = idx),
           items: [
-            const PillNavItem(
+            const BottomNavItem(
               Icons.home_outlined,
-              selectedIcon: Icons.home,
               label: 'Trang chủ',
             ),
-            const PillNavItem(
+            const BottomNavItem(
               Icons.favorite_border,
-              selectedIcon: Icons.favorite,
               label: 'Yêu thích',
             ),
-            PillNavItem(
+            BottomNavItem(
               Icons.shopping_bag_outlined,
-              selectedIcon: Icons.shopping_bag,
               badge: cart.totalItemCount,
               label: 'Giỏ hàng',
             ),
-            const PillNavItem(
+            const BottomNavItem(
               Icons.person_outline,
-              selectedIcon: Icons.person,
               label: 'Cá nhân',
             ),
           ],

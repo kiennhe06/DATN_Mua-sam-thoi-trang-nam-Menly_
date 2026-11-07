@@ -1,7 +1,7 @@
 import { ReviewModel } from '../models/review.model.js';
 
 const MAX_REVIEW_IMAGES = 5;
-const REVIEWABLE_STATUSES = ['delivered', 'completed'];
+export const REVIEWABLE_STATUSES = ['delivered', 'completed', 'paid', 'processing'];
 
 export class ReviewViewModel {
   private model = new ReviewModel();
@@ -17,23 +17,33 @@ export class ReviewViewModel {
   async create(input: {
     userId: string;
     productId?: string;
-    orderItemId: string;
+    orderItemId?: string;
     rating: number;
     comment?: string;
     files?: Express.Multer.File[];
     images?: string[];
   }) {
-    if (!input.orderItemId) throw new Error('Thiếu thông tin sản phẩm trong đơn hàng');
+    let orderItemId = input.orderItemId;
+    if (!orderItemId && input.productId) {
+      const reviewable = await this.model.findReviewableOrderItemForProduct(input.userId, input.productId);
+      if (reviewable) {
+        orderItemId = reviewable.id;
+      } else {
+        throw new Error('Bạn cần mua và thanh toán sản phẩm này trước khi có thể viết đánh giá');
+      }
+    }
+
+    if (!orderItemId) throw new Error('Thiếu thông tin sản phẩm trong đơn hàng');
     if (!Number.isInteger(input.rating) || input.rating < 1 || input.rating > 5) {
       throw new Error('Số sao phải từ 1 đến 5');
     }
 
-    const purchased = await this.model.findPurchasedOrderItem(input.orderItemId, input.userId);
+    const purchased = await this.model.findPurchasedOrderItem(orderItemId, input.userId);
     if (!purchased) {
       throw new Error('Không tìm thấy sản phẩm trong đơn hàng của bạn');
     }
     if (!REVIEWABLE_STATUSES.includes(purchased.orderStatus)) {
-      throw new Error('Chỉ có thể đánh giá sản phẩm đã giao hàng');
+      throw new Error('Chỉ có thể đánh giá sản phẩm sau khi đơn hàng được xác nhận hoặc đã giao');
     }
     if (!purchased.productId) {
       throw new Error('Không xác định được sản phẩm cần đánh giá');
@@ -54,7 +64,10 @@ export class ReviewViewModel {
     return this.model.create({
       userId: input.userId,
       productId: purchased.productId,
-      orderItemId: input.orderItemId,
+      // Dung orderItemId da tra ra o tren chu khong phai input.orderItemId:
+      // khi nguoi dung danh gia tu man san pham thi input khong co truong nay,
+      // gui len null se vi pham rang buoc not null cua product_reviews.
+      orderItemId,
       rating: input.rating,
       comment: input.comment,
       images,

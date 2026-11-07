@@ -40,25 +40,25 @@ export function BiBottomCharts({ orders = [] }: BiBottomChartsProps) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
       {/* Bottom-Left Card: Donut Breakdown */}
-      <div className="lg:col-span-5 bg-[#1c0d36]/90 border border-[#371b63] rounded-2xl p-6">
+      <div className="lg:col-span-5 bg-panel border border-line rounded-2xl p-6 shadow-panel">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-semibold text-slate-300 flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-pink-400"></span>
+          <h3 className="text-sm font-semibold text-ink-mid flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-camel-dark"></span>
             Tỷ lệ đổi trả & Kênh thanh toán
           </h3>
-          <div className="flex gap-1 text-[11px] bg-[#120822] p-1 rounded-lg border border-[#371b63]">
+          <div className="flex gap-1 text-[11px] bg-tint p-1 rounded-lg border border-line">
             <button
               onClick={() => setActiveTab('returns')}
-              className={`px-2 py-0.5 rounded cursor-pointer ${
-                activeTab === 'returns' ? 'bg-violet-600 text-white font-bold' : 'text-slate-400'
+              className={`px-2 py-0.5 rounded-md cursor-pointer ${
+                activeTab === 'returns' ? 'bg-camel text-ink font-bold' : 'text-ink-muted'
               }`}
             >
               Đổi trả
             </button>
             <button
               onClick={() => setActiveTab('payment')}
-              className={`px-2 py-0.5 rounded cursor-pointer ${
-                activeTab === 'payment' ? 'bg-violet-600 text-white font-bold' : 'text-slate-400'
+              className={`px-2 py-0.5 rounded-md cursor-pointer ${
+                activeTab === 'payment' ? 'bg-camel text-ink font-bold' : 'text-ink-muted'
               }`}
             >
               Kênh bán
@@ -70,7 +70,7 @@ export function BiBottomCharts({ orders = [] }: BiBottomChartsProps) {
           {/* Donut graphic */}
           <div className="relative w-44 h-44 flex items-center justify-center">
             <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
-              <circle cx="50" cy="50" r="38" fill="none" stroke="#2a144d" strokeWidth="18" />
+              <circle cx="50" cy="50" r="38" fill="none" stroke="#efece5" strokeWidth="18" />
               {hasOrders && (
                 <>
                   <circle
@@ -78,7 +78,7 @@ export function BiBottomCharts({ orders = [] }: BiBottomChartsProps) {
                     cy="50"
                     r="38"
                     fill="none"
-                    stroke="#7c3aed"
+                    stroke="#b8824a"
                     strokeWidth="18"
                     strokeDasharray="72 238"
                     strokeDashoffset="0"
@@ -88,7 +88,7 @@ export function BiBottomCharts({ orders = [] }: BiBottomChartsProps) {
                     cy="50"
                     r="38"
                     fill="none"
-                    stroke="#a855f7"
+                    stroke="#1f5c8b"
                     strokeWidth="18"
                     strokeDasharray="84 238"
                     strokeDashoffset="-72"
@@ -98,7 +98,7 @@ export function BiBottomCharts({ orders = [] }: BiBottomChartsProps) {
                     cy="50"
                     r="38"
                     fill="none"
-                    stroke="#ec4899"
+                    stroke="#8a6234"
                     strokeWidth="18"
                     strokeDasharray="82 238"
                     strokeDashoffset="-156"
@@ -107,8 +107,8 @@ export function BiBottomCharts({ orders = [] }: BiBottomChartsProps) {
               )}
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-              <span className="text-2xl font-black text-white">{returnRate}%</span>
-              <span className="text-[10px] text-slate-400 font-medium">Tỷ lệ hoàn hủy</span>
+              <span className="text-2xl font-black text-ink">{returnRate}%</span>
+              <span className="text-[10px] text-ink-muted font-medium">Tỷ lệ hoàn hủy</span>
             </div>
           </div>
 
@@ -117,42 +117,42 @@ export function BiBottomCharts({ orders = [] }: BiBottomChartsProps) {
             {activeTab === 'returns' ? (
               <>
                 <div className="flex items-center justify-between gap-4">
-                  <span className="flex items-center gap-2 text-slate-300">
-                    <span className="w-2.5 h-2.5 rounded-full bg-pink-500"></span>
+                  <span className="flex items-center gap-2 text-ink-mid">
+                    <span className="w-2.5 h-2.5 rounded-full bg-camel-dark"></span>
                     Dịch vụ khách hàng
                   </span>
-                  <span className="font-mono font-bold text-white">{hasOrders ? '30%' : '0%'}</span>
+                  <span className="font-mono font-bold text-ink">{hasOrders ? '30%' : '0%'}</span>
                 </div>
                 <div className="flex items-center justify-between gap-4">
-                  <span className="flex items-center gap-2 text-slate-300">
-                    <span className="w-2.5 h-2.5 rounded-full bg-purple-400"></span>
+                  <span className="flex items-center gap-2 text-ink-mid">
+                    <span className="w-2.5 h-2.5 rounded-full bg-steel"></span>
                     Máy móc / Lỗi vải
                   </span>
-                  <span className="font-mono font-bold text-white">{hasOrders ? '35%' : '0%'}</span>
+                  <span className="font-mono font-bold text-ink">{hasOrders ? '35%' : '0%'}</span>
                 </div>
                 <div className="flex items-center justify-between gap-4">
-                  <span className="flex items-center gap-2 text-slate-300">
-                    <span className="w-2.5 h-2.5 rounded-full bg-violet-600"></span>
+                  <span className="flex items-center gap-2 text-ink-mid">
+                    <span className="w-2.5 h-2.5 rounded-full bg-camel"></span>
                     Thiếu phụ kiện size
                   </span>
-                  <span className="font-mono font-bold text-white">{hasOrders ? '35%' : '0%'}</span>
+                  <span className="font-mono font-bold text-ink">{hasOrders ? '35%' : '0%'}</span>
                 </div>
               </>
             ) : (
               <>
                 <div className="flex items-center justify-between gap-4">
-                  <span className="flex items-center gap-2 text-slate-300">
-                    <span className="w-2.5 h-2.5 rounded-full bg-cyan-400"></span>
+                  <span className="flex items-center gap-2 text-ink-mid">
+                    <span className="w-2.5 h-2.5 rounded-full bg-steel"></span>
                     Thanh toán COD
                   </span>
-                  <span className="font-mono font-bold text-white">{codPercent}%</span>
+                  <span className="font-mono font-bold text-ink">{codPercent}%</span>
                 </div>
                 <div className="flex items-center justify-between gap-4">
-                  <span className="flex items-center gap-2 text-slate-300">
-                    <span className="w-2.5 h-2.5 rounded-full bg-violet-500"></span>
+                  <span className="flex items-center gap-2 text-ink-mid">
+                    <span className="w-2.5 h-2.5 rounded-full bg-camel"></span>
                     Thanh toán VNPay
                   </span>
-                  <span className="font-mono font-bold text-white">{vnpayPercent}%</span>
+                  <span className="font-mono font-bold text-ink">{vnpayPercent}%</span>
                 </div>
               </>
             )}
@@ -161,27 +161,27 @@ export function BiBottomCharts({ orders = [] }: BiBottomChartsProps) {
       </div>
 
       {/* Bottom-Right Card: Stacked Bar Chart */}
-      <div className="lg:col-span-7 bg-[#1c0d36]/90 border border-[#371b63] rounded-2xl p-6 flex flex-col justify-between">
+      <div className="lg:col-span-7 bg-panel border border-line rounded-2xl p-6 flex flex-col justify-between shadow-panel">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-semibold text-slate-300 flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-cyan-400"></span>
+          <h3 className="text-sm font-semibold text-ink-mid flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-steel"></span>
             Biến động đơn hàng & giao dịch theo tháng
           </h3>
-          <div className="flex items-center gap-3 text-[10px] text-slate-400">
+          <div className="flex items-center gap-3 text-[10px] text-ink-muted">
             <span className="flex items-center gap-1">
-              <span className="w-2 h-2 rounded-xs bg-violet-600"></span> Tầng 1
+              <span className="w-2 h-2 rounded-md bg-camel"></span> Tầng 1
             </span>
             <span className="flex items-center gap-1">
-              <span className="w-2 h-2 rounded-xs bg-cyan-500"></span> Tầng 2
+              <span className="w-2 h-2 rounded-md bg-steel"></span> Tầng 2
             </span>
             <span className="flex items-center gap-1">
-              <span className="w-2 h-2 rounded-xs bg-pink-400"></span> Tầng 3
+              <span className="w-2 h-2 rounded-md bg-camel-dark"></span> Tầng 3
             </span>
           </div>
         </div>
 
         {/* 22 Stacked Bars */}
-        <div className="h-44 flex items-end justify-between gap-1 pt-6 pb-2 border-b border-[#371b63]">
+        <div className="h-44 flex items-end justify-between gap-1 pt-6 pb-2 border-b border-line">
           {monthlyData.map((d, idx) => {
             const maxTotal = 135;
             const barHeight = hasOrders ? (d.total / maxTotal) * 130 : 4;
@@ -191,16 +191,16 @@ export function BiBottomCharts({ orders = [] }: BiBottomChartsProps) {
 
             return (
               <div key={idx} className="flex-1 flex flex-col items-center group relative h-full justify-end">
-                <span className="text-[9px] font-mono text-slate-400 mb-1 opacity-80 group-hover:text-white transition-colors">
+                <span className="text-[9px] font-mono text-ink-muted mb-1 opacity-80 group-hover:text-ink transition-colors">
                   {d.total}
                 </span>
                 <div
                   style={{ height: `${barHeight}px` }}
-                  className="w-full max-w-[14px] rounded-t-xs overflow-hidden flex flex-col justify-end"
+                  className="w-full max-w-[14px] rounded-t-md overflow-hidden flex flex-col justify-end"
                 >
-                  <div style={{ height: `${h3}px` }} className={hasOrders ? 'bg-pink-400/90 w-full' : 'bg-slate-700/40 w-full'} />
-                  <div style={{ height: `${h2}px` }} className={hasOrders ? 'bg-cyan-500/90 w-full' : 'bg-slate-700/40 w-full'} />
-                  <div style={{ height: `${h1}px` }} className={hasOrders ? 'bg-violet-600/90 w-full' : 'bg-slate-700/40 w-full'} />
+                  <div style={{ height: `${h3}px` }} className={hasOrders ? 'bg-camel-dark w-full' : 'bg-tint-strong w-full'} />
+                  <div style={{ height: `${h2}px` }} className={hasOrders ? 'bg-steel w-full' : 'bg-tint-strong w-full'} />
+                  <div style={{ height: `${h1}px` }} className={hasOrders ? 'bg-camel w-full' : 'bg-tint-strong w-full'} />
                 </div>
               </div>
             );
@@ -208,7 +208,7 @@ export function BiBottomCharts({ orders = [] }: BiBottomChartsProps) {
         </div>
 
         {/* Months axis labels */}
-        <div className="flex justify-between text-[8px] font-mono text-slate-500 mt-2">
+        <div className="flex justify-between text-[8px] font-mono text-ink-muted mt-2">
           <span>T1 2025</span>
           <span>T2</span>
           <span>T3</span>

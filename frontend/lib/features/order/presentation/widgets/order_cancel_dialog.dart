@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_buttons.dart';
 import 'package:menly_app/features/order/data/models/order_model.dart';
 import '../providers/order_provider.dart';
+import 'package:menly_app/features/notification/presentation/providers/notification_provider.dart';
 
 class OrderCancelDialog {
   static void show({
@@ -28,7 +30,7 @@ class OrderCancelDialog {
       isScrollControlled: true,
       backgroundColor: c.surface,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (ctx) {
         return StatefulBuilder(
@@ -50,7 +52,7 @@ class OrderCancelDialog {
                       height: 4,
                       decoration: BoxDecoration(
                         color: c.border,
-                        borderRadius: BorderRadius.circular(2),
+                        borderRadius: BorderRadius.circular(999),
                       ),
                     ),
                   ),
@@ -120,6 +122,14 @@ class OrderCancelDialog {
                       Navigator.pop(ctx);
                       final success = await orderProv.cancelOrderApi(order.id, reason: selectedReason);
                       if (context.mounted) {
+                        if (success) {
+                          context.read<NotificationProvider>().addNotification(
+                            title: 'Hủy đơn hàng thành công #${order.code}',
+                            body: 'Đơn hàng #${order.code} đã được hủy theo yêu cầu ($selectedReason).',
+                            type: 'order',
+                            data: {'orderId': order.id, 'orderCode': order.code},
+                          );
+                        }
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text(success ? 'Đã hủy đơn hàng thành công' : 'Không thể hủy đơn hàng này'),

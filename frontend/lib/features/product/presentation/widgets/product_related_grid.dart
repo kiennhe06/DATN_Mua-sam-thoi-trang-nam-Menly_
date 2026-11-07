@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/utils/format.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/product_rating_row.dart';
 import '../../../wishlist/presentation/providers/wishlist_provider.dart';
@@ -40,7 +41,7 @@ class ProductRelatedGrid extends StatelessWidget {
           itemCount: relatedProducts.length,
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 2,
-            childAspectRatio: 0.65,
+            childAspectRatio: 0.5,
             crossAxisSpacing: 12,
             mainAxisSpacing: 12,
           ),
@@ -145,7 +146,7 @@ class ProductRelatedGrid extends StatelessWidget {
                           ),
                           const SizedBox(height: 6),
                           Text(
-                            '${related.price} đ',
+                            formatPrice(related.price),
                             style: const TextStyle(
                               color: AppTheme.accentRed,
                               fontWeight: FontWeight.w900,
@@ -165,3 +166,4 @@ class ProductRelatedGrid extends StatelessWidget {
     );
   }
 }
+

@@ -9,13 +9,16 @@ import 'pressable.dart';
 import 'product_rating_row.dart';
 import 'package:menly_app/features/product/data/models/product_model.dart';
 
-/// The san pham chuan UI/UX Menly:
-/// Bo goc tron, hieu ung hover/press nhe, anh theo ty le, nut tim yeu thich va nut them gio.
+/// The san pham chuan cua Menly.
+///
+/// The nam phang tren nen kem: khong vien, khong do bong, chi anh bo goc va chu
+/// ben duoi. Anh va chu la vung bam mo trang chi tiet, con nut "CHON MUA" nam
+/// ngoai vung do vi no mo bang chon size chu khong dieu huong.
 class ProductCard extends StatelessWidget {
   // Ten san pham luon chiem dung so dong nay nen khoi chu duoi the cao co dinh,
   // nho vay anh o moi the trong cung mot hang deu cao bang nhau.
-  static const double _nameFontSize = 13.0;
-  static const double _nameLineHeight = 1.25;
+  static const double _nameFontSize = 12.5;
+  static const double _nameLineHeight = 1.45;
   static const int _nameMaxLines = 2;
   static const double _nameBoxHeight =
       _nameFontSize * _nameLineHeight * _nameMaxLines;
@@ -40,139 +43,127 @@ class ProductCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
-    return Pressable(
-      onTap: onTap,
-      scale: 0.98,
-      child: Container(
-        decoration: BoxDecoration(
-          color: c.surface,
-          borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-          border: Border.all(color: c.border.withValues(alpha: 0.7)),
-          boxShadow: [
-            BoxShadow(
-              color: c.shadow,
-              blurRadius: 16,
-              offset: const Offset(0, 6),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Anh nhan phan chieu cao con lai cua o luoi. Dung Expanded thay cho
-            // AspectRatio co dinh de the khong bi tran khi o luoi thap di tren
-            // man hinh hep (chu va nut ben duoi cao co dinh theo pixel).
-            Expanded(
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  ClipRRect(
-                    borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(AppTheme.radiusLg),
-                    ),
-                    child: _image(c),
-                  ),
-                  if (badge != null)
-                    Positioned(
-                      top: 8,
-                      left: 8,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: c.inkCard.withValues(alpha: 0.85),
-                          borderRadius:
-                              BorderRadius.circular(AppTheme.radiusPill),
-                        ),
-                        child: Text(
-                          badge!,
-                          style: TextStyle(
-                            color: c.onInk,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                    ),
-                  Positioned(
-                    top: 8,
-                    right: 8,
-                    child: _FavButton(
-                      active: isFavorite,
-                      onTap: onToggleFavorite,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Chua san cho du 2 dong de gia va nut o moi the deu thang hang
-                  SizedBox(
-                    height: _nameBoxHeight,
-                    child: Text(
-                      product.name,
-                      maxLines: _nameMaxLines,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: c.textPrimary,
-                        fontSize: _nameFontSize,
-                        height: _nameLineHeight,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  ProductRatingRow(
-                    ratingAvg: product.ratingAvg,
-                    ratingCount: product.ratingCount,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    formatVnd(product.price),
-                    maxLines: 1,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: Pressable(
+            onTap: onTap,
+            scale: 0.98,
+            borderRadius: BorderRadius.circular(AppTheme.radiusCard),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Anh nhan phan chieu cao con lai cua o luoi. Dung Expanded thay
+                // cho AspectRatio co dinh de the khong bi tran khi o luoi thap di
+                // tren man hinh hep (chu va nut ben duoi cao co dinh theo pixel).
+                Expanded(child: _imageStack(c)),
+                const SizedBox(height: 9),
+                // Chua san cho du 2 dong de gia o moi the deu thang hang
+                SizedBox(
+                  height: _nameBoxHeight,
+                  child: Text(
+                    product.name,
+                    maxLines: _nameMaxLines,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      color: c.secondary,
-                      fontSize: 14.0,
-                      fontWeight: FontWeight.w800,
+                      color: c.textPrimary,
+                      fontSize: _nameFontSize,
+                      height: _nameLineHeight,
+                      fontWeight: FontWeight.w500,
+                      letterSpacing: 0.2,
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  AddToCartButton(
-                    onTap: onAdd ?? onTap,
-                    height: 32,
+                ),
+                const SizedBox(height: 3),
+                // Hang sao danh gia that tu backend (nhanh hung them vao)
+                ProductRatingRow(
+                  ratingAvg: product.ratingAvg,
+                  ratingCount: product.ratingCount,
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  formatVnd(product.price),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: c.textPrimary,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.2,
                   ),
-                ],
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 9),
+        AddToCartButton(onTap: onAdd ?? onTap),
+      ],
+    );
+  }
+
+  Widget _imageStack(AppColors c) {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(AppTheme.radiusCard),
+          child: _image(c),
+        ),
+        if (badge != null)
+          Positioned(
+            top: 9,
+            left: 9,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+              decoration: BoxDecoration(
+                color: c.inkCard,
+                borderRadius: BorderRadius.circular(AppTheme.radiusXs),
+              ),
+              child: Text(
+                badge!,
+                style: TextStyle(
+                  color: c.onInk,
+                  fontSize: 9.5,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1.2,
+                ),
               ),
             ),
-          ],
+          ),
+        Positioned(
+          top: 7,
+          right: 7,
+          child: _FavButton(active: isFavorite, onTap: onToggleFavorite),
         ),
-      ),
+      ],
     );
   }
 
   Widget _image(AppColors c) {
     if (product.thumbnailUrl.isEmpty) {
-      return Container(
-        color: c.surfaceVariant,
-        child: const Center(
-          child: Text('Menly', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold, fontSize: 13)),
-        ),
-      );
+      return _imageFallback(c);
     }
     return CachedNetworkImage(
       imageUrl: product.thumbnailUrl,
       fit: BoxFit.cover,
       placeholder: (_, __) => Container(color: c.surfaceVariant),
-      errorWidget: (_, __, ___) => Container(
-        color: c.surfaceVariant,
-        child: const Center(
-          child: Text('Menly', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold, fontSize: 13)),
+      errorWidget: (_, __, ___) => _imageFallback(c),
+    );
+  }
+
+  Widget _imageFallback(AppColors c) {
+    return Container(
+      color: c.surfaceVariant,
+      alignment: Alignment.center,
+      child: Text(
+        'MENLY',
+        style: TextStyle(
+          color: c.textMuted,
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          letterSpacing: 2.4,
         ),
       ),
     );
@@ -190,23 +181,21 @@ class _FavButton extends StatelessWidget {
     return Pressable(
       onTap: onTap,
       scale: 0.85,
-      borderRadius: BorderRadius.circular(17),
+      borderRadius: BorderRadius.circular(AppTheme.radiusPill),
       child: Container(
-        width: 32,
-        height: 32,
+        width: 30,
+        height: 30,
+        // Nen kem mo de nut noi tren anh ma khong can do bong
         decoration: BoxDecoration(
-          color: c.surface.withValues(alpha: 0.92),
+          color: c.background.withValues(alpha: 0.72),
           shape: BoxShape.circle,
-          boxShadow: [
-            BoxShadow(color: c.shadow, blurRadius: 8, offset: const Offset(0, 2)),
-          ],
         ),
         child: Center(
           child: Icon(
             active ? Icons.favorite : Icons.favorite_border,
             key: ValueKey(active),
             size: 17,
-            color: active ? c.danger : c.textSecondary,
+            color: active ? c.danger : c.textPrimary,
           ),
         ),
       ),

@@ -57,31 +57,31 @@ export function DashboardRecentOrders({
         />
       </div>
 
-      <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6">
+      <div className="bg-panel border border-line rounded-2xl p-6 shadow-panel">
         <div className="flex items-center justify-between mb-5">
           <div>
-            <h2 className="text-base font-bold text-white">Đơn hàng mới nhất</h2>
-            <p className="text-xs text-slate-400 mt-0.5">
+            <h2 className="text-base font-bold text-ink">Đơn hàng mới nhất</h2>
+            <p className="text-xs text-ink-muted mt-0.5">
               Các đơn hàng phát sinh từ ứng dụng di động Flutter và website
             </p>
           </div>
           <Link
             href="/orders"
-            className="text-xs text-amber-400 hover:text-amber-300 font-semibold flex items-center gap-1 transition-colors"
+            className="text-xs text-camel-dark hover:text-camel-dark font-semibold flex items-center gap-1 transition-colors"
           >
             Xem tất cả <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </div>
 
         {loading ? (
-          <div className="py-12 text-center text-slate-500 text-sm">Đang tải đơn hàng...</div>
+          <div className="py-12 text-center text-ink-muted text-sm">Đang tải đơn hàng...</div>
         ) : orders.length === 0 ? (
-          <div className="py-12 text-center text-slate-500 text-sm">Chưa có đơn hàng nào</div>
+          <div className="py-12 text-center text-ink-muted text-sm">Chưa có đơn hàng nào</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead>
-                <tr className="border-b border-slate-800 text-xs text-slate-400 uppercase tracking-wider font-semibold">
+                <tr className="border-b border-line text-xs text-ink-muted uppercase tracking-wider font-semibold">
                   <th className="pb-3">Mã đơn</th>
                   <th className="pb-3">Khách hàng</th>
                   <th className="pb-3">Phương thức</th>
@@ -89,20 +89,20 @@ export function DashboardRecentOrders({
                   <th className="pb-3">Trạng thái</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/60 text-slate-300">
+              <tbody className="divide-y divide-line text-ink-mid">
                 {orders.slice(0, 5).map((ord) => (
-                  <tr key={ord.id} className="hover:bg-slate-800/40 transition-colors">
-                    <td className="py-3 font-mono font-semibold text-amber-400 text-xs">
+                  <tr key={ord.id} className="hover:bg-tint transition-colors">
+                    <td className="py-3 font-mono font-semibold text-camel-dark text-xs">
                       {ord.code}
                     </td>
                     <td className="py-3">
-                      <p className="font-medium text-white">{ord.shippingAddress.name}</p>
-                      <p className="text-xs text-slate-400">{ord.shippingAddress.phone}</p>
+                      <p className="font-medium text-ink">{ord.shippingAddress.name}</p>
+                      <p className="text-xs text-ink-muted">{ord.shippingAddress.phone}</p>
                     </td>
-                    <td className="py-3 uppercase text-xs font-semibold text-slate-300">
+                    <td className="py-3 uppercase text-xs font-semibold text-ink-mid">
                       {ord.paymentMethod}
                     </td>
-                    <td className="py-3 font-semibold text-white">
+                    <td className="py-3 font-semibold text-ink">
                       {ord.total.toLocaleString('vi-VN')} đ
                     </td>
                     <td className="py-3">

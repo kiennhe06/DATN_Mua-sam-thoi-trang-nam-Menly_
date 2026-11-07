@@ -65,6 +65,40 @@ class ApiClient {
           }
           return handler.next(options);
         },
+        onError: (DioException error, handler) async {
+          if (error.response?.statusCode == 401) {
+            try {
+              final prefs = await SharedPreferences.getInstance();
+              final refreshToken = prefs.getString('refresh_token');
+              if (refreshToken != null && refreshToken.isNotEmpty) {
+                // Gọi làm mới access token với Dio độc lập để tránh vòng lặp
+                final refreshDio = Dio(BaseOptions(
+                  baseUrl: baseUrl,
+                  connectTimeout: const Duration(seconds: 5),
+                  receiveTimeout: const Duration(seconds: 5),
+                ));
+                final res = await refreshDio.post('/auth/refresh-token', data: {
+                  'refreshToken': refreshToken,
+                });
+                if (res.statusCode == 200 && res.data?['data']?['accessToken'] != null) {
+                  final newAccessToken = res.data['data']['accessToken'].toString();
+                  final newRefreshToken = res.data['data']['refreshToken']?.toString() ?? refreshToken;
+                  await prefs.setString('access_token', newAccessToken);
+                  await prefs.setString('refresh_token', newRefreshToken);
+
+                  // Thử lại request ban đầu với token mới
+                  final retryOptions = error.requestOptions;
+                  retryOptions.headers['Authorization'] = 'Bearer $newAccessToken';
+                  final retryResponse = await _dio.fetch(retryOptions);
+                  return handler.resolve(retryResponse);
+                }
+              }
+            } catch (_) {
+              // Refresh thất bại (hết hạn hoàn toàn)
+            }
+          }
+          return handler.next(error);
+        },
       ),
     );
   }

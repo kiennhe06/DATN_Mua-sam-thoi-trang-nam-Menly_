@@ -297,7 +297,11 @@ export class OrderModel {
       throw new Error('Sản phẩm hoặc số lượng đặt hàng không hợp lệ');
     }
 
-    const { data: created, error } = await this.db.rpc('create_order', {
+    let created: any;
+    let error: any;
+
+    // Thử gọi hàm create_order có hỗ trợ p_shipping_fee (9 tham số)
+    const rpc9 = await this.db.rpc('create_order', {
       p_user_id: input.userId,
       p_payment_method: input.payment_method,
       p_ship_name: input.ship_name,
@@ -308,17 +312,88 @@ export class OrderModel {
       p_idempotency_key: input.idempotency_key ?? null,
       p_shipping_fee: input.shipping_fee ?? 0,
     });
+
+    const errMsg = (rpc9.error?.message ?? '').toLowerCase();
+    const errCode = rpc9.error?.code ?? '';
+    if (rpc9.error && (errMsg.includes('schema cache') || errMsg.includes('create_order') || errMsg.includes('function') || errCode === 'PGRST202' || errCode === '42883')) {
+      // Fallback cho Supabase instance chưa cập nhật tham số p_shipping_fee (hàm 8 tham số)
+      const rpc8 = await this.db.rpc('create_order', {
+        p_user_id: input.userId,
+        p_payment_method: input.payment_method,
+        p_ship_name: input.ship_name,
+        p_ship_phone: input.ship_phone,
+        p_ship_address: input.ship_address,
+        p_items: input.items.map((item) => ({ variant_id: item.variant_id, quantity: item.quantity })),
+        p_voucher_code: input.voucher_code ?? null,
+        p_idempotency_key: input.idempotency_key ?? null,
+      });
+      created = rpc8.data;
+      error = rpc8.error;
+
+    } else {
+      created = rpc9.data;
+      error = rpc9.error;
+    }
+
     if (error) throw new Error(error.message);
 
     const rpcOrder = Array.isArray(created) ? created[0] : created;
     if (!rpcOrder?.id) throw new Error('Backend không trả về mã đơn hàng vừa tạo');
+
+    // Đồng bộ chính xác tổng thanh toán, phí ship và giảm giá voucher theo đúng dữ liệu app gửi
+    const calculatedTotal = (input.total !== undefined && input.total > 0)
+      ? input.total
+      : Math.max(0, input.subtotal + (input.shipping_fee ?? 0) - (input.discount_amount ?? 0));
+
+    const updatePayload: Record<string, any> = {
+      shipping_fee: input.shipping_fee ?? 0,
+      total: calculatedTotal,
+    };
+    if (input.subtotal && input.subtotal > 0) {
+      updatePayload.subtotal = input.subtotal;
+    }
+
+    await this.db.from('orders').update(updatePayload).eq('id', rpcOrder.id);
+
+    // Đồng bộ chi tiết mã giảm giá vào order_vouchers nếu có mã và chiết khấu
+    if (input.voucher_code && (input.discount_amount ?? 0) > 0) {
+      try {
+        const { data: existingVoucher } = await this.db
+          .from('order_vouchers')
+          .select('id')
+          .eq('order_id', rpcOrder.id)
+          .maybeSingle();
+
+        if (!existingVoucher) {
+          const cleanCode = input.voucher_code.trim();
+          const { data: vRow } = await this.db
+            .from('vouchers')
+            .select('id, used_count')
+            .ilike('code', cleanCode)
+            .maybeSingle();
+
+          if (vRow) {
+            await this.db.from('order_vouchers').insert({
+              order_id: rpcOrder.id,
+              voucher_id: vRow.id,
+              discount_amount: input.discount_amount,
+            });
+            await this.db.from('vouchers').update({
+              used_count: (vRow.used_count ?? 0) + 1,
+            }).eq('id', vRow.id);
+          }
+        }
+      } catch {
+        // Bỏ qua lỗi phụ nếu bảng vouchers tạm thời không khả dụng
+      }
+    }
 
     const order = await this.loadEnrichedOrder(rpcOrder.id);
     if (!order) throw new Error('Không tải được đơn hàng vừa tạo');
 
     const createdOrder = {
       ...order,
-      discount_amount: Math.max(0, order.subtotal + order.shipping_fee - order.total),
+      discount_amount: input.discount_amount ?? Math.max(0, order.subtotal + order.shipping_fee - order.total),
     } as OrderRow;
     await this.notifyOrderUser(
       createdOrder,

@@ -12,24 +12,24 @@ interface InventoryMovementsTableProps {
 
 export function InventoryMovementsTable({ movements, loading }: InventoryMovementsTableProps) {
   return (
-    <div className="bg-slate-900/60 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
-      <div className="p-4 border-b border-slate-800 flex items-center justify-between text-xs text-slate-400 font-medium">
-        <span className="flex items-center gap-1.5 font-bold text-white text-sm">
-          <Clock className="w-4 h-4 text-amber-400" />
+    <div className="bg-panel border border-line rounded-2xl overflow-hidden shadow-xl">
+      <div className="p-4 border-b border-line flex items-center justify-between text-xs text-ink-muted font-medium">
+        <span className="flex items-center gap-1.5 font-bold text-ink text-sm">
+          <Clock className="w-4 h-4 text-camel-dark" />
           Lịch sử Biến động Kho (Inventory Movements)
         </span>
         <span>Ghi nhận thời gian thực</span>
       </div>
 
       {loading ? (
-        <div className="py-20 text-center text-slate-500 text-sm">Đang tải lịch sử kho...</div>
+        <div className="py-20 text-center text-ink-muted text-sm">Đang tải lịch sử kho...</div>
       ) : movements.length === 0 ? (
-        <div className="py-20 text-center text-slate-500 text-sm">Chưa có lịch sử biến động nào</div>
+        <div className="py-20 text-center text-ink-muted text-sm">Chưa có lịch sử biến động nào</div>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead>
-              <tr className="border-b border-slate-800 text-xs text-slate-400 uppercase tracking-wider font-semibold bg-slate-950/40">
+              <tr className="border-b border-line text-xs text-ink-muted uppercase tracking-wider font-semibold bg-tint">
                 <th className="py-3 px-4">Thời gian</th>
                 <th className="py-3 px-4">Sản phẩm / SKU</th>
                 <th className="py-3 px-4">Thay đổi (+/-)</th>
@@ -38,21 +38,21 @@ export function InventoryMovementsTable({ movements, loading }: InventoryMovemen
                 <th className="py-3 px-4">Người thực hiện</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/60 text-slate-300">
+            <tbody className="divide-y divide-line text-ink-mid">
               {movements.map((m) => (
-                <tr key={m.id} className="hover:bg-slate-800/40 transition-colors text-xs">
-                  <td className="py-3 px-4 font-mono text-slate-400 whitespace-nowrap">
+                <tr key={m.id} className="hover:bg-tint transition-colors text-xs">
+                  <td className="py-3 px-4 font-mono text-ink-muted whitespace-nowrap">
                     {new Date(m.createdAt).toLocaleString('vi-VN')}
                   </td>
-                  <td className="py-3 px-4 font-semibold text-white">
+                  <td className="py-3 px-4 font-semibold text-ink">
                     {m.productName || m.sku || m.variantId}
                   </td>
                   <td className="py-3 px-4">
                     <span
-                      className={`font-bold font-mono px-2 py-0.5 rounded flex items-center gap-1 w-fit ${
+                      className={`font-bold font-mono px-2 py-0.5 rounded-md flex items-center gap-1 w-fit ${
                         m.delta > 0
-                          ? 'text-emerald-400 bg-emerald-500/10'
-                          : 'text-rose-400 bg-rose-500/10'
+                          ? 'text-ok bg-ok-bg'
+                          : 'text-danger bg-danger-bg'
                       }`}
                     >
                       {m.delta > 0 ? (
@@ -66,10 +66,10 @@ export function InventoryMovementsTable({ movements, loading }: InventoryMovemen
                   <td className="py-3 px-4">
                     <ReasonBadge reason={m.reason} />
                   </td>
-                  <td className="py-3 px-4 text-slate-400 max-w-xs truncate">
+                  <td className="py-3 px-4 text-ink-muted max-w-xs truncate">
                     {m.note || 'Không có'}
                   </td>
-                  <td className="py-3 px-4 font-mono text-slate-400">
+                  <td className="py-3 px-4 font-mono text-ink-muted">
                     {m.actorId || 'system'}
                   </td>
                 </tr>

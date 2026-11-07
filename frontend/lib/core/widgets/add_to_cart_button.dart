@@ -3,7 +3,10 @@ import '../theme/app_colors.dart';
 import '../theme/app_theme.dart';
 import 'pressable.dart';
 
-/// Nut Them gio chuan phong cach toi gian cua he thong Menly.
+/// Nut "CHON MUA" duoi moi the san pham.
+///
+/// Vien mong tren nen trong thay vi nen dac: the san pham nam trang tren nen
+/// kem nen mot nut dac se keo het su chu y khoi anh san pham.
 class AddToCartButton extends StatelessWidget {
   final VoidCallback? onTap;
   final String label;
@@ -12,7 +15,7 @@ class AddToCartButton extends StatelessWidget {
   const AddToCartButton({
     super.key,
     required this.onTap,
-    this.label = 'Thêm giỏ',
+    this.label = 'CHỌN MUA',
     this.height = 36,
   });
 
@@ -22,25 +25,25 @@ class AddToCartButton extends StatelessWidget {
     return Pressable(
       onTap: onTap,
       scale: 0.96,
-      borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+      borderRadius: BorderRadius.circular(AppTheme.radiusSm),
       child: Container(
         height: height,
         width: double.infinity,
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: c.surfaceVariant,
-          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+          border: Border.all(color: c.textPrimary),
+          borderRadius: BorderRadius.circular(AppTheme.radiusSm),
         ),
         child: Text(
           label,
           style: TextStyle(
             color: c.textPrimary,
-            fontSize: 13,
-            fontWeight: FontWeight.w700,
+            fontSize: 10.5,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 1.3,
           ),
         ),
       ),
     );
   }
 }
-
