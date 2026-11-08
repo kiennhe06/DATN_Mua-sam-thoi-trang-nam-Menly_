@@ -4,7 +4,9 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../../core/navigation/main_navigation_shell.dart';
+import '../../../../core/navigation/staff_navigation_shell.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../product/presentation/providers/product_provider.dart';
 import 'onboarding_page.dart';
 
@@ -97,9 +99,20 @@ class _SplashPageState extends State<SplashPage>
     final hasSeenOnboarding = prefs.getBool('has_seen_onboarding') ?? false;
     if (!mounted) return;
 
-    final Widget next = hasSeenOnboarding
-        ? const MainNavigationShell()
-        : const OnboardingPage();
+    final authProv = context.read<AuthProvider>();
+    if (authProv.user == null) {
+      await authProv.loadProfile();
+    }
+    if (!mounted) return;
+
+    final Widget next;
+    if (authProv.isLoggedIn && authProv.user?.role == 'staff') {
+      next = const StaffNavigationShell();
+    } else {
+      next = hasSeenOnboarding
+          ? const MainNavigationShell()
+          : const OnboardingPage();
+    }
 
     Navigator.of(context).pushReplacement(
       PageRouteBuilder(

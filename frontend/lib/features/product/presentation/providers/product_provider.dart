@@ -37,6 +37,11 @@ class ProductProvider extends ChangeNotifier {
       'newest'; // 'newest', 'price_asc', 'price_desc', 'best_seller'
   double _minPrice = 0;
   double _maxPrice = 1000000;
+  String? _selectedSize;
+  String? _selectedColor;
+  double _minRating = 0.0;
+  bool _onlyInStock = false;
+  String _classification = 'all'; // 'all', 'new', 'best_seller'
 
   ProductProvider() {
     _initialLoad = init();
@@ -61,6 +66,24 @@ class ProductProvider extends ChangeNotifier {
   String get sortBy => _sortBy;
   double get minPrice => _minPrice;
   double get maxPrice => _maxPrice;
+  String? get selectedSize => _selectedSize;
+  String? get selectedColor => _selectedColor;
+  double get minRating => _minRating;
+  bool get onlyInStock => _onlyInStock;
+  String get classification => _classification;
+
+  /// So luong tieu chi loc dang duoc ap dung (khong tinh sap xep)
+  int get activeFilterCount {
+    int count = 0;
+    if (_selectedCategory != 'Tất cả') count++;
+    if (_minPrice > 0 || _maxPrice < 1000000) count++;
+    if (_selectedSize != null && _selectedSize != 'Tất cả') count++;
+    if (_selectedColor != null && _selectedColor != 'Tất cả') count++;
+    if (_minRating > 0) count++;
+    if (_onlyInStock) count++;
+    if (_classification != 'all') count++;
+    return count;
+  }
 
   /// Lay danh sach san pham moi nhat (TM11)
   List<ProductModel> get newProducts {
@@ -290,7 +313,165 @@ class ProductProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Reset bo loc
+  /// Loc theo size
+  void setSelectedSize(String? size) {
+    _selectedSize = (size == 'Tất cả' || size == null || size.isEmpty) ? null : size;
+    _applyFilters();
+    notifyListeners();
+  }
+
+  /// Loc theo mau sac
+  void setSelectedColor(String? color) {
+    _selectedColor = (color == 'Tất cả' || color == null || color.isEmpty) ? null : color;
+    _applyFilters();
+    notifyListeners();
+  }
+
+  /// Loc theo danh gia toi thieu
+  void setMinRating(double rating) {
+    _minRating = rating;
+    _applyFilters();
+    notifyListeners();
+  }
+
+  /// Loc theo tinh trang con hang
+  void setOnlyInStock(bool value) {
+    _onlyInStock = value;
+    _applyFilters();
+    notifyListeners();
+  }
+
+  /// Loc theo phan loai: 'all', 'new', 'best_seller'
+  void setClassification(String value) {
+    _classification = value;
+    _applyFilters();
+    notifyListeners();
+  }
+
+  /// Ap dung nhieu bo loc nang cao mot luc (dung trong modal bo loc)
+  void applyAdvancedFilters({
+    String? sort,
+    double? minPrice,
+    double? maxPrice,
+    String? size,
+    String? color,
+    double? minRating,
+    bool? onlyInStock,
+    String? classification,
+  }) {
+    if (sort != null) _sortBy = sort;
+    if (minPrice != null) _minPrice = minPrice;
+    if (maxPrice != null) _maxPrice = maxPrice;
+    _selectedSize = (size == 'Tất cả' || size == null || size.isEmpty) ? null : size;
+    _selectedColor = (color == 'Tất cả' || color == null || color.isEmpty) ? null : color;
+    if (minRating != null) _minRating = minRating;
+    if (onlyInStock != null) _onlyInStock = onlyInStock;
+    if (classification != null) _classification = classification;
+
+    _applyFilters();
+    notifyListeners();
+  }
+
+  /// Tinh truoc so luong san pham phu hop voi tieu chi loc (hien thi realtime tren nut "Ap dung")
+  int countFilteredProducts({
+    String? category,
+    String? sort,
+    double? minPrice,
+    double? maxPrice,
+    String? size,
+    String? color,
+    double? minRating,
+    bool? onlyInStock,
+    String? classification,
+  }) {
+    List<ProductModel> list = List.from(_allProducts);
+    final cat = category ?? _selectedCategory;
+    if (cat != 'Tất cả') {
+      list = list.where((p) {
+        if (_selectedCategoryId != null && p.categoryId.isNotEmpty) {
+          return p.categoryId == _selectedCategoryId;
+        }
+        return p.categoryName.toLowerCase().contains(cat.toLowerCase());
+      }).toList();
+    }
+    if (_searchQuery.trim().isNotEmpty) {
+      final q = _searchQuery.toLowerCase().trim();
+      list = list.where((p) =>
+          p.name.toLowerCase().contains(q) ||
+          p.description.toLowerCase().contains(q) ||
+          p.categoryName.toLowerCase().contains(q)).toList();
+    }
+    final minP = minPrice ?? _minPrice;
+    final maxP = maxPrice ?? _maxPrice;
+    list = list.where((p) => p.price >= minP && p.price <= maxP).toList();
+
+    final cls = classification ?? _classification;
+    if (cls == 'new') {
+      list = list.where((p) => p.isNew).toList();
+    } else if (cls == 'best_seller') {
+      list = list.where((p) => p.isBestSeller).toList();
+    }
+
+    final rating = minRating ?? _minRating;
+    if (rating > 0) {
+      list = list.where((p) => p.ratingAvg >= rating).toList();
+    }
+
+    final s = (size == 'Tất cả' || size == null || size.isEmpty) ? null : size;
+    if (s != null) {
+      final sUpper = s.toUpperCase().trim();
+      list = list.where((p) => p.variants.any((v) => v.size.toUpperCase().trim() == sUpper)).toList();
+    }
+
+    final c = (color == 'Tất cả' || color == null || color.isEmpty) ? null : color;
+    if (c != null) {
+      list = list.where((p) => p.variants.any((v) => matchColor(v.color, c))).toList();
+    }
+
+    final stock = onlyInStock ?? _onlyInStock;
+    if (stock) {
+      list = list.where((p) {
+        return p.variants.any((v) {
+          final matchSize = s == null || v.size.toUpperCase().trim() == s.toUpperCase().trim();
+          final matchCol = c == null || matchColor(v.color, c);
+          return v.stock > 0 && matchSize && matchCol;
+        });
+      }).toList();
+    }
+
+    return list.length;
+  }
+
+  /// Bo tung tieu chi loc rieng le (dung cho chip badge x)
+  void clearCategory() => setCategory('Tất cả');
+  void clearPriceFilter() => setPriceRange(0, 1000000);
+  void clearSizeFilter() {
+    _selectedSize = null;
+    _applyFilters();
+    notifyListeners();
+  }
+  void clearColorFilter() {
+    _selectedColor = null;
+    _applyFilters();
+    notifyListeners();
+  }
+  void clearRatingFilter() {
+    _minRating = 0.0;
+    _applyFilters();
+    notifyListeners();
+  }
+  void clearStockFilter() {
+    _onlyInStock = false;
+    _applyFilters();
+    notifyListeners();
+  }
+  void clearClassificationFilter() {
+    _classification = 'all';
+    _applyFilters();
+    notifyListeners();
+  }
+
+  /// Reset toan bo bo loc
   void resetFilters() {
     _selectedCategory = 'Tất cả';
     _selectedCategoryId = null;
@@ -298,6 +479,11 @@ class ProductProvider extends ChangeNotifier {
     _sortBy = 'newest';
     _minPrice = 0;
     _maxPrice = 1000000;
+    _selectedSize = null;
+    _selectedColor = null;
+    _minRating = 0.0;
+    _onlyInStock = false;
+    _classification = 'all';
     _applyFilters();
     notifyListeners();
   }
@@ -309,6 +495,65 @@ class ProductProvider extends ChangeNotifier {
       _applyFilters();
       notifyListeners();
     }
+  }
+
+  /// Kiem tra mau bien the co phu hop voi mau can loc hay khong
+  static bool matchColor(String variantColor, String filterColor) {
+    if (filterColor.isEmpty || filterColor == 'Tất cả') return true;
+    final v = variantColor.toLowerCase().trim();
+    final f = filterColor.toLowerCase().trim();
+
+    if (f.contains('đen') || f.contains('den')) {
+      return v.contains('đen') || v.contains('den') || v.contains('black');
+    }
+    if (f.contains('trắng') || f.contains('trang')) {
+      return v.contains('trắng') || v.contains('trang') || v.contains('white');
+    }
+    if (f.contains('xanh rêu') || f.contains('rêu') || f.contains('reu')) {
+      return v.contains('rêu') || v.contains('reu') || v.contains('olive');
+    }
+    if (f.contains('xanh') || f.contains('navy')) {
+      if (v.contains('rêu') || v.contains('reu')) return false;
+      return v.contains('xanh') ||
+          v.contains('navy') ||
+          v.contains('jean') ||
+          v.contains('blue');
+    }
+    if (f.contains('xám') || f.contains('xam')) {
+      return v.contains('xám') ||
+          v.contains('xam') ||
+          v.contains('grey') ||
+          v.contains('gray');
+    }
+    if (f.contains('be') || f.contains('nâu') || f.contains('nau')) {
+      return v.contains('be') ||
+          v.contains('nâu') ||
+          v.contains('nau') ||
+          v.contains('cam đất') ||
+          v.contains('cam dat') ||
+          v.contains('brown');
+    }
+    if (f.contains('khác') || f.contains('khac')) {
+      return v.contains('đỏ') ||
+          v.contains('do') ||
+          v.contains('hồng') ||
+          v.contains('hong') ||
+          v.contains('vàng') ||
+          v.contains('vang') ||
+          v.contains('cam') ||
+          (!v.contains('đen') &&
+              !v.contains('den') &&
+              !v.contains('trắng') &&
+              !v.contains('trang') &&
+              !v.contains('xanh') &&
+              !v.contains('navy') &&
+              !v.contains('xám') &&
+              !v.contains('xam') &&
+              !v.contains('be') &&
+              !v.contains('nâu') &&
+              !v.contains('nau'));
+    }
+    return v.contains(f);
   }
 
   /// Lay danh sach san pham cho trang chu theo tung danh muc (khong bi anh huong boi query tim kiem)
@@ -338,7 +583,7 @@ class ProductProvider extends ChangeNotifier {
   void _applyFilters() {
     List<ProductModel> result = List.from(_allProducts);
 
-    // Filter theo category
+    // 1. Filter theo category
     if (_selectedCategory != 'Tất cả') {
       result = result.where((p) {
         if (_selectedCategoryId != null && p.categoryId.isNotEmpty) {
@@ -350,7 +595,7 @@ class ProductProvider extends ChangeNotifier {
       }).toList();
     }
 
-    // Filter theo search query
+    // 2. Filter theo search query
     if (_searchQuery.trim().isNotEmpty) {
       final q = _searchQuery.toLowerCase().trim();
       result = result.where((p) {
@@ -360,12 +605,54 @@ class ProductProvider extends ChangeNotifier {
       }).toList();
     }
 
-    // Filter theo khoang gia
+    // 3. Filter theo khoang gia
     result = result
         .where((p) => p.price >= _minPrice && p.price <= _maxPrice)
         .toList();
 
-    // Sap xep
+    // 4. Filter theo phan loai (all, new, best_seller)
+    if (_classification == 'new') {
+      result = result.where((p) => p.isNew).toList();
+    } else if (_classification == 'best_seller') {
+      result = result.where((p) => p.isBestSeller).toList();
+    }
+
+    // 5. Filter theo danh gia toi thieu
+    if (_minRating > 0) {
+      result = result.where((p) => p.ratingAvg >= _minRating).toList();
+    }
+
+    // 6. Filter theo size
+    if (_selectedSize != null && _selectedSize != 'Tất cả') {
+      final s = _selectedSize!.toUpperCase().trim();
+      result = result.where((p) {
+        return p.variants.any((v) => v.size.toUpperCase().trim() == s);
+      }).toList();
+    }
+
+    // 7. Filter theo mau sac
+    if (_selectedColor != null && _selectedColor != 'Tất cả') {
+      result = result.where((p) {
+        return p.variants.any((v) => matchColor(v.color, _selectedColor!));
+      }).toList();
+    }
+
+    // 8. Filter theo tinh trang con hang
+    if (_onlyInStock) {
+      result = result.where((p) {
+        return p.variants.any((v) {
+          final matchSize = _selectedSize == null ||
+              _selectedSize == 'Tất cả' ||
+              v.size.toUpperCase().trim() == _selectedSize!.toUpperCase().trim();
+          final matchCol = _selectedColor == null ||
+              _selectedColor == 'Tất cả' ||
+              matchColor(v.color, _selectedColor!);
+          return v.stock > 0 && matchSize && matchCol;
+        });
+      }).toList();
+    }
+
+    // 9. Sap xep
     switch (_sortBy) {
       case 'price_asc':
         result.sort((a, b) => a.price.compareTo(b.price));
@@ -376,6 +663,9 @@ class ProductProvider extends ChangeNotifier {
       case 'best_seller':
         result.sort((a, b) =>
             (b.isBestSeller ? 1 : 0).compareTo(a.isBestSeller ? 1 : 0));
+        break;
+      case 'rating_desc':
+        result.sort((a, b) => b.ratingAvg.compareTo(a.ratingAvg));
         break;
       case 'newest':
       default:
