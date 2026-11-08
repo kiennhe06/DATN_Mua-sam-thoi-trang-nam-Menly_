@@ -1,3 +1,13 @@
+String _realThumbnail(dynamic raw) {
+  final url = raw?.toString().trim() ?? '';
+  if (url.isEmpty) return '';
+  final lower = url.toLowerCase();
+  if (lower.contains('unsplash') || lower.contains('picsum') || lower.contains('placeholder')) {
+    return '';
+  }
+  return url;
+}
+
 /// Item trong don hang
 class OrderItemModel {
   final String id;
@@ -23,16 +33,14 @@ class OrderItemModel {
   factory OrderItemModel.fromJson(Map<String, dynamic> json) {
     return OrderItemModel(
       id: json['id']?.toString() ?? '',
-      productName: json['product_name']?.toString() ?? '',
-      size: json['size']?.toString() ?? 'M',
-      color: json['color']?.toString() ?? 'Đen',
+      productName: json['product_name']?.toString() ?? json['productName']?.toString() ?? '',
+      size: json['size']?.toString() ?? '',
+      color: json['color']?.toString() ?? '',
       unitPrice: (json['unit_price'] is num) ? (json['unit_price'] as num).toInt() : 0,
       quantity: (json['quantity'] is num) ? (json['quantity'] as num).toInt() : 1,
-      thumbnailUrl: (json['thumbnail_url'] != null && json['thumbnail_url'].toString().isNotEmpty && !json['thumbnail_url'].toString().contains('picsum'))
-          ? json['thumbnail_url'].toString()
-          : (json['thumbnailUrl'] != null && json['thumbnailUrl'].toString().isNotEmpty && !json['thumbnailUrl'].toString().contains('picsum'))
-              ? json['thumbnailUrl'].toString()
-              : 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=500&auto=format&fit=crop',
+      thumbnailUrl: _realThumbnail(
+        json['thumbnail_url'] ?? json['thumbnailUrl'],
+      ),
     );
   }
 

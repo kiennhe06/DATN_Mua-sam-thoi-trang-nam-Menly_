@@ -2,12 +2,71 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:menly_app/features/auth/presentation/pages/login_page.dart';
+import 'package:menly_app/features/auth/presentation/providers/auth_provider.dart';
+import 'package:menly_app/features/auth/presentation/widgets/profile_avatar.dart';
 import 'package:menly_app/features/notification/presentation/pages/notifications_page.dart';
 import 'package:menly_app/features/notification/presentation/providers/notification_provider.dart';
+import 'package:menly_app/features/support/data/support_chat_service.dart';
 import 'package:menly_app/features/voucher/presentation/pages/voucher_list_page.dart';
 import 'package:menly_app/features/voucher/presentation/providers/voucher_provider.dart';
 
 void main() {
+  test('Chat CSKH doc duoc thong tin hoi thoai va tin nhan', () {
+    final conversation = SupportConversation.fromJson({
+      'id': 'conversation-id',
+      'user_id': 'customer-id',
+      'last_message': 'Tôi cần hỗ trợ đơn hàng',
+      'last_message_at': '2026-11-07T10:00:00Z',
+      'unread_staff_count': 2,
+      'customer': {
+        'full_name': 'Khách hàng Menly',
+        'email': 'customer@example.com',
+      },
+    });
+    final message = SupportChatMessage.fromJson({
+      'id': 'message-id',
+      'conversation_id': conversation.id,
+      'sender_id': conversation.userId,
+      'sender_role': 'customer',
+      'content': 'Tôi cần hỗ trợ đơn hàng',
+      'created_at': '2026-11-07T10:00:00Z',
+    });
+
+    expect(conversation.customerName, 'Khách hàng Menly');
+    expect(conversation.unreadStaffCount, 2);
+    expect(message.senderRole, 'customer');
+    expect(message.content, conversation.lastMessage);
+  });
+
+  test('Avatar co cac lua chon co san va co the xoa avatar', () {
+    final user = UserModel(
+      id: 'user-1',
+      email: 'member@example.com',
+      fullName: 'Menly Member',
+      avatarUrl: AvatarPreset.presets.first.id,
+    );
+
+    expect(AvatarPreset.presets, hasLength(6));
+    expect(user.copyWith(clearAvatar: true).avatarUrl, isNull);
+  });
+
+  testWidgets('Avatar mau co san hien thi duoc khong can mang', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Wrap(
+            children: AvatarPreset.presets
+                .map((preset) => ProfileAvatar(avatarUrl: preset.id, radius: 32))
+                .toList(),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.byType(ProfileAvatar), findsNWidgets(6));
+    expect(tester.takeException(), isNull);
+  });
+
   test('Kho voucher fallback phai co du lieu khong rong', () {
     final vouchers = VoucherProvider.fallbackVouchers;
 

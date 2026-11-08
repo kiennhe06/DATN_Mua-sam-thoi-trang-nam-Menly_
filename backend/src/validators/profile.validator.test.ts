@@ -46,6 +46,21 @@ test('updateProfileSchema: chấp nhận avatarUrl hợp lệ và từ chối UR
   assert.equal(invalid.success, false);
 });
 
+test('updateProfileSchema: chấp nhận các avatar có sẵn của Menly', () => {
+  const presets = [
+    'menly-avatar:classic',
+    'menly-avatar:bright',
+    'menly-avatar:calm',
+    'menly-avatar:urban',
+    'menly-avatar:classic-light',
+    'menly-avatar:night',
+  ];
+
+  for (const avatar_url of presets) {
+    assert.equal(updateProfileSchema.safeParse({ avatar_url }).success, true);
+  }
+});
+
 test('updateProfileSchema: từ chối khi không có trường nào được cung cấp', () => {
   const result = updateProfileSchema.safeParse({});
   assert.equal(result.success, false);
@@ -60,4 +75,3 @@ test('updateProfileSchema: từ chối họ tên dưới 2 ký tự', () => {
   });
   assert.equal(result.success, false);
 });
-

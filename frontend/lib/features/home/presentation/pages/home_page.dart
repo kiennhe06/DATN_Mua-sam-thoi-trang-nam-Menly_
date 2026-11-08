@@ -7,6 +7,10 @@ import 'package:menly_app/core/widgets/category_tab.dart';
 import 'package:menly_app/core/widgets/product_card.dart';
 import 'package:menly_app/features/product/presentation/pages/search_page.dart';
 import 'package:menly_app/features/product/data/models/product_model.dart';
+import 'package:menly_app/features/auth/presentation/pages/login_page.dart';
+import 'package:menly_app/features/auth/presentation/pages/profile_page.dart';
+import 'package:menly_app/features/auth/presentation/providers/auth_provider.dart';
+import 'package:menly_app/features/auth/presentation/widgets/profile_avatar.dart';
 import 'package:menly_app/features/notification/presentation/widgets/notification_bell_button.dart';
 import 'package:menly_app/features/cart/presentation/providers/cart_provider.dart';
 import 'package:menly_app/features/product/presentation/pages/product_detail_page.dart';
@@ -139,7 +143,38 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
           ),
-          const SizedBox(width: 4),
+          IconButton(
+            tooltip: 'Tài khoản',
+            visualDensity: VisualDensity.compact,
+            onPressed: () {
+              final auth = context.read<AuthProvider>();
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => auth.isLoggedIn
+                      ? const ProfilePage()
+                      : const LoginPage(),
+                ),
+              );
+            },
+            icon: Consumer<AuthProvider>(
+              builder: (_, auth, __) {
+                if (auth.isLoggedIn) {
+                  return ProfileAvatar(
+                    avatarUrl: auth.user?.avatarUrl,
+                    radius: 12,
+                    fallbackText: auth.user?.fullName ?? 'M',
+                  );
+                }
+                return const Icon(
+                  Icons.person_outline_rounded,
+                  color: AppTheme.textPrimary,
+                  size: 23,
+                );
+              },
+            ),
+          ),
+          const SizedBox(width: 8),
         ],
         bottom: const PreferredSize(
           preferredSize: Size.fromHeight(1),

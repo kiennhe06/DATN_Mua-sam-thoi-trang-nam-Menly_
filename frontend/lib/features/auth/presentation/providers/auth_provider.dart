@@ -25,13 +25,14 @@ class UserModel {
     String? fullName,
     String? phone,
     String? avatarUrl,
+    bool clearAvatar = false,
   }) {
     return UserModel(
       id: id,
       email: email,
       fullName: fullName ?? this.fullName,
       phone: phone ?? this.phone,
-      avatarUrl: avatarUrl ?? this.avatarUrl,
+      avatarUrl: clearAvatar ? null : avatarUrl ?? this.avatarUrl,
       role: role,
     );
   }
@@ -64,10 +65,12 @@ class AuthProvider extends ChangeNotifier {
   final ApiClient _api = ApiClient();
   UserModel? _user;
   bool _isLoading = false;
+  String? _profileUpdateError;
 
   UserModel? get user => _user;
   bool get isLoggedIn => _user != null;
   bool get isLoading => _isLoading;
+  String? get profileUpdateError => _profileUpdateError;
 
   Future<void> init() async {
     await loadProfile();
@@ -141,32 +144,47 @@ class AuthProvider extends ChangeNotifier {
     required String phone,
     String? avatarUrl,
   }) async {
-    if (_user == null) return false;
+    if (_user == null) {
+      _profileUpdateError = 'Vui lòng đăng nhập để cập nhật hồ sơ';
+      return false;
+    }
     _isLoading = true;
+    _profileUpdateError = null;
     notifyListeners();
 
     try {
-      _user = _user!.copyWith(
+      final updatedUser = _user!.copyWith(
         fullName: fullName.trim(),
         phone: phone.trim(),
         avatarUrl: avatarUrl?.trim(),
+        clearAvatar: avatarUrl != null && avatarUrl.trim().isEmpty,
       );
 
+      final profileData = <String, String>{
+        'full_name': updatedUser.fullName,
+        'phone': updatedUser.phone ?? '',
+      };
+      if (avatarUrl != null) {
+        profileData['avatar_url'] = avatarUrl.trim();
+      }
+      await _api.dio.put('/profile', data: profileData);
+
+      _user = updatedUser;
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('user_profile', jsonEncode(_user!.toJson()));
-
-      try {
-        await _api.dio.put('/profile', data: {
-          'full_name': _user!.fullName,
-          'phone': _user!.phone,
-          'avatar_url': _user!.avatarUrl,
-        });
-      } catch (_) {}
-
       _isLoading = false;
       notifyListeners();
       return true;
-    } catch (_) {
+    } on DioException catch (error) {
+      final response = error.response?.data;
+      _profileUpdateError = response is Map && response['error'] is String
+          ? response['error'] as String
+          : 'Không thể cập nhật hồ sơ. Vui lòng kiểm tra kết nối và thử lại.';
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    } catch (error) {
+      _profileUpdateError = 'Không thể lưu thông tin hồ sơ: $error';
       _isLoading = false;
       notifyListeners();
       return false;

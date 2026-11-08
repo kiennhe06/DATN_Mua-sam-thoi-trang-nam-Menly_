@@ -26,7 +26,7 @@ export interface CreateOrderReturnInput {
   shopId?: string | null;
 }
 
-const RETURN_BUCKET = 'order-return-images';
+const RETURN_BUCKET = 'review-images';
 const MAX_PROOF_IMAGES = 5;
 const RETURNABLE_STATUSES = ['delivered', 'completed'];
 const OPEN_RETURN_STATUSES = ['requested', 'shop_approved', 'admin_dispute_review'];
@@ -169,7 +169,7 @@ export class OrderReturnModel {
       const extMatch = file.originalname.match(/\.([a-zA-Z0-9]+)$/);
       const ext = extMatch ? extMatch[1].toLowerCase() : file.mimetype.split('/')[1] || 'jpg';
       const fileName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-      const filePath = `${userId}/${fileName}`;
+      const filePath = `returns/${userId}/${fileName}`;
 
       const { error } = await this.db.storage.from(RETURN_BUCKET).upload(filePath, file.buffer, {
         contentType: file.mimetype,
