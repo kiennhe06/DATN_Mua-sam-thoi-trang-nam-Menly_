@@ -79,7 +79,9 @@ class SupportChatService {
     throw const FormatException('Dữ liệu chat trả về không hợp lệ');
   }
 
-  dynamic _data(dynamic response) => _map(response)['data'];
+  // Dio tra ve doi tuong Response, phan than nam trong response.data.
+  // Truyen thang ca Response vao _map se luon nem FormatException.
+  dynamic _data(Response<dynamic> response) => _map(response.data)['data'];
 
   String _message(Object error) {
     if (error is DioException) {

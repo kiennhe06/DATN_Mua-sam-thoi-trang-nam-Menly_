@@ -228,6 +228,31 @@ export class AdminModel {
     });
   }
 
+  /**
+   * Ghi mot dong vao nhat ky quan tri.
+   *
+   * Khong nem loi ra ngoai: ghi nhat ky that bai khong duoc lam hong thao tac ma
+   * quan tri vien vua thuc hien. Loi van in ra console de con dau vet.
+   */
+  async recordAudit(entry: {
+    adminId: string;
+    action: string;
+    entityType: string;
+    entityId?: string | null;
+    before?: unknown;
+    after?: unknown;
+  }): Promise<void> {
+    const { error } = await this.db.from('admin_audit_log').insert({
+      admin_id: entry.adminId,
+      action: entry.action,
+      entity_type: entry.entityType,
+      entity_id: entry.entityId ?? null,
+      before: entry.before ?? null,
+      after: entry.after ?? null,
+    });
+    if (error) console.error('Khong ghi duoc nhat ky quan tri:', error.message);
+  }
+
   async listAuditLogs(limit = 200) {
     const { data, error } = await this.db
       .from('admin_audit_log')

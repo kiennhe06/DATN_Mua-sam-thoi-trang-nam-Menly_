@@ -7,7 +7,7 @@ import { CreateProductModal } from '../../components/CreateProductModal';
 import { EditProductModal } from '../../components/EditProductModal';
 import { DeleteProductModal } from '../../components/DeleteProductModal';
 import { CompactVariantDisplay } from '../../components/CompactVariantDisplay';
-import { fetchAdminProducts, fetchCategories, fetchProductDetail, updateProduct } from '../../lib/api';
+import { approveProduct, fetchAdminProducts, fetchCategories, fetchProductDetail, updateProduct } from '../../lib/api';
 import { Product, Category } from '../../lib/types';
 import {
   Search,
@@ -20,6 +20,7 @@ import {
   FolderOpen,
   Plus,
   Pencil,
+  BadgeCheck,
   RotateCcw,
   Trash2,
   AlertCircle,
@@ -170,8 +171,48 @@ export default function ProductsPage() {
     setTimeout(() => setNotification(null), 3500);
   };
 
+  /**
+   * Duyet san pham de ung dung nhin thay no.
+   *
+   * San pham moi tao luon o trang thai cho duyet. Truoc day trang quan tri
+   * khong co cho nao duyet, nen san pham them tu day khong bao gio hien trong
+   * ung dung va khong ai biet tai sao.
+   */
+  const handleApproveProduct = async (product: Product) => {
+    try {
+      await approveProduct(product.id);
+      setProducts((current) =>
+        current.map((item) =>
+          item.id === product.id
+            ? { ...item, approvalStatus: 'approved', isActive: true }
+            : item,
+        ),
+      );
+      setNotification({
+        message: `Đã duyệt “${product.name}”. Sản phẩm sẽ hiện trong ứng dụng.`,
+        type: 'success',
+      });
+    } catch (error) {
+      setNotification({
+        message: error instanceof Error ? error.message : 'Không duyệt được sản phẩm.',
+        type: 'error',
+      });
+    }
+    setTimeout(() => setNotification(null), 3500);
+  };
+
   const renderProductActions = (product: Product) => (
     <div className="flex items-center justify-center gap-1.5">
+      {product.approvalStatus === 'pending' && (
+        <button
+          type="button"
+          onClick={() => handleApproveProduct(product)}
+          title="Duyệt sản phẩm để hiển thị trong ứng dụng"
+          className="rounded-lg bg-ok-bg p-1.5 text-ok transition-colors hover:opacity-80"
+        >
+          <BadgeCheck className="h-3.5 w-3.5" />
+        </button>
+      )}
       <button
         type="button"
         onClick={async () => {
@@ -298,7 +339,7 @@ export default function ProductsPage() {
     <div className="flex-1 flex flex-col">
       <Header
         title="Quản lý Sản phẩm & Danh mục Phân loại"
-        subtitle="Hiển thị và sắp xếp 125 sản phẩm vào từng danh mục (25 sản phẩm / danh mục) chuẩn mực"
+        subtitle={`Hiển thị và sắp xếp ${sortedProducts.length} sản phẩm vào ${categories.length} danh mục`}
         onRefresh={loadData}
       />
 
@@ -559,6 +600,7 @@ export default function ProductsPage() {
                               <div className="flex items-center gap-2">
                                 <p className="font-semibold text-ink line-clamp-1">{p.name}</p>
                                 {p.isActive === false && <span className="shrink-0 rounded-md bg-tint-strong px-1.5 py-0.5 text-[9px] font-semibold text-ink-mid">Đã ẩn</span>}
+                                {p.approvalStatus === 'pending' && <span className="shrink-0 rounded-md bg-warn-bg px-1.5 py-0.5 text-[9px] font-semibold text-warn">Chờ duyệt</span>}
                               </div>
                               <p className="text-[11px] font-mono text-ink-muted line-clamp-1">
                                 {p.slug}
@@ -639,6 +681,7 @@ export default function ProductsPage() {
                           <div className="flex items-center gap-2">
                             <p className="font-semibold text-ink line-clamp-1">{p.name}</p>
                             {p.isActive === false && <span className="shrink-0 rounded-md bg-tint-strong px-1.5 py-0.5 text-[9px] font-semibold text-ink-mid">Đã ẩn</span>}
+                            {p.approvalStatus === 'pending' && <span className="shrink-0 rounded-md bg-warn-bg px-1.5 py-0.5 text-[9px] font-semibold text-warn">Chờ duyệt</span>}
                           </div>
                           <p className="text-xs font-mono text-ink-muted line-clamp-1">{p.slug}</p>
                         </td>

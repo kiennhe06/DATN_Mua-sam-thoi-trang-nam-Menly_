@@ -32,7 +32,7 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   static const int _homeProductLimit = 8;
   final PageController _bannerController = PageController();
   int _currentBannerIndex = 0;
@@ -42,7 +42,17 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _startBannerAutoScroll();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Quay lai app thi tai lai kho hang: quan tri co the da them hoac xoa san
+    // pham tren web trong luc app nam nen. Provider tu bo qua neu vua tai xong.
+    if (state == AppLifecycleState.resumed && mounted) {
+      context.read<ProductProvider>().refreshIfStale();
+    }
   }
 
   void _startBannerAutoScroll() {
@@ -63,6 +73,7 @@ class _HomePageState extends State<HomePage> {
   @override
   void dispose() {
     _bannerTimer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
     _bannerController.dispose();
     super.dispose();
   }
@@ -80,7 +91,15 @@ class _HomePageState extends State<HomePage> {
         if (list.isNotEmpty) {
           return list.take(_homeProductLimit).toList();
         }
-        return baseProducts.reversed.take(_homeProductLimit).toList();
+        // Chua san pham nao du luot danh gia de goi la ban chay: xep theo so
+        // danh gia giam dan. Truoc day cho nay tra ve danh sach dao nguoc,
+        // tuc la dung nhung san pham cu nhat lam "ban chay".
+        final byPopularity = [...baseProducts]
+          ..sort((a, b) {
+            final byCount = b.ratingCount.compareTo(a.ratingCount);
+            return byCount != 0 ? byCount : b.ratingAvg.compareTo(a.ratingAvg);
+          });
+        return byPopularity.take(_homeProductLimit).toList();
     }
   }
 
