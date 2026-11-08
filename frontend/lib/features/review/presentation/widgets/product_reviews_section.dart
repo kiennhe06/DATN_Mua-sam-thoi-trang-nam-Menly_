@@ -32,11 +32,15 @@ class _ProductReviewsSectionState extends State<ProductReviewsSection> {
 
   bool _expanded = false;
 
+  /// Chi nguoi da nhan duoc hang moi thay nut viet danh gia.
+  bool _canReview = false;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
+      _refreshCanReview();
       context.read<ReviewProvider>().loadProductReviews(widget.productId);
     });
   }
@@ -84,6 +88,23 @@ class _ProductReviewsSectionState extends State<ProductReviewsSection> {
     }
   }
 
+  /// Hoi lai may chu xem co duoc danh gia khong.
+  ///
+  /// Nguoi chua dang nhap hoac chua mua san pham thi khong hien nut, tranh
+  /// truong hop bam vao roi bi may chu tu choi.
+  Future<void> _refreshCanReview() async {
+    final isLoggedIn = context.read<AuthProvider>().user != null;
+    if (!isLoggedIn) {
+      if (mounted && _canReview) setState(() => _canReview = false);
+      return;
+    }
+    final allowed =
+        await context.read<ReviewProvider>().checkCanReview(widget.productId);
+    if (mounted && allowed != _canReview) {
+      setState(() => _canReview = allowed);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
@@ -109,20 +130,27 @@ class _ProductReviewsSectionState extends State<ProductReviewsSection> {
                 ),
               ),
             ),
-            OutlinedButton.icon(
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                visualDensity: VisualDensity.compact,
-                side: BorderSide(color: c.secondary),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            if (_canReview)
+              OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  visualDensity: VisualDensity.compact,
+                  side: BorderSide(color: c.secondary),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8)),
+                ),
+                icon:
+                    Icon(Icons.rate_review_rounded, size: 15, color: c.secondary),
+                label: Text(
+                  'Viết đánh giá',
+                  style: TextStyle(
+                      color: c.secondary,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold),
+                ),
+                onPressed: () => _openReviewForm(context),
               ),
-              icon: Icon(Icons.rate_review_rounded, size: 15, color: c.secondary),
-              label: Text(
-                'Viết đánh giá',
-                style: TextStyle(color: c.secondary, fontSize: 12, fontWeight: FontWeight.bold),
-              ),
-              onPressed: () => _openReviewForm(context),
-            ),
           ],
         ),
         if (reviews.isNotEmpty) ...[

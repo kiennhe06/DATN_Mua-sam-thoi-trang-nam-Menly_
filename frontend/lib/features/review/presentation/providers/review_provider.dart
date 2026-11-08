@@ -50,6 +50,20 @@ class ReviewProvider extends ChangeNotifier {
     }
   }
 
+  /// Hoi may chu xem nguoi dang dang nhap co duoc danh gia san pham nay khong.
+  ///
+  /// Dieu kien la da nhan duoc hang. Tra ve false khi chua dang nhap hoac goi
+  /// that bai, de giao dien chon huong an toan la khong hien nut.
+  Future<bool> checkCanReview(String productId) async {
+    try {
+      final res = await _api.dio.get('/reviews/can-review/$productId');
+      final data = res.data is Map ? res.data['data'] : null;
+      return data is Map && data['canReview'] == true;
+    } catch (_) {
+      return false;
+    }
+  }
+
   Future<void> loadMine() async {
     _isLoadingMine = true;
     notifyListeners();

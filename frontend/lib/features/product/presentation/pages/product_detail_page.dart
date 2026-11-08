@@ -5,6 +5,7 @@ import 'package:menly_app/core/utils/format.dart';
 import 'package:menly_app/core/theme/app_theme.dart';
 import 'package:menly_app/features/cart/data/models/cart_item_model.dart';
 import 'package:menly_app/features/product/data/models/product_model.dart';
+import 'package:menly_app/features/cart/presentation/pages/cart_page.dart';
 import 'package:menly_app/features/cart/presentation/providers/cart_provider.dart';
 import 'package:menly_app/features/order/presentation/pages/checkout_page.dart';
 import 'package:menly_app/features/wishlist/presentation/providers/wishlist_provider.dart';
@@ -657,6 +658,159 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
     );
   }
 
+  /// Mot o chon dung chung cho kich co va mau sac.
+  ///
+  /// Hien het lua chon ra man hinh thay vi giau trong nut xo: nguoi mua nhin
+  /// mot cai la biet co nhung size nao, khong phai bam ra bam vao tung lan.
+  Widget _buildOptionChip({
+    required bool isSelected,
+    required VoidCallback onTap,
+    required Widget child,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color:
+              isSelected ? AppTheme.primary.withValues(alpha: 0.08) : Colors.white,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: isSelected ? AppTheme.primary : AppTheme.border,
+            width: isSelected ? 1.5 : 1,
+          ),
+        ),
+        child: child,
+      ),
+    );
+  }
+
+  Widget _buildSizeChips(List<String> availableSizes) {
+    if (availableSizes.isEmpty) return const SizedBox.shrink();
+    return Wrap(
+      spacing: 10,
+      runSpacing: 10,
+      children: availableSizes.map((size) {
+        final isSelected = size == _selectedSize;
+        final hint = _getSizeHint(size);
+        return _buildOptionChip(
+          isSelected: isSelected,
+          onTap: () => _onSizeChanged(size),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                size,
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                  color: isSelected ? AppTheme.primary : AppTheme.textPrimary,
+                ),
+              ),
+              if (hint.isNotEmpty)
+                Text(
+                  hint,
+                  style: TextStyle(fontSize: 10.5, color: Colors.grey.shade500),
+                ),
+            ],
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildColorChips(List<String> availableColors) {
+    if (availableColors.isEmpty) return const SizedBox.shrink();
+    return Wrap(
+      spacing: 10,
+      runSpacing: 10,
+      children: availableColors.map((color) {
+        final isSelected = color == _selectedColor;
+        final colorDot = _getColorForName(color);
+        return _buildOptionChip(
+          isSelected: isSelected,
+          onTap: () => _onColorChanged(color),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (colorDot != null) ...[
+                Container(
+                  width: 14,
+                  height: 14,
+                  decoration: BoxDecoration(
+                    color: colorDot,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: colorDot == Colors.white
+                          ? Colors.grey.shade400
+                          : Colors.transparent,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+              ],
+              Text(
+                color,
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13.5,
+                  color: isSelected ? AppTheme.primary : AppTheme.textPrimary,
+                ),
+              ),
+            ],
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  /// Nut gio hang kem so mat hang, dat o thanh tren.
+  ///
+  /// De nguoi mua them hang xong la sang gio duoc ngay, khong phai quay lai
+  /// man truoc roi tim tab gio.
+  Widget _buildCartButton(CartProvider cart) {
+    final soMatHang = cart.items.length;
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        IconButton(
+          icon: const Icon(Icons.shopping_bag_outlined,
+              color: AppTheme.textPrimary),
+          tooltip: 'Giỏ hàng',
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const CartPage()),
+            );
+          },
+        ),
+        if (soMatHang > 0)
+          Positioned(
+            top: 6,
+            right: 6,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+              decoration: BoxDecoration(
+                color: AppTheme.accentRed,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              constraints: const BoxConstraints(minWidth: 16),
+              child: Text(
+                soMatHang > 99 ? '99+' : '$soMatHang',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final p = _product;
@@ -677,6 +831,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
       appBar: AppBar(
         title: Text(p.name),
         actions: [
+          _buildCartButton(cart),
           IconButton(
             icon: Icon(
               isFav ? Icons.favorite : Icons.favorite_border,
@@ -815,61 +970,11 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                   ),
                   const SizedBox(height: 10),
 
-                  // DROPDOWN KICH CO
-                  Container(
-                    width: double.infinity,
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: AppTheme.border),
-                    ),
-                    child: DropdownButtonHideUnderline(
-                      child: DropdownButton<String>(
-                        value: availableSizes.contains(_selectedSize)
-                            ? _selectedSize
-                            : null,
-                        isExpanded: true,
-                        icon: const Text('▾',
-                            style: TextStyle(
-                                fontSize: 16, color: AppTheme.textMuted)),
-                        hint: const Text('Chọn kích cỡ',
-                            style: TextStyle(
-                                fontSize: 13, color: AppTheme.textMuted)),
-                        items: availableSizes.map((size) {
-                          final hint = _getSizeHint(size);
-                          return DropdownMenuItem<String>(
-                            value: size,
-                            child: Row(
-                              children: [
-                                Text(
-                                  'Kích cỡ: $size',
-                                  style: const TextStyle(
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 14,
-                                      color: AppTheme.textPrimary),
-                                ),
-                                if (hint.isNotEmpty) ...[
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    hint,
-                                    style: TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.grey.shade500),
-                                  ),
-                                ],
-                              ],
-                            ),
-                          );
-                        }).toList(),
-                        onChanged: _onSizeChanged,
-                      ),
-                    ),
-                  ),
+                  // CHON KICH CO
+                  _buildSizeChips(availableSizes),
                   const SizedBox(height: 12),
 
-                  // DROPDOWN MAU SAC
+                  // CHON MAU SAC
                   if (_loadingDetail && p.variants.isEmpty)
                     const Padding(
                       padding: EdgeInsets.only(bottom: 12),
@@ -897,65 +1002,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                         style: const TextStyle(color: Colors.red),
                       ),
                     ),
-                  Container(
-                    width: double.infinity,
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: AppTheme.border),
-                    ),
-                    child: DropdownButtonHideUnderline(
-                      child: DropdownButton<String>(
-                        value: availableColors.contains(_selectedColor)
-                            ? _selectedColor
-                            : null,
-                        isExpanded: true,
-                        icon: const Text('▾',
-                            style: TextStyle(
-                                fontSize: 16, color: AppTheme.textMuted)),
-                        hint: const Text('Chọn màu sắc',
-                            style: TextStyle(
-                                fontSize: 13, color: AppTheme.textMuted)),
-                        items: availableColors.map((color) {
-                          final colorDot = _getColorForName(color);
-                          return DropdownMenuItem<String>(
-                            value: color,
-                            child: Row(
-                              children: [
-                                if (colorDot != null) ...[
-                                  Container(
-                                    width: 16,
-                                    height: 16,
-                                    decoration: BoxDecoration(
-                                      color: colorDot,
-                                      shape: BoxShape.circle,
-                                      border: Border.all(
-                                        color: colorDot == Colors.white
-                                            ? Colors.grey.shade400
-                                            : Colors.transparent,
-                                        width: 1,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 10),
-                                ],
-                                Text(
-                                  'Màu sắc: $color',
-                                  style: const TextStyle(
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 14,
-                                      color: AppTheme.textPrimary),
-                                ),
-                              ],
-                            ),
-                          );
-                        }).toList(),
-                        onChanged: _onColorChanged,
-                      ),
-                    ),
-                  ),
+                  _buildColorChips(availableColors),
                   if (selectedVariant != null && selectedVariant.stock > 0)
                     Padding(
                       padding: const EdgeInsets.only(top: 8),
@@ -1113,7 +1160,9 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                           );
                           if (!context.mounted) return;
 
-                          ScaffoldMessenger.of(context).showSnackBar(
+                          final messenger = ScaffoldMessenger.of(context);
+                          messenger.hideCurrentSnackBar();
+                          messenger.showSnackBar(
                             SnackBar(
                               content: Text(added
                                   ? 'Đã thêm $_quantity x "${p.name}" (Size: $_selectedSize, Màu: $_selectedColor) vào giỏ hàng'

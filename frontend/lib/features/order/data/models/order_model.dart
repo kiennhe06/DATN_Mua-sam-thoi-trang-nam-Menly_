@@ -149,6 +149,34 @@ extension OrderStatusExtension on OrderStatus {
 }
 
 /// Model don hang (AP-DH2, TM07, AP-QT9, AP-TT1)
+/// Mot lan doi trang thai DA THUC SU xay ra, kem moc thoi gian.
+///
+/// Dung de ve hanh trinh giao hang theo du lieu that. Truoc day man chi tiet
+/// suy ra ca hanh trinh tu mot trang thai hien tai, nen don vua dat da hien
+/// san may buoc nhu the kho da xac nhan va dong goi xong.
+class OrderStatusEvent {
+  final OrderStatus fromStatus;
+  final OrderStatus toStatus;
+  final DateTime at;
+
+  const OrderStatusEvent({
+    required this.fromStatus,
+    required this.toStatus,
+    required this.at,
+  });
+
+  factory OrderStatusEvent.fromJson(Map<String, dynamic> json) {
+    return OrderStatusEvent(
+      fromStatus: OrderStatusExtension.fromString(
+          json['from_status']?.toString() ?? 'processing'),
+      toStatus: OrderStatusExtension.fromString(
+          json['to_status']?.toString() ?? 'processing'),
+      at: DateTime.tryParse(json['created_at']?.toString() ?? '') ??
+          DateTime.now(),
+    );
+  }
+}
+
 class OrderModel {
   final String id;
   final String code;
@@ -164,6 +192,8 @@ class OrderModel {
   final String shipAddress;
   final DateTime createdAt;
   final List<OrderItemModel> items;
+  /// Cac lan doi trang thai da ghi lai, xep theo thoi gian tang dan.
+  final List<OrderStatusEvent> statusHistory;
   String? cancelReason;
 
   OrderModel({
@@ -181,6 +211,7 @@ class OrderModel {
     required this.shipAddress,
     required this.createdAt,
     required this.items,
+    this.statusHistory = const [],
     this.cancelReason,
   });
 
@@ -228,6 +259,10 @@ class OrderModel {
   bool get canReturn =>
       status == OrderStatus.delivered || status == OrderStatus.completed;
 
+  /// Chi danh gia duoc khi da nhan hang, giong quy tac o may chu.
+  bool get canReview =>
+      status == OrderStatus.delivered || status == OrderStatus.completed;
+
   factory OrderModel.fromJson(Map<String, dynamic> json) {
     var rawItems = json['items'] ?? json['order_items'];
     List<OrderItemModel> parsedItems = [];
@@ -236,6 +271,15 @@ class OrderModel {
           .map((i) => OrderItemModel.fromJson(Map<String, dynamic>.from(i)))
           .toList();
     }
+    final rawHistory = json['order_status_history'];
+    final parsedHistory = rawHistory is List
+        ? (rawHistory
+            .map((item) =>
+                OrderStatusEvent.fromJson(Map<String, dynamic>.from(item)))
+            .toList()
+          ..sort((a, b) => a.at.compareTo(b.at)))
+        : <OrderStatusEvent>[];
+
     return OrderModel(
       id: json['id']?.toString() ?? '',
       code: json['code']?.toString() ?? 'MNL-${DateTime.now().millisecondsSinceEpoch % 100000}',
@@ -253,6 +297,7 @@ class OrderModel {
           ? DateTime.tryParse(json['created_at'].toString()) ?? DateTime.now()
           : DateTime.now(),
       items: parsedItems,
+      statusHistory: parsedHistory,
       cancelReason: json['cancel_reason']?.toString(),
     );
   }

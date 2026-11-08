@@ -10,6 +10,7 @@ import 'package:menly_app/features/cart/presentation/providers/cart_provider.dar
 import 'package:menly_app/features/notification/presentation/providers/notification_provider.dart';
 import 'package:menly_app/features/order/presentation/providers/order_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:menly_app/core/session/user_session.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -54,6 +55,10 @@ class _LoginPageState extends State<LoginPage> {
       }
 
       if (!mounted) return;
+
+      // Xoa du lieu cua nguoi dung truoc truoc khi nap du lieu nguoi vua dang
+      // nhap. Cac provider song suot vong doi ung dung nen khong tu mat.
+      clearUserDataInMemory(context);
 
       // Cap nhat ngay thong tin nguoi dung vao AuthProvider de khi chuyen sang
       // tab Ca nhan khong bi coi la chua dang nhap (khong phai dang nhap lai).

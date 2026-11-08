@@ -443,4 +443,15 @@ class CartProvider extends ChangeNotifier {
   void _checkVoucherEligibility() {
     // Khong gioi han so tien don hang
   }
+
+  /// Xoa du lieu cua nguoi dung truoc khi doi tai khoan.
+  void clearUserData() {
+    _items.clear();
+    _shippingFeeFromApi = null;
+    _shippingNote = null;
+    _errorMessage = null;
+    _isLoading = false;
+    notifyListeners();
+  }
+
 }

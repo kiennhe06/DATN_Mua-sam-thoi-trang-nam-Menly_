@@ -214,4 +214,13 @@ class NotificationProvider extends ChangeNotifier {
     _notifications.removeWhere((n) => n.isRead);
     notifyListeners();
   }
+
+  /// Xoa du lieu cua nguoi dung truoc khi doi tai khoan.
+  void clearUserData() {
+    _notifications = [];
+    _unreadCount = 0;
+    _isLoading = false;
+    notifyListeners();
+  }
+
 }

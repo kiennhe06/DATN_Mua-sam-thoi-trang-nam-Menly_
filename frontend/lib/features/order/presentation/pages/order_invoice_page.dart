@@ -1,9 +1,11 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:menly_app/core/utils/format.dart';
 import 'package:menly_app/features/order/data/models/order_model.dart';
 
-/// Hoa don don gian in tu du lieu don hang that
+/// Bien nhan don hang, dung du lieu that cua don.
+///
+/// Truoc day co nut In nhung no khong in gi, chi hien mot dong nhac nguoi
+/// dung tu chup man hinh. Da bo di de khong hua hen sai.
 class OrderInvoicePage extends StatelessWidget {
   final OrderModel order;
 
@@ -21,23 +23,6 @@ class OrderInvoicePage extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Hóa đơn'),
         centerTitle: true,
-        actions: [
-          IconButton(
-            tooltip: 'In hóa đơn',
-            icon: const Icon(Icons.print_outlined),
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text(
-                    kIsWeb
-                        ? 'Dùng hộp thoại in của trình duyệt (Ctrl+P).'
-                        : 'Chụp màn hình hoặc chia sẻ hóa đơn này để in.',
-                  ),
-                ),
-              );
-            },
-          ),
-        ],
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),

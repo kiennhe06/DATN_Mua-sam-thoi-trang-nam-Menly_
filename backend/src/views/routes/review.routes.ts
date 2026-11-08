@@ -36,6 +36,16 @@ router.get('/product/:productId', async (req, res) => {
 });
 
 // GET /api/v1/reviews/mine - danh sach danh gia cua toi
+// GET /api/v1/reviews/can-review/:productId - toi co duoc danh gia san pham nay khong
+router.get('/can-review/:productId', requireAuth, async (req, res) => {
+  try {
+    const canReview = await vm.canReview(req.user!.id, req.params.productId);
+    return res.json({ data: { canReview } });
+  } catch (e) {
+    return res.status(500).json({ error: e instanceof Error ? e.message : 'Loi' });
+  }
+});
+
 router.get('/mine', requireAuth, async (req, res) => {
   try {
     const data = await vm.listMine(req.user!.id);

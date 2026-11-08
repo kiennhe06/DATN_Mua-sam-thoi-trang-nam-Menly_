@@ -9,31 +9,76 @@ class OrderTimelineCard extends StatelessWidget {
 
   const OrderTimelineCard({super.key, required this.order});
 
-  static int getTimelineStep(OrderStatus status) {
-    switch (status) {
-      case OrderStatus.pendingPayment:
-        return 0; // Chờ thanh toán
-      case OrderStatus.paid:
-        return 1; // Đã thanh toán
-      case OrderStatus.processing:
-        return 2; // Đang xử lý / đóng gói
-      case OrderStatus.shipping:
-        return 3; // Đang vận chuyển
-      case OrderStatus.delivered:
-        return 4; // Đã giao hàng
-      case OrderStatus.canceled:
-      case OrderStatus.returned:
-      case OrderStatus.expired:
-        return -1; // Đã hủy / trả
-      case OrderStatus.completed:
-        return 4; // Hoàn tất
+  /// Thu tu cac trang thai mot don hang di qua.
+  static const List<OrderStatus> _hanhTrinh = [
+    OrderStatus.pendingPayment,
+    OrderStatus.paid,
+    OrderStatus.processing,
+    OrderStatus.shipping,
+    OrderStatus.delivered,
+    OrderStatus.completed,
+  ];
+
+  static const Map<OrderStatus, String> _moTa = {
+    OrderStatus.pendingPayment: 'Chờ khách thanh toán',
+    OrderStatus.paid: 'Đã ghi nhận thanh toán',
+    OrderStatus.processing: 'Cửa hàng đang chuẩn bị hàng',
+    OrderStatus.shipping: 'Đã bàn giao cho đơn vị vận chuyển',
+    OrderStatus.delivered: 'Khách hàng đã nhận hàng',
+    OrderStatus.completed: 'Đơn hàng kết thúc',
+  };
+
+  static const Map<OrderStatus, String> _tieuDe = {
+    OrderStatus.pendingPayment: 'Chờ thanh toán',
+    OrderStatus.paid: 'Đã thanh toán',
+    OrderStatus.processing: 'Đang xử lý',
+    OrderStatus.shipping: 'Đang vận chuyển',
+    OrderStatus.delivered: 'Đã giao',
+    OrderStatus.completed: 'Hoàn tất',
+  };
+
+  /// Dung hanh trinh tu du lieu that.
+  ///
+  /// Moc thoi gian lay tu bang lich su doi trang thai, rieng buoc dau lay tu
+  /// ngay tao don. Buoc nao chua co moc thi de xam — truoc day moi buoc dung
+  /// truoc trang thai hien tai deu duoc to xanh, nen don vua dat trong nhu da
+  /// qua ba buoc.
+  List<_BuocHanhTrinh> _dungCacBuoc() {
+    final trangThaiBanDau = order.statusHistory.isNotEmpty
+        ? order.statusHistory.first.fromStatus
+        : order.status;
+
+    final daDatToi = <OrderStatus, DateTime>{trangThaiBanDau: order.createdAt};
+    for (final lan in order.statusHistory) {
+      daDatToi[lan.toStatus] = lan.at;
     }
+
+    final viTriBatDau = _hanhTrinh.indexOf(trangThaiBanDau);
+    final conLai = viTriBatDau >= 0
+        ? _hanhTrinh.sublist(viTriBatDau + 1)
+        : <OrderStatus>[];
+
+    return [
+      _BuocHanhTrinh(
+        tieuDe: 'Đã đặt hàng',
+        moTa: _moTa[trangThaiBanDau] ?? 'Hệ thống đã ghi nhận đơn',
+        luc: order.createdAt,
+        laHienTai: order.status == trangThaiBanDau,
+      ),
+      for (final trangThai in conLai)
+        _BuocHanhTrinh(
+          tieuDe: _tieuDe[trangThai] ?? trangThai.label,
+          moTa: _moTa[trangThai] ?? '',
+          luc: daDatToi[trangThai],
+          laHienTai: order.status == trangThai,
+        ),
+    ];
   }
 
   @override
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
-    final currentStep = getTimelineStep(order.status);
+    final cacBuoc = _dungCacBuoc();
     final isCancelled = order.status == OrderStatus.canceled;
 
     return Container(
@@ -148,34 +193,26 @@ class OrderTimelineCard extends StatelessWidget {
               ),
             ),
           ] else ...[
-            _buildTimeline(context, currentStep),
+            _buildTimeline(context, cacBuoc),
           ],
         ],
       ),
     );
   }
 
-  Widget _buildTimeline(BuildContext context, int currentStep) {
+  Widget _buildTimeline(BuildContext context, List<_BuocHanhTrinh> cacBuoc) {
     final c = AppColors.of(context);
-    final steps = [
-      {'title': 'Đã đặt hàng', 'sub': 'Hệ thống đã ghi nhận đơn'},
-      {'title': 'Đã xác nhận', 'sub': 'Kho chuẩn bị hàng'},
-      {'title': 'Đang đóng gói', 'sub': 'Kiểm tra chất lượng & tem mác'},
-      {'title': 'Đang vận chuyển', 'sub': 'Bàn giao cho đơn vị vận chuyển'},
-      {'title': 'Giao thành công', 'sub': 'Khách hàng đã nhận hàng'},
-    ];
-
     return Column(
       children: [
-        for (int i = 0; i < steps.length; i++)
+        for (int i = 0; i < cacBuoc.length; i++)
           _buildStepRow(
             context,
             index: i,
-            title: steps[i]['title']!,
-            subtitle: steps[i]['sub']!,
-            isDone: i <= currentStep,
-            isCurrent: i == currentStep,
-            isLast: i == steps.length - 1,
+            title: cacBuoc[i].tieuDe,
+            subtitle: cacBuoc[i].moTaKemGio,
+            isDone: cacBuoc[i].daXayRa,
+            isCurrent: cacBuoc[i].laHienTai,
+            isLast: i == cacBuoc.length - 1,
             c: c,
           ),
       ],
@@ -276,5 +313,37 @@ class OrderTimelineCard extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+/// Mot buoc tren hanh trinh giao hang.
+class _BuocHanhTrinh {
+  final String tieuDe;
+  final String moTa;
+
+  /// Null nghia la buoc nay chua xay ra.
+  final DateTime? luc;
+  final bool laHienTai;
+
+  const _BuocHanhTrinh({
+    required this.tieuDe,
+    required this.moTa,
+    required this.luc,
+    required this.laHienTai,
+  });
+
+  bool get daXayRa => luc != null;
+
+  String get moTaKemGio {
+    final moc = luc;
+    if (moc == null) return moTa.isEmpty ? 'Chưa diễn ra' : '$moTa · chưa diễn ra';
+    // May chu tra ve gio quoc te; phai doi sang gio may moi khop voi hoa don
+    // va cac man khac trong ung dung.
+    final theoGioMay = moc.toLocal();
+    final gio = theoGioMay.hour.toString().padLeft(2, '0');
+    final phut = theoGioMay.minute.toString().padLeft(2, '0');
+    final ngay = theoGioMay.day.toString().padLeft(2, '0');
+    final thang = theoGioMay.month.toString().padLeft(2, '0');
+    return moTa.isEmpty ? '$gio:$phut $ngay/$thang' : '$moTa · $gio:$phut $ngay/$thang';
   }
 }
