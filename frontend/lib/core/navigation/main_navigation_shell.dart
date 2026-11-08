@@ -5,6 +5,7 @@ import '../../features/auth/presentation/pages/profile_page.dart';
 import '../../features/cart/presentation/pages/cart_page.dart';
 import '../../features/cart/presentation/providers/cart_provider.dart';
 import '../../features/home/presentation/pages/home_page.dart';
+import '../../features/product/presentation/providers/product_provider.dart';
 import '../../features/wishlist/presentation/pages/wishlist_page.dart';
 
 class TabSwitchNotification extends Notification {
@@ -47,7 +48,12 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
         ),
         bottomNavigationBar: AppBottomNav(
           currentIndex: _currentIndex,
-          onTap: (idx) => setState(() => _currentIndex = idx),
+          onTap: (idx) {
+            if (idx == 0) {
+              context.read<ProductProvider>().clearSearchQuery();
+            }
+            setState(() => _currentIndex = idx);
+          },
           items: [
             const BottomNavItem(
               Icons.home_outlined,

@@ -45,6 +45,7 @@ class ProductProvider extends ChangeNotifier {
   bool get isLoading => _loading;
   String? get error => _error;
   List<ProductModel> get products => _filteredProducts;
+  List<ProductModel> get allProducts => List.unmodifiable(_allProducts);
   List<BannerModel> get banners => _banners;
   List<CategoryModel> get categoryItems => List.unmodifiable(_categories);
   List<ProductModel> get recentlyViewed => _recentlyViewed;
@@ -148,11 +149,8 @@ class ProductProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // Kho hien co 86 san pham; de 50 thi nguoi dung khong bao gio thay het.
+      // Luon tai toan bo kho san pham de phuc vu trang chu va tim kiem tuc thi kem anh
       final queryParams = <String, dynamic>{'limit': _productFetchLimit};
-      if (_searchQuery.trim().isNotEmpty) {
-        queryParams['search'] = _searchQuery.trim();
-      }
       if (_selectedCategoryId != null) {
         queryParams['categoryId'] = _selectedCategoryId;
       }
@@ -300,6 +298,39 @@ class ProductProvider extends ChangeNotifier {
     _maxPrice = 1000000;
     _applyFilters();
     notifyListeners();
+  }
+
+  /// Xoa tu khoa tim kiem va cap nhat lai bo loc
+  void clearSearchQuery() {
+    if (_searchQuery.isNotEmpty) {
+      _searchQuery = '';
+      _applyFilters();
+      notifyListeners();
+    }
+  }
+
+  /// Lay danh sach san pham cho trang chu theo tung danh muc (khong bi anh huong boi query tim kiem)
+  List<ProductModel> getCategoryProducts(String category) {
+    if (category == 'Tất cả') {
+      return List.unmodifiable(_allProducts);
+    }
+    return _allProducts.where((p) {
+      if (_selectedCategoryId != null && p.categoryId.isNotEmpty) {
+        return p.categoryId == _selectedCategoryId;
+      }
+      return p.categoryName.toLowerCase().contains(category.toLowerCase());
+    }).toList();
+  }
+
+  /// Tim kiem san pham theo tu khoa (kem anh, gia, danh muc de hien thi ngay tren SearchPage)
+  List<ProductModel> searchProducts(String query) {
+    if (query.trim().isEmpty) return [];
+    final q = query.toLowerCase().trim();
+    return _allProducts.where((p) {
+      return p.name.toLowerCase().contains(q) ||
+          p.categoryName.toLowerCase().contains(q) ||
+          p.description.toLowerCase().contains(q);
+    }).toList();
   }
 
   void _applyFilters() {

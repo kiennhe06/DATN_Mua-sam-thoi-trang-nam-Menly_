@@ -44,6 +44,11 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _startBannerAutoScroll();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        context.read<ProductProvider>().clearSearchQuery();
+      }
+    });
   }
 
   @override
@@ -109,7 +114,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     final wishlistProv = context.watch<WishlistProvider>();
 
     final currentCategory = productProv.selectedCategory;
-    final baseProducts = productProv.products;
+    // Trang chu luon hien thi toan bo san pham theo danh muc, khong bi kẹt boi query tim kiem
+    final baseProducts = productProv.getCategoryProducts(currentCategory);
     final displayedProducts = _filterProducts(baseProducts);
 
     return Scaffold(
@@ -201,7 +207,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         ),
       ),
       body: RefreshIndicator(
-        onRefresh: () => productProv.init(),
+        onRefresh: () async {
+          productProv.clearSearchQuery();
+          await productProv.init();
+        },
         child: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
