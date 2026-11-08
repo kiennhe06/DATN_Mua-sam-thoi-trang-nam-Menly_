@@ -31,7 +31,6 @@ export function CreateProductModal({ categories, onClose, onCreated }: CreatePro
   const [variants, setVariants] = useState<VariantDraft[]>([
     { size: 'M', color: 'Đen', sku: '', stock: '0' },
   ]);
-  const [isActive, setIsActive] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -81,7 +80,6 @@ export function CreateProductModal({ categories, onClose, onCreated }: CreatePro
         price: Number(price),
         thumbnailUrl: imageUrl,
         images: imageUrl ? [imageUrl] : [],
-        isActive,
         variants: normalizedVariants,
       });
       onCreated(product);
@@ -168,10 +166,10 @@ export function CreateProductModal({ categories, onClose, onCreated }: CreatePro
             ))}
           </div>
 
-          <label className="flex items-center gap-2 text-sm text-ink-mid">
-            <input type="checkbox" checked={isActive} onChange={(event) => setIsActive(event.target.checked)} className="h-4 w-4 accent-camel" />
-            Hiển thị sản phẩm ngay sau khi tạo
-          </label>
+          <p className="rounded-xl border border-warn-line bg-warn-bg px-3 py-2.5 text-xs text-ink-mid">
+            Sản phẩm mới luôn ở trạng thái <span className="font-semibold">Chờ duyệt</span> và chưa
+            hiện trong ứng dụng. Sau khi tạo, bấm nút duyệt ở danh sách sản phẩm để đưa lên ứng dụng.
+          </p>
 
           <div className="flex justify-end gap-3 border-t border-line pt-4">
             <button type="button" onClick={onClose} disabled={loading} className="rounded-xl border border-line-strong px-4 py-2.5 text-sm font-semibold text-ink-mid hover:bg-tint disabled:opacity-50">Hủy</button>

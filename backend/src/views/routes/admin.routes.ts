@@ -1,5 +1,5 @@
 import { Router, type Response } from 'express';
-import { requireAdmin } from '../../middlewares/auth.js';
+import { requireAdmin, forgetAuthUser } from '../../middlewares/auth.js';
 import { ProductModel } from '../../models/product.model.js';
 import { OrderModel } from '../../models/order.model.js';
 import { VoucherModel } from '../../models/voucher.model.js';
@@ -38,6 +38,59 @@ const adminModel = new AdminModel();
 const reviewModel = new ReviewModel();
 
 // Cac trang thai don hang hop le (khop enum order_status trong DB)
+// Truong khong bao gio duoc ghi vao nhat ky
+const SENSITIVE_FIELDS = ['password', 'newPassword', 'currentPassword', 'token'];
+const ACTION_BY_METHOD: Record<string, string> = {
+  POST: 'create',
+  PUT: 'update',
+  PATCH: 'update',
+  DELETE: 'delete',
+};
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Bo mat khau va token ra khoi du lieu truoc khi luu lai. */
+function redact(body: unknown): unknown {
+  if (!body || typeof body !== 'object' || Array.isArray(body)) return body ?? null;
+  const copy: Record<string, unknown> = { ...(body as Record<string, unknown>) };
+  for (const field of SENSITIVE_FIELDS) {
+    if (field in copy) copy[field] = '***';
+  }
+  return copy;
+}
+
+/**
+ * Ghi nhat ky moi thao tac lam thay doi du lieu o trang quan tri.
+ *
+ * Dat tap trung o day thay vi rai rac trong tung handler: duong dan them sau nay
+ * cung tu dong duoc ghi, khong ai phai nho. Ghi sau khi phan hoi da gui xong nen
+ * khong lam cham thao tac.
+ */
+router.use((req, res, next) => {
+  if (req.method === 'GET') return next();
+
+  res.on('finish', () => {
+    if (res.statusCode >= 400) return;
+    const adminId = req.user?.id;
+    if (!adminId) return;
+
+    // Vi du duong dan: /users/<id>/lock -> ['users', '<id>', 'lock']
+    const segments = req.path.split('/').filter(Boolean);
+    const entityType = segments[0] ?? 'unknown';
+    const entityId = segments[1] && UUID_PATTERN.test(segments[1]) ? segments[1] : null;
+    const action = segments[2] ?? ACTION_BY_METHOD[req.method] ?? req.method.toLowerCase();
+
+    void adminModel.recordAudit({
+      adminId,
+      action,
+      entityType,
+      entityId,
+      after: redact(req.body),
+    });
+  });
+
+  return next();
+});
+
 const ORDER_STATUSES = [
   'pending_payment',
   'paid',
@@ -297,6 +350,8 @@ router.put('/users/:id', async (req, res, next) => {
   try {
     const data = await adminModel.updateUser(id.data, parsed.data);
     if (!data) return res.status(404).json({ error: 'Không tìm thấy người dùng' });
+    // Doi vai tro / trang thai phai co hieu luc ngay, khong doi dem het han
+    forgetAuthUser(id.data);
     return res.json({ data });
   } catch (error) {
     return next(error);
@@ -319,6 +374,7 @@ router.delete('/users/:id', async (req, res, next) => {
     }
 
     await adminModel.deleteUser(id.data);
+    forgetAuthUser(id.data);
     return res.json({ message: 'Đã xóa người dùng thành công' });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Không thể xóa người dùng';
@@ -342,6 +398,8 @@ router.patch('/users/:id/lock', async (req, res, next) => {
   try {
     const user = await adminModel.setLock(id.data, parsed.data.isLocked);
     if (!user) return res.status(404).json({ error: 'Không tìm thấy người dùng' });
+    // Khoa tai khoan phai chan duoc ngay ca khi ho dang dung dich vu
+    forgetAuthUser(id.data);
     return res.json({ user });
   } catch (error) {
     return next(error);

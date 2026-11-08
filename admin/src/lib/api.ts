@@ -74,6 +74,7 @@ function normalizeProduct(p: any): Product {
     categoryName: p.categoryName ?? p.category_name ?? p.categories?.name ?? '',
     images,
     isActive: p.isActive ?? p.is_active,
+    approvalStatus: p.approvalStatus ?? p.approval_status,
     createdAt: p.createdAt ?? p.created_at,
     variants,
   };
@@ -123,6 +124,14 @@ export async function updateProduct(
   return normalizeProduct(res && res.data ? res.data : res);
 }
 
+/** Duyet san pham de no hien trong ung dung. */
+export async function approveProduct(id: string): Promise<Product> {
+  const res = await apiFetch<any>(`/api/v1/admin/products/${id}/approve`, {
+    method: 'PATCH',
+  });
+  return normalizeProduct(res && res.data ? res.data : res);
+}
+
 export async function deleteProduct(id: string): Promise<void> {
   await apiFetch<{ message: string }>(`/api/v1/admin/products/${id}`, {
     method: 'DELETE',
@@ -136,7 +145,8 @@ export interface CreateProductInput {
   price: number;
   thumbnailUrl: string | null;
   images: string[];
-  isActive: boolean;
+  /** May chu luon tao san pham o trang thai cho duyet nen truong nay chi de tuong thich. */
+  isActive?: boolean;
   variants: Array<{
     size: string;
     color: string;

@@ -12,56 +12,11 @@ class VoucherProvider extends ChangeNotifier {
   bool _isLoading = false;
   String? _error;
 
-  static List<VoucherModel> get fallbackVouchers => [
-    VoucherModel(
-      id: 'fallback_welcome_10',
-      code: 'WELCOME10',
-      title: 'Giảm 10% cho đơn đầu tiên',
-      discountType: 'percentage',
-      discountValue: 10,
-      minOrderValue: 200000,
-      maxDiscount: 50000,
-      endDate: DateTime.now().add(const Duration(days: 90)),
-      isActive: true,
-    ),
-    VoucherModel(
-      id: 'fallback_sale_50k',
-      code: 'SALE50K',
-      title: 'Giảm 50k cho đơn từ 300k',
-      discountType: 'fixed_amount',
-      discountValue: 50000,
-      minOrderValue: 300000,
-      endDate: DateTime.now().add(const Duration(days: 60)),
-      isActive: true,
-    ),
-    VoucherModel(
-      id: 'fallback_menly_20',
-      code: 'MENLY20',
-      title: 'Giảm 20% tối đa 100k',
-      discountType: 'percentage',
-      discountValue: 20,
-      minOrderValue: 500000,
-      maxDiscount: 100000,
-      endDate: DateTime.now().add(const Duration(days: 60)),
-      isActive: true,
-    ),
-    VoucherModel(
-      id: 'fallback_freeship',
-      code: 'FREESHIP',
-      title: 'Miễn phí vận chuyển',
-      discountType: 'fixed_amount',
-      discountValue: 25000,
-      minOrderValue: 0,
-      endDate: DateTime.now().add(const Duration(days: 90)),
-      isActive: true,
-    ),
-  ];
-
   VoucherProvider({bool autoLoad = true}) {
     if (autoLoad) loadVouchers();
   }
 
-  List<VoucherModel> get vouchers => _vouchers.isEmpty ? fallbackVouchers : _vouchers;
+  List<VoucherModel> get vouchers => _vouchers;
   bool get isLoading => _isLoading;
   String? get error => _error;
 
@@ -82,15 +37,18 @@ class VoucherProvider extends ChangeNotifier {
                 .toList()
             : <VoucherModel>[];
 
-        _vouchers = parsed.isNotEmpty ? parsed : fallbackVouchers;
+        _vouchers = parsed;
         _error = null;
       } else {
-        _vouchers = fallbackVouchers;
-        _error = null;
+        // Truoc day cho nay thay bang mot danh sach ma giam gia bia san. Nguoi
+        // dung thay ma khong co that, nhap vao thanh toan thi that bai ma khong
+        // hieu vi sao. Thieu du lieu thi phai noi la thieu.
+        _vouchers = [];
+        _error = 'Không tải được mã giảm giá. Vui lòng thử lại.';
       }
     } catch (_) {
-      _vouchers = fallbackVouchers;
-      _error = null;
+      _vouchers = [];
+      _error = 'Không tải được mã giảm giá. Vui lòng thử lại.';
     } finally {
       _isLoading = false;
       notifyListeners();
