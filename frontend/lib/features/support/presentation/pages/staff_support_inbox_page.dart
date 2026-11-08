@@ -5,7 +5,8 @@ import '../../data/support_chat_service.dart';
 import 'support_chat_page.dart';
 
 class StaffSupportInboxPage extends StatefulWidget {
-  const StaffSupportInboxPage({super.key});
+  final bool showBackButton;
+  const StaffSupportInboxPage({super.key, this.showBackButton = true});
 
   @override
   State<StaffSupportInboxPage> createState() => _StaffSupportInboxPageState();
@@ -76,6 +77,7 @@ class _StaffSupportInboxPageState extends State<StaffSupportInboxPage> {
       appBar: AppBar(
         title: const Text('Hội thoại CSKH'),
         centerTitle: true,
+        automaticallyImplyLeading: widget.showBackButton,
         actions: [
           IconButton(
             tooltip: 'Làm mới',
