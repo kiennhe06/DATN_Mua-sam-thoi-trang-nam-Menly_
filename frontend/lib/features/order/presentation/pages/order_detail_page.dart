@@ -93,9 +93,8 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
           OrderItemsCard(order: o),
           const SizedBox(height: 12),
 
-          if (o.status != OrderStatus.canceled &&
-              o.status != OrderStatus.expired &&
-              o.status != OrderStatus.pendingPayment) ...[
+          // Khoi danh gia chi hien khi khach da nhan hang, giong quy tac may chu
+          if (o.canReview) ...[
             OrderReviewSection(order: o),
             const SizedBox(height: 12),
           ],
@@ -105,7 +104,7 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
           const SizedBox(height: 16),
 
           SecondaryButton(
-            label: 'Xem / In hóa đơn',
+            label: 'Xem hóa đơn',
             icon: Icons.receipt_long_outlined,
             onPressed: () {
               Navigator.push(

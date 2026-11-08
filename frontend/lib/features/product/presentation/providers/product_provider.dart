@@ -464,4 +464,14 @@ class ProductProvider extends ChangeNotifier {
     }
     return suggestions.take(5).toList();
   }
+  /// Xoa du lieu cua nguoi dung truoc khi doi tai khoan.
+  ///
+  /// Danh sach xem gan day va lich su tim kiem la rieng tung nguoi; de lai thi
+  /// nguoi dang nhap sau thay nguoi truoc da xem va tim nhung gi.
+  void clearUserData() {
+    _recentlyViewed = [];
+    _searchHistory = [];
+    notifyListeners();
+  }
+
 }

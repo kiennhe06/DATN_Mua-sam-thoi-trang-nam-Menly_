@@ -196,11 +196,32 @@ class AuthProvider extends ChangeNotifier {
     await _clearSession(prefs);
   }
 
+  /// Moi thu luu tren may gan voi MOT nguoi dung cu the.
+  ///
+  /// Truoc day dang xuat chi xoa ba khoa phien dang nhap, con gio hang, dia chi,
+  /// don hang, lich su tim kiem thi de nguyen. Nguoi dang nhap sau tren cung mot
+  /// may se thay du lieu cua nguoi truoc.
+  static const List<String> perUserKeys = [
+    'access_token',
+    'refresh_token',
+    'user_profile',
+    'cached_cart_items',
+    'cached_orders',
+    'saved_addresses',
+    'last_ship_name',
+    'last_ship_phone',
+    'last_ship_address',
+    'saved_user_name',
+    'saved_user_phone',
+    'recently_viewed_ids',
+    'search_history',
+  ];
+
   /// Xoa sach dau vet phien dang nhap va bao giao dien ve trang thai khach.
   Future<void> _clearSession(SharedPreferences prefs) async {
-    await prefs.remove('access_token');
-    await prefs.remove('refresh_token');
-    await prefs.remove('user_profile');
+    for (final key in perUserKeys) {
+      await prefs.remove(key);
+    }
     _user = null;
     notifyListeners();
   }
@@ -208,9 +229,23 @@ class AuthProvider extends ChangeNotifier {
   /// Cap nhat thong tin nguoi dung ngay sau khi dang nhap thanh cong,
   /// luu ca vao bo nho va SharedPreferences de khong bi mat phien khi chuyen tab.
   Future<void> setUserFromLogin(UserModel user) async {
+    // Don du lieu con sot cua nguoi dung truoc tren may nay. Can lam ca o day
+    // chu khong chi luc dang xuat: neu ung dung bi tat dot ngot thi lan dang
+    // nhap sau se khong co buoc dang xuat nao chay ca.
+    await _clearPreviousUserStorage();
     _user = user;
     notifyListeners();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('user_profile', jsonEncode(user.toJson()));
+  }
+
+  /// Xoa du lieu cua nguoi dung truoc nhung giu lai phien dang nhap vua tao.
+  Future<void> _clearPreviousUserStorage() async {
+    const sessionKeys = {'access_token', 'refresh_token', 'user_profile'};
+    final prefs = await SharedPreferences.getInstance();
+    for (final key in perUserKeys) {
+      if (sessionKeys.contains(key)) continue;
+      await prefs.remove(key);
+    }
   }
 }

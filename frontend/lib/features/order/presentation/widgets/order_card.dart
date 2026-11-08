@@ -190,9 +190,10 @@ class OrderCard extends StatelessWidget {
                       ),
                       const SizedBox(width: 4),
                     ],
-                    if (order.status != OrderStatus.canceled &&
-                        order.status != OrderStatus.expired &&
-                        order.status != OrderStatus.pendingPayment) ...[
+                    // Truoc day cho nay chi loai tru don da huy, het han va cho
+                    // thanh toan, nen tra tien xong la danh gia duoc ngay khi
+                    // hang chua giao.
+                    if (order.canReview) ...[
                       ElevatedButton.icon(
                         style: ElevatedButton.styleFrom(
                           backgroundColor: c.secondary,

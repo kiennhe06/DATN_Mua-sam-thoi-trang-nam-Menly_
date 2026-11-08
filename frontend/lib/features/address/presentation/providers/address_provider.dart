@@ -158,4 +158,12 @@ class AddressProvider extends ChangeNotifier {
       await prefs.setString('saved_addresses', jsonEncode(list));
     } catch (_) {}
   }
+
+  /// Xoa du lieu cua nguoi dung truoc khi doi tai khoan.
+  void clearUserData() {
+    _addresses = [];
+    _isLoading = false;
+    notifyListeners();
+  }
+
 }

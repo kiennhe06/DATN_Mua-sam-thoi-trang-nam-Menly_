@@ -122,13 +122,18 @@ export class ReviewModel {
     };
   }
 
-  async findReviewableOrderItemForProduct(userId: string, productId: string) {
+  /** Danh sach trang thai duoc truyen vao de chi co mot noi dinh nghia quy tac. */
+  async findReviewableOrderItemForProduct(
+    userId: string,
+    productId: string,
+    reviewableStatuses: string[],
+  ) {
     const { data: items, error } = await this.db
       .from('order_items')
       .select('id, orders!inner(user_id, status), product_variants!inner(product_id)')
       .eq('orders.user_id', userId)
       .eq('product_variants.product_id', productId)
-      .in('orders.status', ['delivered', 'completed', 'paid', 'processing']);
+      .in('orders.status', reviewableStatuses);
 
     if (error || !items || !items.length) return null;
 

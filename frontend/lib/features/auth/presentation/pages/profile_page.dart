@@ -21,6 +21,7 @@ import 'package:menly_app/features/voucher/presentation/pages/voucher_list_page.
 import 'package:menly_app/features/voucher/presentation/providers/voucher_provider.dart';
 import 'package:menly_app/features/wishlist/presentation/pages/wishlist_page.dart';
 import 'package:menly_app/features/wishlist/presentation/providers/wishlist_provider.dart';
+import 'package:menly_app/core/session/user_session.dart';
 
 /// Trang Ca nhan (Profile) quan ly toan bo thong tin tai khoan, don hang, dia chi va tien ich
 class ProfilePage extends StatelessWidget {
@@ -520,6 +521,11 @@ class ProfilePage extends StatelessWidget {
                               ElevatedButton(
                                 style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
                                 onPressed: () async {
+                                  // Xoa luon du lieu trong bo nho, khong chi
+                                  // phien dang nhap: nguoi vao sau tren cung
+                                  // mot may khong duoc thay gio hang, dia chi
+                                  // hay danh sach yeu thich cua nguoi truoc.
+                                  clearUserDataInMemory(context);
                                   await auth.logout();
                                   if (ctx.mounted) Navigator.pop(ctx);
                                 },

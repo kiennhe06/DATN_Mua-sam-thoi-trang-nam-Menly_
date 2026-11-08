@@ -205,6 +205,11 @@ export class OrderModel {
   private static readonly ORDER_WITH_ITEMS_SELECT =
     '*, order_items(*, product_variants(size, color, products(name, thumbnail_url)))';
 
+  // Man chi tiet don can them lich su doi trang thai de ve hanh trinh giao hang
+  // theo moc thoi gian that, thay vi suy ra tu mot trang thai hien tai.
+  private static readonly ORDER_DETAIL_SELECT =
+    '*, order_items(*, product_variants(size, color, products(name, thumbnail_url))), order_status_history(from_status, to_status, created_at)';
+
   private realImageUrl(url: unknown): string {
     const value = String(url ?? '').trim();
     if (!value) return '';
@@ -421,7 +426,7 @@ export class OrderModel {
   }
 
   private async loadEnrichedOrder(orderId: string, userId?: string): Promise<OrderRow | null> {
-    let query = this.db.from('orders').select(OrderModel.ORDER_WITH_ITEMS_SELECT).eq('id', orderId);
+    let query = this.db.from('orders').select(OrderModel.ORDER_DETAIL_SELECT).eq('id', orderId);
     if (userId) query = query.eq('user_id', userId);
     const { data, error } = await query.maybeSingle();
     if (error || !data) return null;
