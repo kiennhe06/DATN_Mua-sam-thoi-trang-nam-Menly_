@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../data/support_chat_service.dart';
+import 'package:menly_app/features/chat/presentation/pages/live_chat_page.dart';
 
 class SupportChatPage extends StatefulWidget {
   final SupportConversation? conversation;
@@ -131,6 +132,16 @@ class _SupportChatPageState extends State<SupportChatPage> {
           ],
         ),
         actions: [
+          IconButton(
+            tooltip: 'Tư vấn AI Stylist 24/7',
+            icon: const Icon(Icons.auto_awesome, color: AppTheme.primaryAccent),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const LiveChatPage()),
+              );
+            },
+          ),
           IconButton(
             tooltip: 'Làm mới',
             onPressed: _isRefreshing ? null : () => _loadChat(),

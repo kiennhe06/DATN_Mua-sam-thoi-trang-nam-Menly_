@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:menly_app/features/auth/presentation/pages/login_page.dart';
-import 'package:menly_app/features/auth/presentation/providers/auth_provider.dart';
 import 'package:menly_app/features/support/presentation/pages/contact_page.dart';
 import 'package:menly_app/features/support/presentation/pages/policy_page.dart';
-import 'support_chat_page.dart';
+import 'package:menly_app/features/chat/presentation/pages/live_chat_page.dart';
 
 /// Trang Cau hoi thuong gap (FAQ) (TM05)
 class FAQPage extends StatefulWidget {
@@ -190,35 +187,26 @@ class _FAQPageState extends State<FAQPage> {
                   const SizedBox(height: 12),
                   SizedBox(
                     width: double.infinity,
-                    child: ElevatedButton.icon(
+                    child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.black87,
-                        foregroundColor: Colors.white,
+                        backgroundColor: const Color(0xFFC5A880),
+                        foregroundColor: Colors.black87,
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10),
                         ),
+                        elevation: 1,
                       ),
-                      icon: const Icon(Icons.chat_bubble_outline_rounded),
-                      label: const Text('Chat trực tiếp với CSKH'),
                       onPressed: () {
-                        if (!context.read<AuthProvider>().isLoggedIn) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Vui lòng đăng nhập để chat với CSKH'),
-                            ),
-                          );
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (_) => const LoginPage()),
-                          );
-                          return;
-                        }
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (_) => const SupportChatPage()),
+                          MaterialPageRoute(builder: (_) => const LiveChatPage()),
                         );
                       },
+                      child: const Text(
+                        'Chat với nhân viên',
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 8),

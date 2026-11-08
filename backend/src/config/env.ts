@@ -6,6 +6,7 @@ export const env = {
   supabaseUrl: process.env.SUPABASE_URL ?? '',
   supabaseAnonKey: process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || '',
   supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY ?? '',
+  GEMINI_API_KEY: process.env.GEMINI_API_KEY ?? '',
   vnpay: {
     // Secret thanh toan bat buoc cau hinh qua bien moi truong, khong hardcode gia tri that.
     tmnCode: process.env.VNPAY_TMN_CODE ?? '',

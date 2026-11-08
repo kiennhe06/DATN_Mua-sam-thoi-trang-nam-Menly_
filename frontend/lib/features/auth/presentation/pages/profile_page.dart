@@ -17,6 +17,7 @@ import 'package:menly_app/features/order/presentation/pages/staff_order_manageme
 import 'package:menly_app/features/order/presentation/providers/order_provider.dart';
 import 'package:menly_app/features/support/presentation/pages/faq_page.dart';
 import 'package:menly_app/features/support/presentation/pages/staff_support_inbox_page.dart';
+import 'package:menly_app/features/chat/presentation/pages/live_chat_page.dart';
 import 'package:menly_app/features/voucher/presentation/pages/voucher_list_page.dart';
 import 'package:menly_app/features/voucher/presentation/providers/voucher_provider.dart';
 import 'package:menly_app/features/wishlist/presentation/pages/wishlist_page.dart';
@@ -487,6 +488,15 @@ class ProfilePage extends StatelessWidget {
                       ),
                     ),
                   ],
+                  const Divider(height: 1),
+                  ProfileMenuItem(
+                    title: 'Chat với nhân viên',
+                    subtitle: 'Tư vấn chọn size & phối đồ tức thì 24/7',
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const LiveChatPage()),
+                    ),
+                  ),
                   const Divider(height: 1),
                   ProfileMenuItem(
                     title: 'Trung tâm trợ giúp & CSKH',
