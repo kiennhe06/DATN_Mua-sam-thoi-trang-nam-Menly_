@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/network/api_client.dart';
 
@@ -188,6 +189,64 @@ class AuthProvider extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
       return false;
+    }
+  }
+
+  /// Tải ảnh đại diện từ file (bộ sưu tập / camera) lên máy chủ Supabase Storage
+  Future<String?> uploadAvatar(XFile file) async {
+    if (_user == null) {
+      _profileUpdateError = 'Vui lòng đăng nhập để cập nhật ảnh đại diện';
+      return null;
+    }
+    _isLoading = true;
+    _profileUpdateError = null;
+    notifyListeners();
+
+    try {
+      final bytes = await file.readAsBytes();
+      final form = FormData();
+
+      form.files.add(
+        MapEntry(
+          'avatar',
+          MultipartFile.fromBytes(
+            bytes,
+            filename: file.name.isNotEmpty ? file.name : 'avatar.jpg',
+          ),
+        ),
+      );
+
+      final res = await _api.dio.post(
+        '/profile/upload-avatar',
+        data: form,
+        options: Options(contentType: 'multipart/form-data'),
+      );
+
+      final body = res.data;
+      final data = body is Map ? (body['data'] ?? body) : null;
+      final newAvatarUrl = data is Map ? data['avatarUrl']?.toString() : null;
+
+      if (newAvatarUrl != null && newAvatarUrl.isNotEmpty) {
+        _user = _user!.copyWith(avatarUrl: newAvatarUrl);
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('user_profile', jsonEncode(_user!.toJson()));
+      }
+      _isLoading = false;
+      notifyListeners();
+      return newAvatarUrl;
+    } on DioException catch (error) {
+      final response = error.response?.data;
+      _profileUpdateError = response is Map && response['error'] is String
+          ? response['error'] as String
+          : 'Không thể tải ảnh đại diện lên máy chủ';
+      _isLoading = false;
+      notifyListeners();
+      return null;
+    } catch (error) {
+      _profileUpdateError = 'Lỗi tải ảnh đại diện: $error';
+      _isLoading = false;
+      notifyListeners();
+      return null;
     }
   }
 

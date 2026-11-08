@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+import 'package:image_picker/image_picker.dart';
 import '../widgets/profile_menu_item.dart';
 import '../widgets/profile_stat_item.dart';
 import 'package:menly_app/core/widgets/display_settings.dart';
@@ -36,9 +38,91 @@ class ProfilePage extends StatelessWidget {
       text: selectedPreset == null ? user?.avatarUrl ?? '' : '',
     );
     String? selectedPresetId = selectedPreset?.id;
+    XFile? pickedAvatarFile;
+    Uint8List? pickedAvatarBytes;
     var isSaving = false;
 
     const avatarPresets = AvatarPreset.presets;
+
+    Future<void> pickAvatar(StateSetter setModalState, ImageSource source) async {
+      try {
+        final picker = ImagePicker();
+        final picked = await picker.pickImage(
+          source: source,
+          maxWidth: 1024,
+          maxHeight: 1024,
+          imageQuality: 85,
+        );
+        if (picked != null) {
+          final bytes = await picked.readAsBytes();
+          setModalState(() {
+            pickedAvatarFile = picked;
+            pickedAvatarBytes = bytes;
+            selectedPresetId = null;
+            avatarCtrl.clear();
+          });
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(source == ImageSource.camera
+                  ? 'Không thể mở máy ảnh: $e'
+                  : 'Không thể mở bộ sưu tập: $e'),
+            ),
+          );
+        }
+      }
+    }
+
+    Future<void> showSourceSheet(BuildContext context, StateSetter setModalState) async {
+      final source = await showModalBottomSheet<ImageSource>(
+        context: context,
+        backgroundColor: Colors.white,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        ),
+        builder: (sheetCtx) => SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.symmetric(vertical: 10),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 6),
+                child: Text(
+                  'Chọn ảnh đại diện',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+              ),
+              const Divider(height: 1),
+              ListTile(
+                leading: const Icon(Icons.camera_alt_outlined, color: AppTheme.primary),
+                title: const Text('Chụp ảnh từ máy ảnh (Camera)'),
+                onTap: () => Navigator.pop(sheetCtx, ImageSource.camera),
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library_outlined, color: AppTheme.primary),
+                title: const Text('Chọn ảnh từ bộ sưu tập (Thư viện)'),
+                onTap: () => Navigator.pop(sheetCtx, ImageSource.gallery),
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        ),
+      );
+
+      if (source != null) {
+        await pickAvatar(setModalState, source);
+      }
+    }
 
     showModalBottomSheet(
       context: context,
@@ -78,65 +162,186 @@ class ProfilePage extends StatelessWidget {
                     const SizedBox(height: 16),
 
                     const Text('Chọn ảnh đại diện:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 10),
+
+                    // Avatar preview & Nut chup anh / chon tu bo suu tap
                     Row(
                       children: [
-                        ProfileAvatar(
-                          avatarUrl: selectedPresetId ??
-                              (avatarCtrl.text.trim().isEmpty ? null : avatarCtrl.text.trim()),
-                          radius: 30,
-                          fallbackText: user?.fullName ?? 'M',
+                        // Avatar preview (nhan truc tiep de mo menu chup anh / chon file)
+                        GestureDetector(
+                          onTap: () => showSourceSheet(ctx, setModalState),
+                          child: Stack(
+                            children: [
+                              Container(
+                                width: 72,
+                                height: 72,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: pickedAvatarBytes != null ? Colors.green : AppTheme.primary,
+                                    width: 2.5,
+                                  ),
+                                ),
+                                child: pickedAvatarBytes != null
+                                    ? ClipOval(
+                                        child: Image.memory(
+                                          pickedAvatarBytes!,
+                                          width: 72,
+                                          height: 72,
+                                          fit: BoxFit.cover,
+                                        ),
+                                      )
+                                    : ProfileAvatar(
+                                        avatarUrl: selectedPresetId ??
+                                            (avatarCtrl.text.trim().isEmpty ? null : avatarCtrl.text.trim()),
+                                        radius: 36,
+                                        fallbackText: user?.fullName ?? 'M',
+                                      ),
+                              ),
+                              Positioned(
+                                right: 0,
+                                bottom: 0,
+                                child: Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: BoxDecoration(
+                                    color: pickedAvatarBytes != null ? Colors.green : AppTheme.primary,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(color: Colors.white, width: 1.5),
+                                  ),
+                                  child: Icon(
+                                    pickedAvatarBytes != null ? Icons.check : Icons.camera_alt,
+                                    size: 13,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                         const SizedBox(width: 14),
+                        // 2 nut: Chup anh & Bo suu tap
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text('Ảnh có sẵn, sử dụng không cần mạng:', style: TextStyle(fontSize: 11, color: Colors.grey)),
-                              const SizedBox(height: 6),
-                              Wrap(
-                                spacing: 8,
-                                runSpacing: 8,
-                                children: avatarPresets.map((preset) {
-                                  final isSelected = selectedPresetId == preset.id;
-                                  return Tooltip(
-                                    message: preset.label,
-                                    child: InkWell(
-                                      customBorder: const CircleBorder(),
-                                      onTap: () => setModalState(() {
-                                        selectedPresetId = preset.id;
-                                        avatarCtrl.clear();
-                                      }),
-                                      child: Container(
-                                        padding: const EdgeInsets.all(2),
-                                        decoration: BoxDecoration(
-                                          shape: BoxShape.circle,
-                                          border: Border.all(
-                                            color: isSelected ? AppTheme.primary : Colors.transparent,
-                                            width: 2,
-                                          ),
-                                        ),
-                                        child: ProfileAvatar(avatarUrl: preset.id, radius: 19),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: OutlinedButton.icon(
+                                      icon: const Icon(Icons.camera_alt_outlined, size: 15),
+                                      label: const Text('Chụp ảnh', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                                      style: OutlinedButton.styleFrom(
+                                        foregroundColor: AppTheme.primary,
+                                        side: const BorderSide(color: AppTheme.primary),
+                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                      ),
+                                      onPressed: () => pickAvatar(setModalState, ImageSource.camera),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: OutlinedButton.icon(
+                                      icon: const Icon(Icons.photo_library_outlined, size: 15),
+                                      label: const Text('Bộ sưu tập', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                                      style: OutlinedButton.styleFrom(
+                                        foregroundColor: AppTheme.primary,
+                                        side: const BorderSide(color: AppTheme.primary),
+                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                      ),
+                                      onPressed: () => pickAvatar(setModalState, ImageSource.gallery),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              if (pickedAvatarFile != null) ...[
+                                const SizedBox(height: 6),
+                                Row(
+                                  children: [
+                                    const Icon(Icons.check_circle, size: 14, color: Colors.green),
+                                    const SizedBox(width: 4),
+                                    Expanded(
+                                      child: Text(
+                                        'Đã chọn: ${pickedAvatarFile!.name}',
+                                        style: const TextStyle(fontSize: 11, color: Colors.green, fontWeight: FontWeight.w500),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
                                       ),
                                     ),
-                                  );
-                                }).toList(),
-                              ),
+                                    InkWell(
+                                      onTap: () => setModalState(() {
+                                        pickedAvatarFile = null;
+                                        pickedAvatarBytes = null;
+                                      }),
+                                      child: const Padding(
+                                        padding: EdgeInsets.symmetric(horizontal: 4),
+                                        child: Icon(Icons.close, size: 15, color: Colors.grey),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ] else ...[
+                                const SizedBox(height: 5),
+                                const Text(
+                                  'Chụp trực tiếp hoặc tải từ máy (tối đa 5MB)',
+                                  style: TextStyle(fontSize: 10.5, color: Colors.grey),
+                                ),
+                              ],
                             ],
                           ),
                         ),
                       ],
                     ),
+                    const SizedBox(height: 14),
+
+                    // Mau anh co san
+                    const Text('Hoặc chọn ảnh đại diện có sẵn:', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                    const SizedBox(height: 6),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: avatarPresets.map((preset) {
+                        final isSelected = selectedPresetId == preset.id && pickedAvatarFile == null;
+                        return Tooltip(
+                          message: preset.label,
+                          child: InkWell(
+                            customBorder: const CircleBorder(),
+                            onTap: () => setModalState(() {
+                              selectedPresetId = preset.id;
+                              pickedAvatarFile = null;
+                              pickedAvatarBytes = null;
+                              avatarCtrl.clear();
+                            }),
+                            child: Container(
+                              padding: const EdgeInsets.all(2),
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: isSelected ? AppTheme.primary : Colors.transparent,
+                                  width: 2,
+                                ),
+                              ),
+                              child: ProfileAvatar(avatarUrl: preset.id, radius: 19),
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
                     const SizedBox(height: 12),
+
+                    // Hoac nhap URL
                     TextField(
                       controller: avatarCtrl,
                       decoration: const InputDecoration(
-                        labelText: 'Hoặc nhập URL ảnh đại diện',
+                        labelText: 'Hoặc nhập liên kết (URL) ảnh đại diện',
                         border: OutlineInputBorder(),
                         isDense: true,
                       ),
                       onChanged: (_) => setModalState(() {
                         selectedPresetId = null;
+                        pickedAvatarFile = null;
+                        pickedAvatarBytes = null;
                       }),
                     ),
                     const SizedBox(height: 16),
@@ -182,10 +387,32 @@ class ProfilePage extends StatelessWidget {
                           }
 
                           setModalState(() => isSaving = true);
+
+                          String? avatarUrlToSave = selectedPresetId ?? avatarCtrl.text.trim();
+
+                          // 1. Neu co chon anh tu bo suu tap -> Tai len server
+                          if (pickedAvatarFile != null) {
+                            final uploadedUrl = await auth.uploadAvatar(pickedAvatarFile!);
+                            if (uploadedUrl == null) {
+                              setModalState(() => isSaving = false);
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(auth.profileUpdateError ?? 'Không thể tải ảnh đại diện lên máy chủ'),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                              }
+                              return;
+                            }
+                            avatarUrlToSave = uploadedUrl;
+                          }
+
+                          // 2. Cap nhat ho so nguoi dung
                           final updated = await auth.updateProfile(
                             fullName: nameCtrl.text,
                             phone: phoneCtrl.text,
-                            avatarUrl: selectedPresetId ?? avatarCtrl.text.trim(),
+                            avatarUrl: avatarUrlToSave,
                           );
 
                           if (context.mounted) {
@@ -259,16 +486,36 @@ class ProfilePage extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      // Avatar
-                      Container(
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(color: AppTheme.primary, width: 2),
-                        ),
-                        child: ProfileAvatar(
-                          avatarUrl: user?.avatarUrl,
-                          radius: 36,
-                          fallbackText: user?.fullName ?? 'M',
+                      // Avatar (co the click truc tiep de chinh sua)
+                      GestureDetector(
+                        onTap: auth.isLoggedIn ? () => _showEditProfileModal(context, auth) : null,
+                        child: Stack(
+                          children: [
+                            Container(
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                border: Border.all(color: AppTheme.primary, width: 2),
+                              ),
+                              child: ProfileAvatar(
+                                avatarUrl: user?.avatarUrl,
+                                radius: 36,
+                                fallbackText: user?.fullName ?? 'M',
+                              ),
+                            ),
+                            if (auth.isLoggedIn)
+                              Positioned(
+                                right: 0,
+                                bottom: 0,
+                                child: Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: const BoxDecoration(
+                                    color: AppTheme.primary,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(Icons.camera_alt, size: 13, color: Colors.white),
+                                ),
+                              ),
+                          ],
                         ),
                       ),
                       const SizedBox(width: 16),

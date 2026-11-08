@@ -183,14 +183,17 @@ export class ProfileModel {
     await this.ensureBucketExists();
 
     const extMatch = file.originalname.match(/\.([a-zA-Z0-9]+)$/);
-    const ext = extMatch ? extMatch[1].toLowerCase() : (file.mimetype.split('/')[1] || 'jpg');
+    const ext = extMatch ? extMatch[1].toLowerCase() : (file.mimetype?.split('/')[1] || 'jpg');
     const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}.${ext}`;
     const filePath = `${userId}/${fileName}`;
+    const contentType = file.mimetype && file.mimetype !== 'application/octet-stream'
+      ? file.mimetype
+      : `image/${ext === 'jpg' ? 'jpeg' : ext}`;
 
     const { error: uploadError } = await this.db.storage
       .from(this.bucketName)
       .upload(filePath, file.buffer, {
-        contentType: file.mimetype,
+        contentType,
         upsert: true,
       });
 

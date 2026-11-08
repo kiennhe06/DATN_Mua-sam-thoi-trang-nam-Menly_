@@ -9,6 +9,8 @@ const allowedMimeTypes = [
   'image/webp',
   'image/gif',
   'image/jpg',
+  'image/heic',
+  'image/heif',
 ];
 
 const upload = multer({
@@ -17,7 +19,8 @@ const upload = multer({
     fileSize: 5 * 1024 * 1024, // 5MB
   },
   fileFilter: (_req, file, cb) => {
-    if (allowedMimeTypes.includes(file.mimetype)) {
+    const isImageExt = /\.(jpe?g|png|webp|gif|heic|heif)$/i.test(file.originalname);
+    if (allowedMimeTypes.includes(file.mimetype) || (file.mimetype === 'application/octet-stream' && isImageExt)) {
       cb(null, true);
     } else {
       cb(new Error('Chỉ chấp nhận file hình ảnh (JPEG, PNG, WEBP, GIF)'));
