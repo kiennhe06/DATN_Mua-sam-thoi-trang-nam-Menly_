@@ -4,6 +4,11 @@ export interface Review {
   productId: string;
   rating: number;
   comment: string | null;
+  /** Anh thuc te khach gui kem danh gia. */
+  images?: string[];
+  /** Noi dung cua hang tra loi, null neu chua tra loi. */
+  replyComment?: string | null;
+  replyAt?: string | null;
   createdAt: string;
   user?: {
     id: string;
@@ -35,4 +40,16 @@ export async function deleteAdminReview(id: string): Promise<void> {
   await adminFetch(`/api/v1/admin/reviews/${id}`, {
     method: 'DELETE',
   });
+}
+
+/** Tra loi mot danh gia cua khach (POST /api/v1/admin/reviews/:id/reply). */
+export async function replyToAdminReview(id: string, reply: string): Promise<Review> {
+  const res = await adminFetch<{ data?: Review } | Review>(
+    `/api/v1/admin/reviews/${id}/reply`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ reply }),
+    },
+  );
+  return (res as { data?: Review }).data ?? (res as Review);
 }

@@ -50,7 +50,12 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
           currentIndex: _currentIndex,
           onTap: (idx) {
             if (idx == 0) {
-              context.read<ProductProvider>().clearSearchQuery();
+              final productProv = context.read<ProductProvider>();
+              productProv.clearSearchQuery();
+              // IndexedStack giu nguyen trang chu nen no khong tu dung lai.
+              // Quay ve tab nay thi lay du lieu moi, de san pham vua them hoac
+              // vua duyet ben web hien ra ngay.
+              productProv.refreshIfStale();
             }
             setState(() => _currentIndex = idx);
           },

@@ -276,7 +276,7 @@ class AddressPage extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                         ),
-                        onPressed: () {
+                        onPressed: () async {
                           final finalProvince = selectedProvince;
                           final finalDistrict = selectedDistrict ?? districtCtrl.text.trim();
                           final finalWard = selectedWard ?? wardCtrl.text.trim();
@@ -294,8 +294,11 @@ class AddressPage extends StatelessWidget {
                           }
 
                           final addrProv = context.read<AddressProvider>();
+                          final notifProv = context.read<NotificationProvider>();
+                          final messenger = ScaffoldMessenger.of(context);
+                          final laThemMoi = addressToEdit == null;
                           if (addressToEdit == null) {
-                            addrProv.addAddress(AddressModel(
+                            await addrProv.addAddress(AddressModel(
                               id: 'addr-${DateTime.now().millisecondsSinceEpoch}',
                               recipientName: nameCtrl.text.trim(),
                               phone: phoneCtrl.text.trim(),
@@ -305,13 +308,8 @@ class AddressPage extends StatelessWidget {
                               detailAddress: detailCtrl.text.trim(),
                               isDefault: isDefault,
                             ));
-                            context.read<NotificationProvider>().addNotification(
-                              title: 'Đã thêm địa chỉ nhận hàng mới',
-                              body: 'Địa chỉ của ${nameCtrl.text.trim()} tại $finalDistrict, $finalProvince đã được thêm vào sổ địa chỉ.',
-                              type: 'system',
-                            );
                           } else {
-                            addrProv.updateAddress(addressToEdit.copyWith(
+                            await addrProv.updateAddress(addressToEdit.copyWith(
                               recipientName: nameCtrl.text.trim(),
                               phone: phoneCtrl.text.trim(),
                               province: finalProvince,
@@ -320,12 +318,32 @@ class AddressPage extends StatelessWidget {
                               detailAddress: detailCtrl.text.trim(),
                               isDefault: isDefault,
                             ));
-                            context.read<NotificationProvider>().addNotification(
-                              title: 'Đã cập nhật địa chỉ nhận hàng',
-                              body: 'Địa chỉ giao hàng tại $finalDistrict, $finalProvince đã được cập nhật thành công.',
+                          }
+                          // Neu may chu tu choi thi phai noi ra, khong de nguoi
+                          // dung tuong da luu vao so trong khi chua luu duoc.
+                          final loi = addrProv.errorMessage;
+                          // Chi bao da luu vao so khi may chu that su nhan.
+                          if (loi == null) {
+                            notifProv.addNotification(
+                              title: laThemMoi
+                                  ? 'Đã thêm địa chỉ nhận hàng mới'
+                                  : 'Đã cập nhật địa chỉ nhận hàng',
+                              body: laThemMoi
+                                  ? 'Địa chỉ của ${nameCtrl.text.trim()} tại $finalDistrict, $finalProvince đã được thêm vào sổ địa chỉ.'
+                                  : 'Địa chỉ giao hàng tại $finalDistrict, $finalProvince đã được cập nhật thành công.',
                               type: 'system',
                             );
                           }
+                          if (loi != null) {
+                            messenger.showSnackBar(
+                              SnackBar(
+                                content: Text(loi),
+                                backgroundColor: Colors.red.shade700,
+                                duration: const Duration(seconds: 4),
+                              ),
+                            );
+                          }
+                          if (!ctx.mounted) return;
                           Navigator.pop(ctx);
                         },
                         child: Text(addressToEdit == null ? 'Lưu địa chỉ' : 'Cập nhật'),

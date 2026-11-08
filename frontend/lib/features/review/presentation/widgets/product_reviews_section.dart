@@ -27,7 +27,8 @@ class ProductReviewsSection extends StatefulWidget {
   State<ProductReviewsSection> createState() => _ProductReviewsSectionState();
 }
 
-class _ProductReviewsSectionState extends State<ProductReviewsSection> {
+class _ProductReviewsSectionState extends State<ProductReviewsSection>
+    with WidgetsBindingObserver {
   static const int _collapsedCount = 2;
 
   bool _expanded = false;
@@ -38,6 +39,7 @@ class _ProductReviewsSectionState extends State<ProductReviewsSection> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       _refreshCanReview();
@@ -85,6 +87,22 @@ class _ProductReviewsSectionState extends State<ProductReviewsSection> {
         message: 'Cảm ơn bạn đã gửi đánh giá sản phẩm!',
         icon: Icons.check_circle_outline,
       );
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Cua hang co the vua tra loi danh gia tren trang quan tri; quay lai app la
+    // tai lai ngay, khong phai mo lai app.
+    if (state == AppLifecycleState.resumed && mounted) {
+      context.read<ReviewProvider>().loadProductReviews(widget.productId);
+      _refreshCanReview();
     }
   }
 

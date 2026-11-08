@@ -194,6 +194,12 @@ class OrderModel {
   final List<OrderItemModel> items;
   /// Cac lan doi trang thai da ghi lai, xep theo thoi gian tang dan.
   final List<OrderStatusEvent> statusHistory;
+
+  /// Ma cua tat ca don duoc tao trong cung lan dat hang.
+  ///
+  /// Moi san pham tao mot don rieng, nen mot lan bam dat hang co the sinh ra
+  /// nhieu don. Chi co gia tri ngay sau khi dat, khong luu lai.
+  final List<String> splitOrderCodes;
   String? cancelReason;
 
   OrderModel({
@@ -212,6 +218,7 @@ class OrderModel {
     required this.createdAt,
     required this.items,
     this.statusHistory = const [],
+    this.splitOrderCodes = const [],
     this.cancelReason,
   });
 
@@ -298,6 +305,9 @@ class OrderModel {
           : DateTime.now(),
       items: parsedItems,
       statusHistory: parsedHistory,
+      splitOrderCodes: json['split_order_codes'] is List
+          ? (json['split_order_codes'] as List).map((e) => e.toString()).toList()
+          : const [],
       cancelReason: json['cancel_reason']?.toString(),
     );
   }

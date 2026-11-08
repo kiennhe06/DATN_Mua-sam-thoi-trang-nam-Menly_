@@ -94,15 +94,17 @@ class ProductProvider extends ChangeNotifier {
   /// Dung cho man cho: doi du lieu that nap xong ma khong goi API trung lap.
   Future<void> ensureInitialized() => _initialLoad ??= init();
 
-  /// Thoi gian toi thieu giua hai lan tu dong tai lai khi quay lai app.
-  static const Duration _tuoiToiDa = Duration(seconds: 30);
+  /// Thoi gian toi thieu giua hai lan tu dong tai lai.
+  ///
+  /// De ngan de quan tri them hoac duyet san pham ben web xong, chuyen sang app
+  /// la thay ngay. Van co moc de chuyen tab qua lai khong thanh goi lien tuc.
+  static const Duration _tuoiToiDa = Duration(seconds: 5);
 
   /// Tai lai neu du lieu da cu.
   ///
-  /// Quan tri them hoac xoa san pham tren web thi app dang mo khong biet. Goi
-  /// ham nay khi nguoi dung quay lai app de ho thay kho hang dung thuc te ma
-  /// khong phai khoi dong lai. Co moc thoi gian de chuyen man qua lai khong
-  /// bien thanh goi API lien tuc.
+  /// Goi khi quay lai app va khi quay ve tab Trang chu. Quan tri them, duyet
+  /// hay xoa san pham ben web thi app dang mo khong he biet, neu khong tai lai
+  /// thi phai khoi dong lai app moi thay.
   Future<void> refreshIfStale() async {
     final lastLoaded = _lastLoadedAt;
     if (lastLoaded != null && DateTime.now().difference(lastLoaded) < _tuoiToiDa) {

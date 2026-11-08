@@ -116,7 +116,9 @@ class _OrderSuccessPageState extends State<OrderSuccessPage> with SingleTickerPr
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Cảm ơn bạn đã mua sắm tại Menly.\nĐơn hàng của bạn đang được tiếp nhận và sẽ sớm được giao đến bạn.',
+                        (widget.order?.splitOrderCodes.length ?? 0) > 1
+                            ? 'Cảm ơn bạn đã mua sắm tại Menly.\nMỗi sản phẩm được tách thành một đơn riêng để theo dõi giao hàng, lần này có ${widget.order?.splitOrderCodes.length ?? 0} đơn.'
+                            : 'Cảm ơn bạn đã mua sắm tại Menly.\nĐơn hàng của bạn đang được tiếp nhận và sẽ sớm được giao đến bạn.',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           color: c.textSecondary,

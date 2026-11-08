@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/network/api_client.dart';
 import 'package:menly_app/features/address/data/models/address_model.dart';
+import 'package:dio/dio.dart';
 
 /// Provider quan ly So dia chi giao hang
 /// Phu trach boi: Thanh Toan (AP-DC1)
@@ -12,6 +13,7 @@ class AddressProvider extends ChangeNotifier {
   List<AddressModel> _addresses = [];
   AddressModel? _selectedAddress;
   bool _isLoading = false;
+  String? _errorMessage;
 
   AddressProvider() {
     loadAddresses();
@@ -20,6 +22,9 @@ class AddressProvider extends ChangeNotifier {
   List<AddressModel> get addresses => _addresses;
   AddressModel? get selectedAddress => _selectedAddress ?? defaultAddress;
   bool get isLoading => _isLoading;
+
+  /// Loi cua lan dong bo gan nhat, null neu khong co.
+  String? get errorMessage => _errorMessage;
 
   /// Lay dia chi mac dinh
   AddressModel? get defaultAddress {
@@ -36,6 +41,15 @@ class AddressProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Doc thong bao loi that su tu may chu thay vi chi noi chung chung.
+  String _describeError(Object error) {
+    if (error is DioException) {
+      final data = error.response?.data;
+      if (data is Map && data['error'] is String) return data['error'] as String;
+    }
+    return 'Không lưu được địa chỉ lên hệ thống. Vui lòng thử lại.';
+  }
+
   /// Them dia chi moi (POST /api/v1/addresses)
   Future<void> addAddress(AddressModel newAddr) async {
     if (newAddr.isDefault || _addresses.isEmpty) {
@@ -46,16 +60,23 @@ class AddressProvider extends ChangeNotifier {
     await _saveToLocal();
 
     // Dong bo backend
+    _errorMessage = null;
     try {
-      final res = await _api.dio.post('/addresses', data: newAddr.toJson());
+      final res = await _api.dio.post('/addresses', data: newAddr.toServerJson());
       if (res.statusCode == 201 && res.data['data'] != null) {
         final saved = AddressModel.fromJson(res.data['data']);
         final idx = _addresses.indexWhere((a) => a.id == newAddr.id);
         if (idx >= 0) _addresses[idx] = saved;
-        notifyListeners();
         await _saveToLocal();
+      } else {
+        _errorMessage = 'Địa chỉ chưa được lưu lên hệ thống.';
       }
-    } catch (_) {}
+    } catch (error) {
+      // Truoc day cho nay nuot sach loi, nen dia chi chi nam tren may va nguoi
+      // dung tuong da luu vao so.
+      _errorMessage = _describeError(error);
+    }
+    notifyListeners();
   }
 
   /// Cap nhat dia chi (PUT /api/v1/addresses/:id)
@@ -73,9 +94,14 @@ class AddressProvider extends ChangeNotifier {
       notifyListeners();
       await _saveToLocal();
 
+      _errorMessage = null;
       try {
-        await _api.dio.put('/addresses/${updated.id}', data: updated.toJson());
-      } catch (_) {}
+        await _api.dio
+            .put('/addresses/${updated.id}', data: updated.toServerJson());
+      } catch (error) {
+        _errorMessage = _describeError(error);
+      }
+      notifyListeners();
     }
   }
 

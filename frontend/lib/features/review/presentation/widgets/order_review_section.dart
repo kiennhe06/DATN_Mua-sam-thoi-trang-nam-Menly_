@@ -18,13 +18,30 @@ class OrderReviewSection extends StatefulWidget {
   State<OrderReviewSection> createState() => _OrderReviewSectionState();
 }
 
-class _OrderReviewSectionState extends State<OrderReviewSection> {
+class _OrderReviewSectionState extends State<OrderReviewSection>
+    with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) context.read<ReviewProvider>().loadMine();
     });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Quay lai app thi tai lai danh gia: cua hang co the vua tra loi tren trang
+    // quan tri trong luc app nam nen, khong bat nguoi dung phai mo lai app.
+    if (state == AppLifecycleState.resumed && mounted) {
+      context.read<ReviewProvider>().loadMine();
+    }
   }
 
   Future<void> _openReviewForm(OrderItemModel item) async {
@@ -145,6 +162,29 @@ class _OrderReviewSectionState extends State<OrderReviewSection> {
                 if (review.images.isNotEmpty) ...[
                   const SizedBox(height: 6),
                   ReviewImageGallery(images: review.images, size: 40, spacing: 6),
+                ],
+                if (review.replyComment != null &&
+                    review.replyComment!.trim().isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 7),
+                    decoration: BoxDecoration(
+                      color: c.surfaceVariant,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border(
+                        left: BorderSide(color: c.secondary, width: 2),
+                      ),
+                    ),
+                    child: Text(
+                      'Phản hồi từ Menly: ${review.replyComment}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        height: 1.4,
+                        color: c.textSecondary,
+                      ),
+                    ),
+                  ),
                 ],
               ],
             ],

@@ -297,7 +297,90 @@ export class OrderModel {
   }
 
   /** Tạo đơn hàng mới, lưu vào bảng orders + order_items trên Supabase */
+  /**
+   * Tao don hang tu gio hang: MOI SAN PHAM MOT DON RIENG.
+   *
+   * Moi don co ma rieng va trang thai rieng, nen quan tri danh dau da giao
+   * tung mon duoc, khong keo theo cac mon khac trong cung lan dat.
+   *
+   * Phi van chuyen tinh MOT LAN cho ca lan dat nen dat het vao don dau tien;
+   * giam gia cung vay, tru dan cho tung don cho den het. Nho do tong tien khach
+   * tra khong doi so voi so hien o man thanh toan.
+   */
   async createOrder(input: CreateOrderInput): Promise<OrderRow> {
+    if (!input.items.length) {
+      throw new Error('Sản phẩm hoặc số lượng đặt hàng không hợp lệ');
+    }
+
+    const createdOrders: OrderRow[] = [];
+    let giamGiaConLai = input.discount_amount ?? 0;
+
+    for (let i = 0; i < input.items.length; i++) {
+      const phiShip = i === 0 ? (input.shipping_fee ?? 0) : 0;
+
+      // Tao don truoc de biet subtotal that cua rieng mon nay
+      const don = await this.createSingleOrder({
+        ...input,
+        items: [input.items[i]],
+        subtotal: 0,
+        total: 0,
+        shipping_fee: phiShip,
+        discount_amount: 0,
+        voucher_code: i === 0 ? input.voucher_code : undefined,
+        idempotency_key: input.idempotency_key
+          ? `${input.idempotency_key}-${i + 1}`
+          : undefined,
+      }, false);
+
+      // Tru dan giam gia, khong de vuot qua gia tri cua chinh don do
+      const giamChoDonNay = Math.min(giamGiaConLai, don.subtotal);
+      giamGiaConLai -= giamChoDonNay;
+
+      if (giamChoDonNay > 0) {
+        const tongMoi = Math.max(0, don.subtotal + phiShip - giamChoDonNay);
+        await this.db.from('orders').update({ total: tongMoi }).eq('id', don.id);
+        don.total = tongMoi;
+      }
+
+      // Noi cac don sau ve don dau tien. Cong thanh toan doi chieu theo tung
+      // don, nen phai biet duoc nhung don nao thuoc cung mot lan tra tien.
+      if (i > 0) {
+        await this.db
+          .from('orders')
+          .update({ parent_order_id: createdOrders[0].id })
+          .eq('id', don.id);
+      }
+
+      createdOrders.push(don);
+    }
+
+    // Mot thong bao duy nhat cho ca lan dat, du tach thanh bao nhieu don
+    const donDau = createdOrders[0];
+    await this.notifyOrderUser(
+      donDau,
+      'Đặt hàng thành công',
+      createdOrders.length > 1
+        ? `Đã tạo ${createdOrders.length} đơn cho lần đặt này: ${createdOrders
+            .map((o) => `#${o.code}`)
+            .join(', ')}. Mỗi sản phẩm một đơn để theo dõi giao hàng riêng.`
+        : `Đơn hàng #${donDau.code} đã được tạo. Menly sẽ cập nhật khi đơn được xử lý.`,
+    );
+
+    // Tra ve don dau tien de giao dien cu van chay, kem ma cua cac don con lai
+    return {
+      ...donDau,
+      split_order_codes: createdOrders.map((o) => o.code),
+    } as OrderRow;
+  }
+
+  /// Tao MOT don hang cho danh sach san pham duoc truyen vao.
+  ///
+  /// Khong goi truc tiep tu ben ngoai: createOrder se goi ham nay nhieu lan,
+  /// moi san pham mot don.
+  private async createSingleOrder(
+    input: CreateOrderInput,
+    tuTaoThongBao = true,
+  ): Promise<OrderRow> {
     if (!input.items.length || input.items.some((item) => !item.variant_id || !Number.isInteger(item.quantity) || item.quantity < 1)) {
       throw new Error('Sản phẩm hoặc số lượng đặt hàng không hợp lệ');
     }
@@ -345,10 +428,20 @@ export class OrderModel {
     const rpcOrder = Array.isArray(created) ? created[0] : created;
     if (!rpcOrder?.id) throw new Error('Backend không trả về mã đơn hàng vừa tạo');
 
-    // Đồng bộ chính xác tổng thanh toán, phí ship và giảm giá voucher theo đúng dữ liệu app gửi
+    // Đồng bộ chính xác tổng thanh toán, phí ship và giảm giá voucher theo đúng dữ liệu app gửi.
+    // Khi tach don thi app khong gui subtotal/total cho tung don, luc do lay
+    // subtotal do ham create_order tu tinh theo gia that cua san pham.
+    const { data: vuaTao } = await this.db
+      .from('orders')
+      .select('subtotal')
+      .eq('id', rpcOrder.id)
+      .maybeSingle();
+    const baseSubtotal = (input.subtotal && input.subtotal > 0)
+      ? input.subtotal
+      : Number(vuaTao?.subtotal ?? 0);
     const calculatedTotal = (input.total !== undefined && input.total > 0)
       ? input.total
-      : Math.max(0, input.subtotal + (input.shipping_fee ?? 0) - (input.discount_amount ?? 0));
+      : Math.max(0, baseSubtotal + (input.shipping_fee ?? 0) - (input.discount_amount ?? 0));
 
     const updatePayload: Record<string, any> = {
       shipping_fee: input.shipping_fee ?? 0,
@@ -400,11 +493,15 @@ export class OrderModel {
       ...order,
       discount_amount: input.discount_amount ?? Math.max(0, order.subtotal + order.shipping_fee - order.total),
     } as OrderRow;
-    await this.notifyOrderUser(
-      createdOrder,
-      'Đặt hàng thành công',
-      `Đơn hàng #${createdOrder.code} đã được tạo. Menly sẽ cập nhật khi đơn được xử lý.`,
-    );
+    // Khi tach don thi createOrder tu gui MOT thong bao tong hop, neu de day
+    // gui thi mua 3 mon se nhan 3 thong bao giong het nhau.
+    if (tuTaoThongBao) {
+      await this.notifyOrderUser(
+        createdOrder,
+        'Đặt hàng thành công',
+        `Đơn hàng #${createdOrder.code} đã được tạo. Menly sẽ cập nhật khi đơn được xử lý.`,
+      );
+    }
     return createdOrder;
   }
 

@@ -43,7 +43,11 @@ export default function ProductsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('category');
   const [viewMode, setViewMode] = useState<'grouped' | 'table'>('grouped');
-  const [statusFilter, setStatusFilter] = useState<'active' | 'inactive' | 'all'>('active');
+  // Mac dinh hien TAT CA. Truoc day mac dinh la 'active', ma san pham vua tao
+  // luon o trang thai tat + cho duyet, nen vua them xong la bi chinh bo loc giau
+  // di, khong ai tim thay de bam duyet.
+  const [statusFilter, setStatusFilter] =
+    useState<'active' | 'pending' | 'inactive' | 'all'>('all');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
@@ -267,6 +271,35 @@ export default function ProductsPage() {
   };
 
   // Filter products by selected category and search query
+  /// Bon nhom tach bach, khong chong len nhau.
+  ///
+  /// 'active' la dang ban that su tren ung dung: vua bat vua da duyet. San pham
+  /// cho duyet du co bat cung chua len app nen khong tinh vao nhom nay.
+  const matchesStatus = useCallback(
+    (p: Product) => {
+      const isPending = p.approvalStatus === 'pending';
+      switch (statusFilter) {
+        case 'all':
+          return true;
+        case 'pending':
+          return isPending;
+        case 'inactive':
+          return !isPending && p.isActive === false;
+        case 'active':
+        default:
+          return !isPending && p.isActive !== false;
+      }
+    },
+    [statusFilter],
+  );
+
+  // Dung cho cac chip danh muc, de con so tren chip khop voi so san pham that
+  // su hien ra ben duoi.
+  const productsInStatus = useMemo(
+    () => products.filter(matchesStatus),
+    [products, matchesStatus],
+  );
+
   const filteredProducts = useMemo(() => {
     return products.filter((p) => {
       const pCat = getProductCategory(p);
@@ -279,11 +312,9 @@ export default function ProductsPage() {
         p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         p.slug.toLowerCase().includes(searchQuery.toLowerCase()) ||
         p.id.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchStatus = statusFilter === 'all' ||
-        (statusFilter === 'active' ? p.isActive !== false : p.isActive === false);
-      return matchCat && matchSearch && matchStatus;
+      return matchCat && matchSearch && matchesStatus(p);
     });
-  }, [products, selectedCategory, searchQuery, getProductCategory, statusFilter]);
+  }, [products, selectedCategory, searchQuery, getProductCategory, matchesStatus]);
 
   // Sort products based on selected sort option
   const sortedProducts = useMemo(() => {
@@ -414,12 +445,12 @@ export default function ProductsPage() {
                     : 'bg-panel text-ink-muted'
                 }`}
               >
-                {products.length}
+                {productsInStatus.length}
               </span>
             </button>
 
             {categories.map((c) => {
-              const count = products.filter((p) => {
+              const count = productsInStatus.filter((p) => {
                 const cat = getProductCategory(p);
                 return p.categoryId === c.id || cat.id === c.id;
               }).length;
@@ -468,12 +499,15 @@ export default function ProductsPage() {
             <select
               aria-label="Lọc trạng thái sản phẩm"
               value={statusFilter}
-              onChange={(event) => setStatusFilter(event.target.value as 'active' | 'inactive' | 'all')}
+              onChange={(event) => setStatusFilter(
+                  event.target.value as 'active' | 'pending' | 'inactive' | 'all',
+                )}
               className="rounded-xl border border-line bg-panel px-3 py-2 text-xs font-medium text-ink-mid focus:border-camel focus:outline-none shadow-panel"
             >
+              <option value="all">Tất cả trạng thái</option>
+              <option value="pending">Chờ duyệt</option>
               <option value="active">Đang hiển thị</option>
               <option value="inactive">Đã ẩn</option>
-              <option value="all">Tất cả trạng thái</option>
             </select>
             {/* Sort Dropdown */}
             <div className="flex items-center gap-2 bg-panel px-3 py-1.5 rounded-xl border border-line shadow-panel">

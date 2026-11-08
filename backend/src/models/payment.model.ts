@@ -270,19 +270,34 @@ export class PaymentModel {
         return { RspCode: '02', Message: 'Order already confirmed' };
       }
 
-      if (order.total !== vnpAmount) {
+      // Mot lan dat hang co the sinh nhieu don (moi san pham mot don) nhung
+      // khach chi tra tien MOT LAN cho ca nhom. Phai cong tong ca nhom roi moi
+      // doi chieu, neu khong cong thanh toan se bao sai so tien.
+      const idsCungNhom = await this.layIdCungLanDat(order.id);
+      const { data: donCungNhom } = await this.db
+        .from('orders')
+        .select('id, total')
+        .in('id', idsCungNhom);
+      const tongCaNhom = (donCungNhom ?? []).reduce(
+        (tong, d) => tong + Number(d.total ?? 0),
+        0,
+      );
+
+      if (tongCaNhom !== vnpAmount) {
         return { RspCode: '04', Message: 'Invalid amount' };
       }
 
       // Cập nhật trạng thái đơn hàng khi thanh toán thành công
       if (isSuccess) {
-        await this.db.from('orders').update({ status: 'paid' }).eq('id', order.id);
-        await this.db.from('order_status_history').insert({
-          order_id: order.id,
-          from_status: 'pending_payment',
-          to_status: 'paid',
-          note: `VNPay IPN: Thanh toán thành công (Mã GD: ${transactionNo})`,
-        });
+        await this.db.from('orders').update({ status: 'paid' }).in('id', idsCungNhom);
+        await this.db.from('order_status_history').insert(
+          idsCungNhom.map((id) => ({
+            order_id: id,
+            from_status: 'pending_payment',
+            to_status: 'paid',
+            note: `VNPay IPN: Thanh toán thành công (Mã GD: ${transactionNo})`,
+          })),
+        );
       }
 
       return { RspCode: '00', Message: 'Confirm Success' };
@@ -408,4 +423,25 @@ export class PaymentModel {
       orderCode,
     };
   }
+  /// Lay id cua tat ca don thuoc cung mot lan dat hang.
+  ///
+  /// Don dau tien lam don goc, cac don sau tro ve no qua parent_order_id.
+  private async layIdCungLanDat(orderId: string): Promise<string[]> {
+    const { data: don } = await this.db
+      .from('orders')
+      .select('id, parent_order_id')
+      .eq('id', orderId)
+      .maybeSingle();
+    if (!don) return [orderId];
+
+    const idGoc = don.parent_order_id ?? don.id;
+    const { data: cacDon } = await this.db
+      .from('orders')
+      .select('id')
+      .or(`id.eq.${idGoc},parent_order_id.eq.${idGoc}`);
+
+    const ids = (cacDon ?? []).map((d) => d.id as string);
+    return ids.length ? ids : [orderId];
+  }
+
 }

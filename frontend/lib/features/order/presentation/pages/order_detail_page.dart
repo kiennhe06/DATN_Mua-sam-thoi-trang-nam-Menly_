@@ -6,6 +6,7 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/app_snackbar.dart';
 import '../../../../core/widgets/app_buttons.dart';
 import 'package:menly_app/features/order/data/models/order_model.dart';
+import '../../../review/presentation/providers/review_provider.dart';
 import '../../../review/presentation/widgets/order_review_section.dart';
 import '../providers/order_provider.dart';
 import '../widgets/order_timeline_card.dart';
@@ -46,6 +47,14 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
     });
   }
 
+  /// Tai lai du lieu cua man nay khi nguoi dung keo xuong.
+  Future<void> _reloadDetail() async {
+    await Future.wait([
+      context.read<OrderProvider>().loadOrders(),
+      context.read<ReviewProvider>().loadMine(),
+    ]);
+  }
+
   @override
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
@@ -78,9 +87,14 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
         ),
         centerTitle: true,
       ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 40),
-        children: [
+      // Keo xuong de tai lai: cua hang vua tra loi danh gia hay doi trang thai
+      // don thi khong phai mo lai ca ung dung.
+      body: RefreshIndicator(
+        onRefresh: _reloadDetail,
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 40),
+          physics: const AlwaysScrollableScrollPhysics(),
+          children: [
           // 1. Tien trinh don hang 5 buoc
           OrderTimelineCard(order: o),
           const SizedBox(height: 12),
@@ -148,7 +162,8 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
                 );
               },
             ),
-        ],
+          ],
+        ),
       ),
     );
   }
