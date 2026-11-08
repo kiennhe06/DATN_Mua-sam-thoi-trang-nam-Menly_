@@ -1,4 +1,5 @@
 import { Router, type Response } from 'express';
+import { supabase } from '../../config/supabase.js';
 import { requireAdmin, forgetAuthUser } from '../../middlewares/auth.js';
 import { ProductModel } from '../../models/product.model.js';
 import { OrderModel } from '../../models/order.model.js';
@@ -368,8 +369,11 @@ router.delete('/users/:id', async (req, res, next) => {
   }
 
   try {
-    const { data: targetProfile } = await supabase.from('profiles').select('email, role').eq('id', id.data).maybeSingle();
-    if (targetProfile?.email === 'admin@gmail.com') {
+    const targetUser = await adminModel.getUser(id.data);
+    if (!targetUser) {
+      return res.status(404).json({ error: 'Không tìm thấy người dùng' });
+    }
+    if (targetUser.email === 'admin@gmail.com') {
       return res.status(400).json({ error: 'Không thể xóa tài khoản Quản trị viên cấp cao (admin@gmail.com)' });
     }
 
