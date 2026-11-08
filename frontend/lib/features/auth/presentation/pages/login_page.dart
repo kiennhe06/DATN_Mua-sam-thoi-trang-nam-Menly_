@@ -6,6 +6,7 @@ import 'package:menly_app/features/auth/presentation/pages/forgot_password_page.
 import 'package:menly_app/features/auth/presentation/pages/register_page.dart';
 import 'package:menly_app/features/auth/presentation/providers/auth_provider.dart';
 import 'package:menly_app/core/navigation/main_navigation_shell.dart';
+import 'package:menly_app/core/navigation/staff_navigation_shell.dart';
 import 'package:menly_app/features/cart/presentation/providers/cart_provider.dart';
 import 'package:menly_app/features/notification/presentation/providers/notification_provider.dart';
 import 'package:menly_app/features/order/presentation/providers/order_provider.dart';
@@ -63,24 +64,34 @@ class _LoginPageState extends State<LoginPage> {
       // Cap nhat ngay thong tin nguoi dung vao AuthProvider de khi chuyen sang
       // tab Ca nhan khong bi coi la chua dang nhap (khong phai dang nhap lai).
       final userJson = payload['user'];
+      String userRole = 'customer';
       if (userJson is Map) {
-        await context.read<AuthProvider>().setUserFromLogin(
-              UserModel.fromJson(Map<String, dynamic>.from(userJson)),
-            );
+        final userModel = UserModel.fromJson(Map<String, dynamic>.from(userJson));
+        userRole = userModel.role;
+        await context.read<AuthProvider>().setUserFromLogin(userModel);
         if (!mounted) return;
         await context.read<NotificationProvider>().loadNotifications();
         if (!mounted) return;
       }
-      context.read<CartProvider>().loadCartFromApi();
-      context.read<OrderProvider>().loadOrders();
+      if (userRole == 'staff') {
+        context.read<OrderProvider>().loadStaffOrders();
+      } else {
+        context.read<CartProvider>().loadCartFromApi();
+        context.read<OrderProvider>().loadOrders();
+      }
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Đăng nhập thành công.'),
+        SnackBar(
+          content: Text(userRole == 'staff'
+              ? 'Đăng nhập Cổng Nhân Viên thành công.'
+              : 'Đăng nhập thành công.'),
           backgroundColor: Colors.green,
         ),
       );
+      final Widget destination = userRole == 'staff'
+          ? const StaffNavigationShell()
+          : const MainNavigationShell();
       Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => const MainNavigationShell()),
+        MaterialPageRoute(builder: (_) => destination),
         (route) => false,
       );
     } on DioException catch (e) {

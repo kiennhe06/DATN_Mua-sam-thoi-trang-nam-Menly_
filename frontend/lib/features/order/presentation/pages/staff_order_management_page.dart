@@ -10,7 +10,8 @@ import 'order_invoice_page.dart';
 
 /// Man quan ly don hang cho nhan vien tren app (AP-QT9)
 class StaffOrderManagementPage extends StatefulWidget {
-  const StaffOrderManagementPage({super.key});
+  final bool showBackButton;
+  const StaffOrderManagementPage({super.key, this.showBackButton = true});
 
   @override
   State<StaffOrderManagementPage> createState() =>
@@ -145,8 +146,9 @@ class _StaffOrderManagementPageState extends State<StaffOrderManagementPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Quản lý đơn hàng (Nhân viên)'),
+        title: const Text('Quản lý đơn hàng'),
         centerTitle: true,
+        automaticallyImplyLeading: widget.showBackButton,
       ),
       body: Column(
         children: [
