@@ -5,10 +5,8 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   Boxes,
-  ClipboardList,
   LayoutDashboard,
   Menu,
-  Settings,
   Shirt,
   ShoppingBag,
   Star,
@@ -25,8 +23,6 @@ const NAV_ITEMS = [
   { href: '/vouchers', label: 'Mã giảm giá', icon: Ticket },
   { href: '/reviews', label: 'Đánh giá', icon: Star },
   { href: '/users', label: 'Người dùng', icon: Users },
-  { href: '/audit', label: 'Nhật ký hoạt động', icon: ClipboardList },
-  { href: '/settings', label: 'Cài đặt hệ thống', icon: Settings },
 ];
 
 export function Sidebar() {

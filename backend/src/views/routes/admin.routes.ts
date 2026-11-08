@@ -308,11 +308,21 @@ router.delete('/users/:id', async (req, res, next) => {
   const id = userIdSchema.safeParse(req.params.id);
   if (!id.success) return res.status(400).json({ error: 'Mã người dùng không hợp lệ' });
 
+  if (id.data === req.user?.id) {
+    return res.status(400).json({ error: 'Không thể tự xóa tài khoản quản trị đang đăng nhập' });
+  }
+
   try {
+    const { data: targetProfile } = await supabase.from('profiles').select('email, role').eq('id', id.data).maybeSingle();
+    if (targetProfile?.email === 'admin@gmail.com') {
+      return res.status(400).json({ error: 'Không thể xóa tài khoản Quản trị viên cấp cao (admin@gmail.com)' });
+    }
+
     await adminModel.deleteUser(id.data);
-    return res.json({ message: 'Đã xóa người dùng' });
+    return res.json({ message: 'Đã xóa người dùng thành công' });
   } catch (error) {
-    return next(error);
+    const message = error instanceof Error ? error.message : 'Không thể xóa người dùng';
+    return res.status(400).json({ error: message });
   }
 });
 

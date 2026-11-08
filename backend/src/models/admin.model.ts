@@ -191,11 +191,67 @@ export class AdminModel {
     return toAdminUser(data as ProfileRow);
   }
 
-  /** [Admin] Xoa nguoi dung (xoa auth.users -> profiles tu xoa theo cascade) */
+  /** [Admin] Xoa nguoi dung va tat ca du lieu lien quan tranh loi rang buoc khoa ngoai */
   async deleteUser(id: string): Promise<boolean> {
-    const { error } = await this.db.auth.admin.deleteUser(id);
-    if (error) throw new Error(error.message);
-    return true;
+    try {
+      // 1. Tim va don dep tat ca don hang cua nguoi dung
+      const { data: userOrders } = await this.db
+        .from('orders')
+        .select('id')
+        .eq('user_id', id);
+
+      const orderIds = (userOrders ?? []).map((o) => o.id);
+      if (orderIds.length > 0) {
+        // Xoa giao dich thanh toan
+        await this.db.from('payments').delete().in('order_id', orderIds);
+        // Huy lien ket bien dong ton kho
+        await this.db.from('inventory_movements').update({ order_id: null }).in('order_id', orderIds);
+        // Xoa yeu cau tra hang cua cac don hang nay
+        await this.db.from('order_returns').delete().in('order_id', orderIds);
+        // Xoa don hang (order_items, order_vouchers, order_status_history se tu dong cascade)
+        await this.db.from('orders').delete().in('id', orderIds);
+      }
+
+      // 2. Go lien ket o cac bang nhat ky/lich su
+      await this.db.from('inventory_movements').update({ created_by: null }).eq('created_by', id);
+      await this.db.from('order_status_history').update({ changed_by: null }).eq('changed_by', id);
+
+      // 3. Xoa danh gia san pham & yeu cau tra hang
+      await this.db.from('product_reviews').delete().eq('user_id', id);
+      await this.db.from('order_returns').delete().eq('user_id', id);
+
+      // 4. Xoa tin nhan & cuoc hoi thoai chat
+      await this.db.from('chat_messages').delete().eq('sender_id', id);
+      await this.db.from('chat_conversations').delete().eq('user_id', id);
+
+      // 5. Xoa nhat ky audit log neu co
+      await this.db.from('admin_audit_log').delete().eq('admin_id', id);
+
+      // 6. Xoa gio hang, yeu thich, thong bao, dia chi, theo doi shop
+      await this.db.from('cart_items').delete().eq('user_id', id);
+      await this.db.from('wishlists').delete().eq('user_id', id);
+      await this.db.from('notifications').delete().eq('user_id', id);
+      await this.db.from('user_addresses').delete().eq('user_id', id);
+      await this.db.from('shop_followers').delete().eq('user_id', id);
+
+      // 7. Xoa ho so profile
+      await this.db.from('profiles').delete().eq('id', id);
+
+      // 8. Xoa tai khoan khoi Supabase Auth
+      try {
+        const { error: authError } = await this.db.auth.admin.deleteUser(id);
+        if (authError && !authError.message.toLowerCase().includes('not found')) {
+          console.error('Loi khi xoa auth user:', authError.message);
+        }
+      } catch (authEx) {
+        console.error('Ngoai le khi xoa auth user:', authEx);
+      }
+
+      return true;
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : 'Không thể xóa người dùng';
+      throw new Error(msg);
+    }
   }
 
   async listInventoryMovements(limit = 200) {

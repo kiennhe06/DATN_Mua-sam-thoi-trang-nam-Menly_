@@ -56,7 +56,9 @@ export async function adminFetch<T>(
       }
     }
     const message =
-      data?.error?.message || data?.message || `Backend trả về HTTP ${response.status}`;
+      (typeof data?.error === 'string' ? data.error : data?.error?.message) ||
+      data?.message ||
+      `Backend trả về HTTP ${response.status}`;
     throw new Error(message);
   }
 
