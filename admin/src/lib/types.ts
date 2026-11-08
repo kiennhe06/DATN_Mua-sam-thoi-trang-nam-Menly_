@@ -70,6 +70,8 @@ export interface Product {
   price: number;
   thumbnailUrl: string | null;
   isActive?: boolean;
+  /** 'pending' | 'approved' | 'rejected'. Chua duyet thi ung dung khong thay. */
+  approvalStatus?: string;
   createdAt: string;
   variants?: ProductVariant[];
   images?: ProductImage[];

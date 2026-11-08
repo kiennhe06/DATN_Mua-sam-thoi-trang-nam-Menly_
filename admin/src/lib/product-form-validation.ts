@@ -56,8 +56,10 @@ export function validateProductVariants(variants: ProductVariantInput[]): string
     if (!color || color.length > 60) {
       return `Màu của biến thể ${index + 1} phải có từ 1 đến 60 ký tự.`;
     }
-    if (sku.length > 100) {
-      return `SKU của biến thể ${index + 1} không được vượt quá 100 ký tự.`;
+    // May chu bat buoc SKU phai co it nhat 1 ky tu. Truoc day cho nay chi chan
+    // SKU qua dai, nen bo trong o SKU se lot qua day roi bi may chu tu choi 400.
+    if (!sku || sku.length > 100) {
+      return `SKU của biến thể ${index + 1} phải có từ 1 đến 100 ký tự.`;
     }
     if (!variant.stock.trim() || !Number.isSafeInteger(stock) || stock < 0) {
       return `Tồn kho của biến thể ${index + 1} phải là số nguyên không âm.`;

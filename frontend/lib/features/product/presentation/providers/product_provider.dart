@@ -5,6 +5,9 @@ import 'package:menly_app/features/home/data/models/banner_model.dart';
 import 'package:menly_app/features/product/data/models/category_model.dart';
 import 'package:menly_app/features/product/data/models/product_model.dart';
 
+/// So san pham toi da tai ve mot lan cho man hinh chinh.
+const int _productFetchLimit = 200;
+
 /// Provider quan ly San pham, Banner, Danh muc, Da xem gan day, Lich su tim kiem
 /// Ket noi truc tiep cac API backend da hoan thien:
 /// - GET /api/v1/banners (AP-BN1)
@@ -24,6 +27,7 @@ class ProductProvider extends ChangeNotifier {
   bool _loading = false;
   String? _error;
   Future<void>? _initialLoad;
+  DateTime? _lastLoadedAt;
 
   // Filter state
   String _selectedCategory = 'Tất cả';
@@ -89,6 +93,23 @@ class ProductProvider extends ChangeNotifier {
   /// Dung cho man cho: doi du lieu that nap xong ma khong goi API trung lap.
   Future<void> ensureInitialized() => _initialLoad ??= init();
 
+  /// Thoi gian toi thieu giua hai lan tu dong tai lai khi quay lai app.
+  static const Duration _tuoiToiDa = Duration(seconds: 30);
+
+  /// Tai lai neu du lieu da cu.
+  ///
+  /// Quan tri them hoac xoa san pham tren web thi app dang mo khong biet. Goi
+  /// ham nay khi nguoi dung quay lai app de ho thay kho hang dung thuc te ma
+  /// khong phai khoi dong lai. Co moc thoi gian de chuyen man qua lai khong
+  /// bien thanh goi API lien tuc.
+  Future<void> refreshIfStale() async {
+    final lastLoaded = _lastLoadedAt;
+    if (lastLoaded != null && DateTime.now().difference(lastLoaded) < _tuoiToiDa) {
+      return;
+    }
+    await init();
+  }
+
   /// AP-BN1: Goi API GET /api/v1/banners
   Future<void> loadBanners() async {
     try {
@@ -127,7 +148,8 @@ class ProductProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final queryParams = <String, dynamic>{'limit': 50};
+      // Kho hien co 86 san pham; de 50 thi nguoi dung khong bao gio thay het.
+      final queryParams = <String, dynamic>{'limit': _productFetchLimit};
       if (_searchQuery.trim().isNotEmpty) {
         queryParams['search'] = _searchQuery.trim();
       }
@@ -138,19 +160,12 @@ class ProductProvider extends ChangeNotifier {
       final res = await _api.dio.get('/products', queryParameters: queryParams);
       if (res.statusCode == 200 && res.data['data'] != null) {
         final list = res.data['data'] as List;
-        _allProducts = list.asMap().entries.map((entry) {
-          final idx = entry.key;
-          final json = Map<String, dynamic>.from(entry.value);
-          if (json['is_new'] == null) {
-            json['is_new'] = idx < 10;
-          }
-          if (json['is_best_seller'] == null) {
-            json['is_best_seller'] = (idx >= 6 && idx < 18) ||
-                (json['rating_count'] != null &&
-                    (json['rating_count'] as num) >= 10);
-          }
-          return ProductModel.fromJson(json);
-        }).toList();
+        // Nhan Moi / Ban chay do may chu quyet dinh theo du lieu that.
+        // Truoc day cho nay tu gan nhan theo vi tri trong danh sach, nghia la
+        // 10 san pham dau luon la "moi" du chung duoc them tu bao gio.
+        _allProducts = list
+            .map((item) => ProductModel.fromJson(Map<String, dynamic>.from(item)))
+            .toList();
       } else {
         _allProducts = [];
         _error = 'Không tải được danh sách sản phẩm';
@@ -161,6 +176,7 @@ class ProductProvider extends ChangeNotifier {
       _error = 'Không tải được danh sách sản phẩm. Vui lòng thử lại.';
     }
 
+    _lastLoadedAt = DateTime.now();
     _applyFilters();
     _loading = false;
     notifyListeners();

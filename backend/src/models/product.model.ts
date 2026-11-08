@@ -51,6 +51,10 @@ function normalizePublicProduct(product: any) {
   };
 }
 
+// Nguong gan nhan hien thi tren ung dung. Doi o day la doi toan bo app.
+const NEW_PRODUCTS_PER_CATEGORY = 4;
+const BEST_SELLER_MIN_REVIEWS = 10;
+
 // Lop truy cap du lieu cho: San pham
 export class ProductModel {
   protected db = supabase;
@@ -71,14 +75,34 @@ export class ProductModel {
 
     const { data, error } = await query;
     if (error) throw new Error(error.message);
-    return (data || []).map((p: any, idx: number) => {
-      const product = normalizePublicProduct(p);
-      if (product.is_new == null) product.is_new = idx < 10;
+
+    const products = (data || []).map((p: any) => normalizePublicProduct(p));
+
+    // Nhan "moi" tinh theo tung danh muc chu khong theo ngay tao: ca kho hien tai
+    // deu duoc them trong cung mot dot, neu tinh theo ngay thi san pham nao cung
+    // la hang moi va nhan mat y nghia.
+    const newestIds = new Set<string>();
+    const byCategory = new Map<string, any[]>();
+    for (const product of products) {
+      const key = product.category_id ?? 'khong-danh-muc';
+      const group = byCategory.get(key);
+      if (group) group.push(product);
+      else byCategory.set(key, [product]);
+    }
+    for (const group of byCategory.values()) {
+      group
+        .sort((a, b) => String(b.created_at ?? '').localeCompare(String(a.created_at ?? '')))
+        .slice(0, NEW_PRODUCTS_PER_CATEGORY)
+        .forEach((product) => newestIds.add(product.id));
+    }
+
+    for (const product of products) {
+      if (product.is_new == null) product.is_new = newestIds.has(product.id);
       if (product.is_best_seller == null) {
-        product.is_best_seller = Boolean((idx >= 6 && idx < 18) || (product.rating_count && product.rating_count >= 10));
+        product.is_best_seller = Number(product.rating_count ?? 0) >= BEST_SELLER_MIN_REVIEWS;
       }
-      return product;
-    });
+    }
+    return products;
   }
 
   // Lay chi tiet 1 san pham kem bien the + anh
@@ -131,6 +155,8 @@ export class ProductModel {
         price: input.price,
         thumbnail_url: input.thumbnailUrl || null,
         search_text: [input.name, input.description].filter(Boolean).join(' '),
+        // San pham moi luon cho duyet va chua duoc bat. Quan tri bam Duyet o
+        // trang San pham thi approveAdminProduct bat ca hai cung luc.
         approval_status: 'pending',
         is_active: false,
       })
