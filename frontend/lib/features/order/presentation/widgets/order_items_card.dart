@@ -1,10 +1,10 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/format.dart';
 import 'package:menly_app/features/order/data/models/order_model.dart';
+import 'package:menly_app/core/widgets/app_image.dart';
 
 class OrderItemsCard extends StatelessWidget {
   final OrderModel order;
@@ -65,22 +65,16 @@ class OrderItemsCard extends StatelessWidget {
           child: SizedBox(
             width: 56,
             height: 56,
-            child: item.thumbnailUrl.isNotEmpty
-                ? CachedNetworkImage(
-                    imageUrl: item.thumbnailUrl,
-                    fit: BoxFit.cover,
-                    placeholder: (_, __) => Container(color: c.surfaceVariant),
-                    errorWidget: (_, __, ___) => Container(
-                      color: c.surfaceVariant,
-                      alignment: Alignment.center,
-                      child: Text('Menly', style: TextStyle(color: c.textMuted, fontSize: 10, fontWeight: FontWeight.bold)),
-                    ),
-                  )
-                : Container(
-                    color: c.surfaceVariant,
-                    alignment: Alignment.center,
-                    child: Text('Menly', style: TextStyle(color: c.textMuted, fontSize: 10, fontWeight: FontWeight.bold)),
-                  ),
+            child: AppImage(
+              url: item.thumbnailUrl,
+              fit: BoxFit.cover,
+              placeholder: (_) => Container(color: c.surfaceVariant),
+              errorWidget: (_) => Container(
+                color: c.surfaceVariant,
+                alignment: Alignment.center,
+                child: Text('Menly', style: TextStyle(color: c.textMuted, fontSize: 10, fontWeight: FontWeight.bold)),
+              ),
+            ),
           ),
         ),
         const SizedBox(width: 12),

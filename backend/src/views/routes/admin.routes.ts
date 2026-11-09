@@ -226,18 +226,34 @@ router.patch('/products/:id/approve', async (req, res, next) => {
   }
 });
 
-// GET /api/v1/admin/orders - DS don (loc theo status, gioi han limit)
+/** Moc thoi gian dang ISO; tra ve undefined neu khong co, null neu sai dinh dang. */
+function parseMocThoiGian(raw: unknown): string | undefined | null {
+  if (typeof raw !== 'string' || raw.trim() === '') return undefined;
+  const moc = new Date(raw);
+  return Number.isNaN(moc.getTime()) ? null : moc.toISOString();
+}
+
+// GET /api/v1/admin/orders - DS don (loc theo status va khoang ngay, gioi han limit)
 router.get('/orders', async (req, res, next) => {
   const statusRaw = typeof req.query.status === 'string' ? req.query.status : undefined;
   if (statusRaw && !ORDER_STATUSES.includes(statusRaw)) {
     return res.status(400).json({ error: 'Trạng thái đơn hàng không hợp lệ' });
   }
 
+  const from = parseMocThoiGian(req.query.from);
+  const to = parseMocThoiGian(req.query.to);
+  if (from === null || to === null) {
+    return res.status(400).json({ error: 'Khoảng ngày không hợp lệ' });
+  }
+  if (from && to && from >= to) {
+    return res.status(400).json({ error: 'Ngày bắt đầu phải trước ngày kết thúc' });
+  }
+
   const limitRaw = typeof req.query.limit === 'string' ? Number.parseInt(req.query.limit, 10) : NaN;
   const limit = Number.isInteger(limitRaw) && limitRaw > 0 ? limitRaw : undefined;
 
   try {
-    const data = await orderModel.adminListOrders({ status: statusRaw, limit });
+    const data = await orderModel.adminListOrders({ status: statusRaw, limit, from, to });
     return res.json({ data });
   } catch (error) {
     return next(error);

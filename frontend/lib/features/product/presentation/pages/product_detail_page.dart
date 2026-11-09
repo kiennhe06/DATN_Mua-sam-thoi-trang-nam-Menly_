@@ -1,4 +1,3 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:menly_app/core/utils/format.dart';
@@ -13,6 +12,7 @@ import 'package:menly_app/features/product/presentation/providers/product_provid
 import 'package:menly_app/features/review/presentation/widgets/product_reviews_section.dart';
 import '../widgets/product_perk_item.dart';
 import '../widgets/product_related_grid.dart';
+import 'package:menly_app/core/widgets/app_image.dart';
 
 /// Trang Chi tiet san pham cao cap Menly (Chon Size & Mau theo dang Dropdown tien loi)
 class ProductDetailPage extends StatefulWidget {
@@ -572,13 +572,13 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                 controller: _imageController,
                 itemCount: images.length,
                 onPageChanged: (index) => setState(() => _imageIndex = index),
-                itemBuilder: (_, index) => CachedNetworkImage(
-                  imageUrl: images[index],
+                itemBuilder: (_, index) => AppImage(
+                  url: images[index],
                   width: double.infinity,
                   fit: BoxFit.cover,
-                  placeholder: (_, __) =>
+                  placeholder: (_) =>
                       Container(color: Colors.grey.shade100),
-                  errorWidget: (_, __, ___) => Container(
+                  errorWidget: (_) => Container(
                     color: Colors.grey.shade100,
                     alignment: Alignment.center,
                     child: const Text('Menly',
@@ -641,12 +641,12 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                       ),
                     ),
                     clipBehavior: Clip.antiAlias,
-                    child: CachedNetworkImage(
-                      imageUrl: images[index],
+                    child: AppImage(
+                      url: images[index],
                       fit: BoxFit.cover,
-                      placeholder: (_, __) =>
+                      placeholder: (_) =>
                           Container(color: Colors.grey.shade100),
-                      errorWidget: (_, __, ___) =>
+                      errorWidget: (_) =>
                           Container(color: Colors.grey.shade100),
                     ),
                   ),

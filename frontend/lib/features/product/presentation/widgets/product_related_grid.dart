@@ -5,6 +5,7 @@ import '../../../../core/widgets/product_rating_row.dart';
 import '../../../wishlist/presentation/providers/wishlist_provider.dart';
 import '../../data/models/product_model.dart';
 import '../pages/product_detail_page.dart';
+import 'package:menly_app/core/widgets/app_image.dart';
 
 class ProductRelatedGrid extends StatelessWidget {
   final ProductModel product;
@@ -81,12 +82,17 @@ class ProductRelatedGrid extends StatelessWidget {
                           borderRadius: const BorderRadius.vertical(
                             top: Radius.circular(12),
                           ),
-                          child: Image.network(
-                            related.thumbnailUrl,
+                          child: AppImage(
+                            url: related.thumbnailUrl,
                             width: double.infinity,
                             height: 180,
                             fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => Container(
+                            placeholder: (_) => Container(
+                              width: double.infinity,
+                              height: 180,
+                              color: Colors.grey.shade200,
+                            ),
+                            errorWidget: (_) => Container(
                               width: double.infinity,
                               height: 180,
                               color: Colors.grey.shade200,

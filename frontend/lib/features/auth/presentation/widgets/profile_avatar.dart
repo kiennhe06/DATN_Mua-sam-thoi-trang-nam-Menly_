@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:menly_app/core/widgets/app_image.dart';
 
 class AvatarPreset {
   final String id;
@@ -101,18 +102,17 @@ class ProfileAvatar extends StatelessWidget {
     }
 
     final url = avatarUrl?.trim() ?? '';
-    if (url.startsWith('http://') || url.startsWith('https://')) {
-      return ClipOval(
-        child: Image.network(
-          url,
-          width: radius * 2,
-          height: radius * 2,
-          fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => _fallback(),
-        ),
-      );
-    }
-    return _fallback();
+    if (url.isEmpty) return _fallback();
+    return ClipOval(
+      child: AppImage(
+        url: url,
+        width: radius * 2,
+        height: radius * 2,
+        fit: BoxFit.cover,
+        placeholder: (_) => _fallback(),
+        errorWidget: (_) => _fallback(),
+      ),
+    );
   }
 
   Widget _fallback() => CircleAvatar(

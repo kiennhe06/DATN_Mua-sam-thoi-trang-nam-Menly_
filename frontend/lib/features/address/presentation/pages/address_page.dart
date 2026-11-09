@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:menly_app/features/address/data/models/address_model.dart';
-import '../../data/vietnam_administrative_data.dart';
 import '../providers/address_provider.dart';
+import '../widgets/administrative_unit_picker.dart';
 import 'package:menly_app/features/notification/presentation/providers/notification_provider.dart';
 
 /// Man hinh So dia chi giao hang & Chon dia chi khi dat hang (AP-DC1)
@@ -15,37 +15,12 @@ class AddressPage extends StatelessWidget {
     final nameCtrl = TextEditingController(text: addressToEdit?.recipientName ?? '');
     final phoneCtrl = TextEditingController(text: addressToEdit?.phone ?? '');
 
-    // Chuẩn hóa Tỉnh / Thành phố từ 34 tỉnh thành Việt Nam theo Nghị quyết 202/2025/QH15
-    String selectedProvince = normalizeProvince(addressToEdit?.province ?? 'Thành phố Hồ Chí Minh');
-    final provinceList = List<String>.from(kVietnamProvinces);
-    if (!provinceList.contains(selectedProvince)) {
-      provinceList.insert(0, selectedProvince);
-    }
-
-    // Lấy danh sách Quận / Huyện tương ứng với Tỉnh / Thành phố
-    List<String> availableDistricts = getDistrictsForProvince(selectedProvince);
-    String? selectedDistrict = addressToEdit?.district;
-    if (selectedDistrict != null && selectedDistrict.isNotEmpty) {
-      if (!availableDistricts.contains(selectedDistrict)) {
-        availableDistricts = [selectedDistrict, ...availableDistricts];
-      }
-    } else if (availableDistricts.isNotEmpty) {
-      selectedDistrict = availableDistricts.first;
-    }
-
-    // Lấy danh sách Phường / Xã tương ứng với Tỉnh / Thành phố và Quận / Huyện
-    List<String> availableWards = getWardsForDistrict(selectedProvince, selectedDistrict ?? '');
-    String? selectedWard = addressToEdit?.ward;
-    if (selectedWard != null && selectedWard.isNotEmpty) {
-      if (!availableWards.contains(selectedWard)) {
-        availableWards = [selectedWard, ...availableWards];
-      }
-    } else if (availableWards.isNotEmpty) {
-      selectedWard = availableWards.first;
-    }
-
-    final districtCtrl = TextEditingController(text: selectedDistrict ?? 'Quận 1');
-    final wardCtrl = TextEditingController(text: selectedWard ?? 'Phường Bến Nghé');
+    // Bo ba Tinh / Quan / Phuong do AdministrativeUnitPicker quan ly.
+    var donViHanhChinh = DonViHanhChinh.chuanHoa(
+      province: addressToEdit?.province ?? '',
+      district: addressToEdit?.district ?? '',
+      ward: addressToEdit?.ward ?? '',
+    );
     final detailCtrl = TextEditingController(text: addressToEdit?.detailAddress ?? '');
     bool isDefault = addressToEdit?.isDefault ?? false;
 
@@ -100,155 +75,10 @@ class AddressPage extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 10),
-                    Row(
-                      children: [
-                        // Dropdown Tỉnh / Thành phố với 34 tỉnh thành Việt Nam theo Nghị quyết 202/2025/QH15
-                        Expanded(
-                          child: DropdownButtonFormField<String>(
-                            key: ValueKey('province_$selectedProvince'),
-                            initialValue: selectedProvince,
-                            isExpanded: true,
-                            menuMaxHeight: 350,
-                            decoration: const InputDecoration(
-                              labelText: 'Tỉnh / Thành phố',
-                              border: OutlineInputBorder(),
-                              isDense: true,
-                              contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-                            ),
-                            items: provinceList.map((p) => DropdownMenuItem(
-                              value: p,
-                              child: Text(
-                                p,
-                                style: const TextStyle(fontSize: 13),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            )).toList(),
-                            onChanged: (val) {
-                              if (val == null) return;
-                              setState(() {
-                                selectedProvince = val;
-                                availableDistricts = getDistrictsForProvince(val);
-                                if (availableDistricts.isNotEmpty) {
-                                  selectedDistrict = availableDistricts.first;
-                                  districtCtrl.text = selectedDistrict!;
-                                  availableWards = getWardsForDistrict(val, selectedDistrict!);
-                                  if (availableWards.isNotEmpty) {
-                                    selectedWard = availableWards.first;
-                                    wardCtrl.text = selectedWard!;
-                                  } else {
-                                    selectedWard = null;
-                                    wardCtrl.text = '';
-                                  }
-                                } else {
-                                  selectedDistrict = null;
-                                  districtCtrl.text = '';
-                                  availableWards = getWardsForProvince(val);
-                                  if (availableWards.isNotEmpty) {
-                                    selectedWard = availableWards.first;
-                                    wardCtrl.text = selectedWard!;
-                                  } else {
-                                    selectedWard = null;
-                                    wardCtrl.text = '';
-                                  }
-                                }
-                              });
-                            },
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        // Dropdown Quận / Huyện tương ứng theo Tỉnh / Thành phố đã chọn
-                        Expanded(
-                          child: availableDistricts.isNotEmpty
-                              ? DropdownButtonFormField<String>(
-                                  key: ValueKey('district_${selectedProvince}_$selectedDistrict'),
-                                  initialValue: availableDistricts.contains(selectedDistrict)
-                                      ? selectedDistrict
-                                      : (availableDistricts.isNotEmpty ? availableDistricts.first : null),
-                                  isExpanded: true,
-                                  menuMaxHeight: 350,
-                                  decoration: const InputDecoration(
-                                    labelText: 'Quận / Huyện',
-                                    border: OutlineInputBorder(),
-                                    isDense: true,
-                                    contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-                                  ),
-                                  items: availableDistricts.map((d) => DropdownMenuItem(
-                                    value: d,
-                                    child: Text(
-                                      d,
-                                      style: const TextStyle(fontSize: 13),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  )).toList(),
-                                  onChanged: (val) {
-                                    if (val == null) return;
-                                    setState(() {
-                                      selectedDistrict = val;
-                                      districtCtrl.text = val;
-                                      availableWards = getWardsForDistrict(selectedProvince, val);
-                                      if (availableWards.isNotEmpty) {
-                                        selectedWard = availableWards.first;
-                                        wardCtrl.text = selectedWard!;
-                                      } else {
-                                        selectedWard = null;
-                                        wardCtrl.text = '';
-                                      }
-                                    });
-                                  },
-                                )
-                              : TextField(
-                                  controller: districtCtrl,
-                                  decoration: const InputDecoration(
-                                    labelText: 'Quận / Huyện',
-                                    border: OutlineInputBorder(),
-                                    isDense: true,
-                                    contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-                                  ),
-                                ),
-                        ),
-                      ],
+                    AdministrativeUnitPicker(
+                      giaTri: donViHanhChinh,
+                      onChanged: (chon) => donViHanhChinh = chon,
                     ),
-                    const SizedBox(height: 10),
-                    // Dropdown Phường / Xã tương ứng theo Quận / Huyện và Tỉnh / Thành phố
-                    availableWards.isNotEmpty
-                        ? DropdownButtonFormField<String>(
-                            key: ValueKey('ward_${selectedProvince}_${selectedDistrict}_$selectedWard'),
-                            initialValue: availableWards.contains(selectedWard)
-                                ? selectedWard
-                                : (availableWards.isNotEmpty ? availableWards.first : null),
-                            isExpanded: true,
-                            menuMaxHeight: 350,
-                            decoration: const InputDecoration(
-                              labelText: 'Phường / Xã',
-                              border: OutlineInputBorder(),
-                              isDense: true,
-                              contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-                            ),
-                            items: availableWards.map((w) => DropdownMenuItem(
-                              value: w,
-                              child: Text(
-                                w,
-                                style: const TextStyle(fontSize: 13),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            )).toList(),
-                            onChanged: (val) {
-                              if (val == null) return;
-                              setState(() {
-                                selectedWard = val;
-                                wardCtrl.text = val;
-                              });
-                            },
-                          )
-                        : TextField(
-                            controller: wardCtrl,
-                            decoration: const InputDecoration(
-                              labelText: 'Phường / Xã',
-                              border: OutlineInputBorder(),
-                              isDense: true,
-                              contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-                            ),
-                          ),
                     const SizedBox(height: 10),
                     TextField(
                       controller: detailCtrl,
@@ -277,9 +107,9 @@ class AddressPage extends StatelessWidget {
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                         ),
                         onPressed: () async {
-                          final finalProvince = selectedProvince;
-                          final finalDistrict = selectedDistrict ?? districtCtrl.text.trim();
-                          final finalWard = selectedWard ?? wardCtrl.text.trim();
+                          final finalProvince = donViHanhChinh.province;
+                          final finalDistrict = donViHanhChinh.district;
+                          final finalWard = donViHanhChinh.ward;
 
                           if (nameCtrl.text.trim().isEmpty ||
                               phoneCtrl.text.trim().isEmpty ||

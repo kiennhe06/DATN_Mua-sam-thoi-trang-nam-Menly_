@@ -1,5 +1,5 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:menly_app/core/widgets/app_image.dart';
 
 import '../theme/app_colors.dart';
 import '../theme/app_theme.dart';
@@ -145,11 +145,11 @@ class ProductCard extends StatelessWidget {
     if (product.thumbnailUrl.isEmpty) {
       return _imageFallback(c);
     }
-    return CachedNetworkImage(
-      imageUrl: product.thumbnailUrl,
+    return AppImage(
+      url: product.thumbnailUrl,
       fit: BoxFit.cover,
-      placeholder: (_, __) => Container(color: c.surfaceVariant),
-      errorWidget: (_, __, ___) => _imageFallback(c),
+      placeholder: (_) => Container(color: c.surfaceVariant),
+      errorWidget: (_) => _imageFallback(c),
     );
   }
 

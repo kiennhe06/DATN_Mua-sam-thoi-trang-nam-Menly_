@@ -194,13 +194,8 @@ export class ProductModel {
         }
       }
 
-      const imageUrls = [...new Set([input.thumbnailUrl, ...(input.images ?? [])].filter((url): url is string => Boolean(url)))];
-      if (imageUrls.length) {
-        const { error: imageError } = await this.db.from('product_images').insert(
-          imageUrls.map((url, sortOrder) => ({ product_id: data.id, url, sort_order: sortOrder })),
-        );
-        if (imageError) throw new Error(imageError.message);
-      }
+      const anhBanDau = [input.thumbnailUrl, ...(input.images ?? [])].filter(Boolean);
+      if (anhBanDau.length) await this.ghiDeGallery(data.id, anhBanDau);
     } catch (createError) {
       const { error: rollbackError } = await this.db.from('products').delete().eq('id', data.id);
       if (rollbackError) throw new Error(`Tạo sản phẩm thất bại và không thể hoàn tác: ${createError instanceof Error ? createError.message : String(createError)}; ${rollbackError.message}`);
@@ -208,6 +203,27 @@ export class ProductModel {
     }
 
     return this.findAdminById(data.id);
+  }
+
+  /**
+   * Ghi de toan bo product_images cua mot san pham bang danh sach duoc truyen vao.
+   * Bo url rong va url trung nhau, giu thu tu da cho.
+   */
+  private async ghiDeGallery(productId: string, urls: (string | null | undefined)[]) {
+    const imageUrls = [...new Set(urls.filter((url): url is string => Boolean(url)))];
+
+    const { error: deleteError } = await this.db
+      .from('product_images')
+      .delete()
+      .eq('product_id', productId);
+    if (deleteError) throw new Error(deleteError.message);
+
+    if (!imageUrls.length) return;
+
+    const { error: insertError } = await this.db.from('product_images').insert(
+      imageUrls.map((url, sortOrder) => ({ product_id: productId, url, sort_order: sortOrder })),
+    );
+    if (insertError) throw new Error(insertError.message);
   }
 
   async updateAdminProduct(id: string, input: AdminProductUpdate) {
@@ -235,14 +251,21 @@ export class ProductModel {
       updates.search_text = [name, description].filter(Boolean).join(' ');
     }
 
-    const { data, error } = await this.db
-      .from('products')
-      .update(updates)
-      .eq('id', id)
-      .select('*')
-      .maybeSingle();
+    // Co the chi gui moi danh sach anh, luc do khong co cot nao de ghi nen
+    // doc lai san pham thay vi goi update rong.
+    const { data, error } = Object.keys(updates).length
+      ? await this.db.from('products').update(updates).eq('id', id).select('*').maybeSingle()
+      : await this.db.from('products').select('*').eq('id', id).maybeSingle();
 
     if (error) throw new Error(error.message);
+    if (!data) return null;
+
+    // Chi dong bo khi nguoi goi khai bao ro danh sach anh. San pham co nhieu anh
+    // ma chi doi moi anh dai dien thi gallery van giu nguyen.
+    if (input.images !== undefined) {
+      await this.ghiDeGallery(id, [data.thumbnail_url, ...input.images]);
+    }
+
     return data;
   }
 

@@ -10,6 +10,7 @@ import '../../data/models/review_model.dart';
 import '../pages/review_form_page.dart';
 import '../providers/review_provider.dart';
 import 'review_image_gallery.dart';
+import 'package:menly_app/core/widgets/app_image.dart';
 
 class ProductReviewsSection extends StatefulWidget {
   final String productId;
@@ -382,13 +383,12 @@ class _ProductReviewsSectionState extends State<ProductReviewsSection>
       child: SizedBox(
         width: 38,
         height: 38,
-        child: review.userAvatar != null && review.userAvatar!.isNotEmpty
-            ? Image.network(
-                review.userAvatar!,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => fallback,
-              )
-            : fallback,
+        child: AppImage(
+          url: review.userAvatar ?? '',
+          fit: BoxFit.cover,
+          placeholder: (_) => fallback,
+          errorWidget: (_) => fallback,
+        ),
       ),
     );
   }

@@ -289,14 +289,9 @@ export class PaymentModel {
 
       // Cập nhật trạng thái đơn hàng khi thanh toán thành công
       if (isSuccess) {
-        await this.db.from('orders').update({ status: 'paid' }).in('id', idsCungNhom);
-        await this.db.from('order_status_history').insert(
-          idsCungNhom.map((id) => ({
-            order_id: id,
-            from_status: 'pending_payment',
-            to_status: 'paid',
-            note: `VNPay IPN: Thanh toán thành công (Mã GD: ${transactionNo})`,
-          })),
+        await this.ghiNhanNhomDaThanhToan(
+          order.id,
+          `VNPay IPN: Thanh toán thành công (Mã GD: ${transactionNo})`,
         );
       }
 
@@ -328,16 +323,11 @@ export class PaymentModel {
       .eq('id', payment.id);
 
     // 6. Cập nhật trạng thái đơn hàng trong bảng orders
-    if (payment.order_id) {
-      if (isSuccess) {
-        await this.db.from('orders').update({ status: 'paid' }).eq('id', payment.order_id);
-        await this.db.from('order_status_history').insert({
-          order_id: payment.order_id,
-          from_status: 'pending_payment',
-          to_status: 'paid',
-          note: `VNPay IPN: Thanh toán thành công (Mã GD: ${transactionNo})`,
-        });
-      }
+    if (payment.order_id && isSuccess) {
+      await this.ghiNhanNhomDaThanhToan(
+        payment.order_id,
+        `VNPay IPN: Thanh toán thành công (Mã GD: ${transactionNo})`,
+      );
     }
 
     return { RspCode: '00', Message: 'Confirm Success' };
@@ -388,7 +378,12 @@ export class PaymentModel {
             .eq('id', payment.id);
 
           if (payment.order_id) {
-            await this.db.from('orders').update({ status: 'paid' }).eq('id', payment.order_id);
+            // Ghi nhan ca nhom, khong chi don goc: khach tra mot lan cho ca lan
+            // dat hang nen cac don anh em cung phai sang "da thanh toan".
+            await this.ghiNhanNhomDaThanhToan(
+              payment.order_id,
+              `VNPay: Thanh toán thành công (Mã GD: ${transactionNo ?? '-'})`,
+            );
           }
         }
       }
@@ -403,8 +398,11 @@ export class PaymentModel {
       if (order) {
         orderId = orderId || order.id;
         orderCode = order.code;
-        if (order.status !== 'paid' && isSuccess) {
-          await this.db.from('orders').update({ status: 'paid' }).eq('id', order.id);
+        if (isSuccess) {
+          await this.ghiNhanNhomDaThanhToan(
+            order.id,
+            `VNPay: Thanh toán thành công (Mã GD: ${transactionNo ?? '-'})`,
+          );
         }
       }
     }
@@ -423,6 +421,38 @@ export class PaymentModel {
       orderCode,
     };
   }
+  /**
+   * Ghi nhan CA NHOM don cua mot lan dat hang la da thanh toan.
+   *
+   * Mot lan dat hang co the sinh nhieu don (moi san pham mot don) nhung khach
+   * chi tra tien MOT LAN cho ca nhom. Ghi nhan thieu mot don thi don do van
+   * nam o "cho thanh toan" roi bi huy vi qua han, du khach da tra du tien.
+   *
+   * Chi doi don dang o 'pending_payment', de khong hoi sinh don da huy.
+   */
+  private async ghiNhanNhomDaThanhToan(orderId: string, ghiChu: string): Promise<void> {
+    const idsCungNhom = await this.layIdCungLanDat(orderId);
+
+    const { data: donChoTra } = await this.db
+      .from('orders')
+      .select('id')
+      .in('id', idsCungNhom)
+      .eq('status', 'pending_payment');
+
+    const idsCanGhi = (donChoTra ?? []).map((don) => don.id as string);
+    if (!idsCanGhi.length) return;
+
+    await this.db.from('orders').update({ status: 'paid' }).in('id', idsCanGhi);
+    await this.db.from('order_status_history').insert(
+      idsCanGhi.map((id) => ({
+        order_id: id,
+        from_status: 'pending_payment',
+        to_status: 'paid',
+        note: ghiChu,
+      })),
+    );
+  }
+
   /// Lay id cua tat ca don thuoc cung mot lan dat hang.
   ///
   /// Don dau tien lam don goc, cac don sau tro ve no qua parent_order_id.

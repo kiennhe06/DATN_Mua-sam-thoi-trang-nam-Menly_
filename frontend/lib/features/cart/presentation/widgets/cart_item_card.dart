@@ -1,9 +1,9 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/format.dart';
 import 'package:menly_app/features/cart/data/models/cart_item_model.dart';
+import 'package:menly_app/core/widgets/app_image.dart';
 
 class CartItemCard extends StatelessWidget {
   final CartItemModel item;
@@ -82,22 +82,20 @@ class CartItemCard extends StatelessWidget {
             child: SizedBox(
               width: 72,
               height: 72,
-              child: thumb.isNotEmpty
-                  ? CachedNetworkImage(
-                      imageUrl: thumb,
-                      fit: BoxFit.cover,
-                      placeholder: (context, url) => Container(
-                        color: c.surfaceVariant,
-                        child: Center(
-                          child: CircularProgressIndicator(
-                            color: c.secondary,
-                            strokeWidth: 2,
-                          ),
-                        ),
-                      ),
-                      errorWidget: (context, url, error) => _placeholder(context),
-                    )
-                  : _placeholder(context),
+              child: AppImage(
+                url: thumb,
+                fit: BoxFit.cover,
+                placeholder: (context) => Container(
+                  color: c.surfaceVariant,
+                  child: Center(
+                    child: CircularProgressIndicator(
+                      color: c.secondary,
+                      strokeWidth: 2,
+                    ),
+                  ),
+                ),
+                errorWidget: (context) => _placeholder(context),
+              ),
             ),
           ),
           const SizedBox(width: 12),

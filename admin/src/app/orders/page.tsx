@@ -6,6 +6,11 @@ import { OrderStatusBadge } from '../../components/Badge';
 import { ChangeOrderStatusModal } from '../../components/ChangeOrderStatusModal';
 import { OrderInvoiceModal } from '../../components/OrderInvoiceModal';
 import { fetchAdminOrders, updateOrderStatus } from '../../lib/api';
+import {
+  KhoangNgay,
+  NHAN_KHOANG_NGAY,
+  tinhMocLoc,
+} from '../../lib/order-date-filter';
 import { Order, OrderStatus } from '../../lib/types';
 import {
   ShoppingBag,
@@ -20,6 +25,9 @@ import {
   Search,
   Printer,
 } from 'lucide-react';
+
+/** So don toi da tai ve mot lan. Cham nguong nay thi phai thu hep khoang ngay. */
+const GIOI_HAN_TAI = 200;
 
 const STATUS_TABS: { label: string; value: OrderStatus | 'all' }[] = [
   { label: 'Tất cả đơn', value: 'all' },
@@ -38,6 +46,10 @@ export default function OrdersPage() {
   const [activeTab, setActiveTab] = useState<OrderStatus | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
+  const [khoangNgay, setKhoangNgay] = useState<KhoangNgay>('all');
+  const [tuNgay, setTuNgay] = useState('');
+  const [denNgay, setDenNgay] = useState('');
+
   // Updating status modal
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [newStatus, setNewStatus] = useState<OrderStatus>('processing');
@@ -50,7 +62,15 @@ export default function OrdersPage() {
     setLoading(true);
     setLoadError(null);
     try {
-      const data = await fetchAdminOrders({ status: activeTab, limit: 200 });
+      // Loc ngay o may chu chu khong loc sau khi tai ve, vi khi don nhieu len
+      // thi 200 don tai ve co the da khong con don nao trong khoang can xem.
+      const moc = tinhMocLoc(khoangNgay, tuNgay, denNgay);
+      const data = await fetchAdminOrders({
+        status: activeTab,
+        limit: GIOI_HAN_TAI,
+        from: moc.from,
+        to: moc.to,
+      });
       setOrders(data);
     } catch (error) {
       setOrders([]);
@@ -58,7 +78,7 @@ export default function OrdersPage() {
     } finally {
       setLoading(false);
     }
-  }, [activeTab]);
+  }, [activeTab, khoangNgay, tuNgay, denNgay]);
 
   useEffect(() => {
     loadOrders();
@@ -76,6 +96,12 @@ export default function OrdersPage() {
         ].some((value) => value.toLocaleLowerCase().includes(normalizedSearch))
       )
     : orders;
+
+  // Don da huy khong tinh vao doanh thu cua khoang dang xem.
+  const doanhThu = filteredOrders
+    .filter((order) => !['cancelled', 'expired'].includes(order.status))
+    .reduce((tong, order) => tong + order.total, 0);
+  const chamGioiHan = orders.length >= GIOI_HAN_TAI;
 
   async function handleUpdateStatus() {
     if (!selectedOrder) return;
@@ -113,34 +139,91 @@ export default function OrdersPage() {
       />
 
       <div className="flex-1 space-y-6 p-4 sm:p-6 xl:p-8">
-        {/* Status Filter Tabs */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 bg-panel p-3 rounded-2xl border border-line shadow-panel">
-          <Filter className="w-4 h-4 text-ink-muted ml-2 mr-1" />
-          {STATUS_TABS.map((tab) => (
-            <button
-              key={tab.value}
-              onClick={() => setActiveTab(tab.value)}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all shrink-0 cursor-pointer ${
-                activeTab === tab.value
-                  ? 'bg-camel text-ink shadow-sm'
-                  : 'bg-tint text-ink-mid hover:bg-tint-strong'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
+        {/* Mot khoi loc duy nhat: trang thai, khoang ngay va o tim kiem.
+            Truoc day la ba khoi xep chong, cao gan bang mot the don hang. */}
+        <div className="rounded-2xl border border-line bg-panel shadow-panel">
+          <div className="flex flex-wrap items-center gap-2 p-3">
+            <Filter className="ml-1 h-4 w-4 shrink-0 text-ink-muted" />
+            {STATUS_TABS.map((tab) => (
+              <button
+                key={tab.value}
+                onClick={() => setActiveTab(tab.value)}
+                className={`shrink-0 cursor-pointer rounded-xl px-3.5 py-1.5 text-xs font-semibold transition-all ${
+                  activeTab === tab.value
+                    ? 'bg-camel text-ink shadow-sm'
+                    : 'bg-tint text-ink-mid hover:bg-tint-strong'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
 
-        <label className="flex max-w-xl items-center gap-3 rounded-xl border border-line bg-panel px-4 py-3 shadow-panel">
-          <Search className="h-4 w-4 shrink-0 text-ink-muted" />
-          <input
-            type="search"
-            value={searchQuery}
-            onChange={(event) => setSearchQuery(event.target.value)}
-            placeholder="Tìm theo mã đơn, tên hoặc số điện thoại người nhận..."
-            className="w-full bg-transparent text-sm text-ink outline-none placeholder:text-ink-muted"
-          />
-        </label>
+            <div className="ml-auto flex items-center gap-2">
+              <Calendar className="h-4 w-4 shrink-0 text-ink-muted" />
+              <select
+                value={khoangNgay}
+                onChange={(event) => {
+                  const chon = event.target.value as KhoangNgay;
+                  setKhoangNgay(chon);
+                  if (chon !== 'custom') {
+                    setTuNgay('');
+                    setDenNgay('');
+                  }
+                }}
+                className="cursor-pointer rounded-xl border border-line bg-tint px-3 py-1.5 text-xs font-semibold text-ink-mid outline-none hover:bg-tint-strong focus:border-camel"
+              >
+                {NHAN_KHOANG_NGAY.map((muc) => (
+                  <option key={muc.value} value={muc.value}>
+                    {muc.label}
+                  </option>
+                ))}
+              </select>
+
+              {khoangNgay === 'custom' && (
+                <>
+                  <input
+                    type="date"
+                    value={tuNgay}
+                    max={denNgay || undefined}
+                    onChange={(event) => setTuNgay(event.target.value)}
+                    className="rounded-xl border border-line bg-panel px-2 py-1.5 text-xs text-ink outline-none focus:border-camel"
+                  />
+                  <span className="text-xs text-ink-muted">đến</span>
+                  <input
+                    type="date"
+                    value={denNgay}
+                    min={tuNgay || undefined}
+                    onChange={(event) => setDenNgay(event.target.value)}
+                    className="rounded-xl border border-line bg-panel px-2 py-1.5 text-xs text-ink outline-none focus:border-camel"
+                  />
+                </>
+              )}
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-line px-4 py-2.5">
+            <Search className="h-4 w-4 shrink-0 text-ink-muted" />
+            <input
+              type="search"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder="Tìm theo mã đơn, tên hoặc số điện thoại người nhận..."
+              className="min-w-[200px] flex-1 bg-transparent text-sm text-ink outline-none placeholder:text-ink-muted"
+            />
+            {!loading && !loadError && filteredOrders.length > 0 && (
+              <span className="shrink-0 text-xs text-ink-muted">
+                <strong className="text-ink">{filteredOrders.length}</strong> đơn ·{' '}
+                <strong className="text-ink">{doanhThu.toLocaleString('vi-VN')} đ</strong>
+                <span className="text-ink-muted"> (trừ đơn huỷ)</span>
+                {chamGioiHan && (
+                  <span className="ml-2 text-warn">
+                    · mới nhất {GIOI_HAN_TAI} đơn, thu hẹp khoảng ngày để xem đủ
+                  </span>
+                )}
+              </span>
+            )}
+          </div>
+        </div>
 
         {/* Feedback message */}
         {feedback && (
@@ -177,9 +260,11 @@ export default function OrdersPage() {
             </div>
           ) : filteredOrders.length === 0 ? (
             <div className="p-16 text-center text-ink-muted text-sm">
-              {orders.length === 0
+              {orders.length > 0
+                ? 'Không tìm thấy đơn hàng khớp với nội dung tìm kiếm'
+                : khoangNgay === 'all'
                 ? 'Không tìm thấy đơn hàng nào ở bộ lọc này'
-                : 'Không tìm thấy đơn hàng khớp với nội dung tìm kiếm'}
+                : 'Không có đơn hàng nào trong khoảng ngày đang chọn'}
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-4">

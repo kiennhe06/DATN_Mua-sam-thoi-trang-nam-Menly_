@@ -37,8 +37,10 @@ export const adminProductSchema = z
   })
   .strict();
 
+// Giu lai 'images' de khi sua anh thi gallery duoc cap nhat theo, neu bo di
+// thi anh cu van nam lai trong product_images va hien thanh o anh trong.
 export const updateAdminProductSchema = adminProductSchema
-  .omit({ images: true, variants: true })
+  .omit({ variants: true })
   .partial()
   .refine((value) => Object.keys(value).length > 0, 'Cần có ít nhất một trường để cập nhật');
 

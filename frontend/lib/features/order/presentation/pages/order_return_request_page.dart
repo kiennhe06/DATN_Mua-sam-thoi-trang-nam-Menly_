@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -13,6 +12,7 @@ import '../../../../core/utils/format.dart';
 import '../../../../core/widgets/app_buttons.dart';
 import '../../data/models/order_model.dart';
 import '../providers/order_provider.dart';
+import 'package:menly_app/core/widgets/app_image.dart';
 
 class OrderReturnRequestPage extends StatefulWidget {
   final OrderModel order;
@@ -264,13 +264,12 @@ class _OrderReturnRequestPageState extends State<OrderReturnRequestPage> {
                     child: SizedBox(
                       width: 48,
                       height: 48,
-                      child: item.thumbnailUrl.isNotEmpty
-                          ? CachedNetworkImage(
-                              imageUrl: item.thumbnailUrl,
-                              fit: BoxFit.cover,
-                              errorWidget: (_, __, ___) => Container(color: c.surfaceVariant),
-                            )
-                          : Container(color: c.surfaceVariant),
+                      child: AppImage(
+                        url: item.thumbnailUrl,
+                        fit: BoxFit.cover,
+                        placeholder: (_) => Container(color: c.surfaceVariant),
+                        errorWidget: (_) => Container(color: c.surfaceVariant),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 10),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
+import 'package:menly_app/core/widgets/app_image.dart';
 
 void showReviewImagePreview(BuildContext context, String url) {
   showDialog<void>(
@@ -14,10 +15,10 @@ void showReviewImagePreview(BuildContext context, String url) {
         child: InteractiveViewer(
           minScale: 0.8,
           maxScale: 4,
-          child: Image.network(
-            url,
+          child: AppImage(
+            url: url,
             fit: BoxFit.contain,
-            errorBuilder: (_, __, ___) => Container(
+            errorWidget: (_) => Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
                 color: Colors.black.withValues(alpha: 0.85),
@@ -61,12 +62,17 @@ class ReviewImageGallery extends StatelessWidget {
             onTap: () => showReviewImagePreview(context, url),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(AppTheme.radiusSm),
-              child: Image.network(
-                url,
+              child: AppImage(
+                url: url,
                 width: size,
                 height: size,
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(
+                placeholder: (_) => Container(
+                  width: size,
+                  height: size,
+                  color: c.surfaceVariant,
+                ),
+                errorWidget: (_) => Container(
                   width: size,
                   height: size,
                   color: c.surfaceVariant,

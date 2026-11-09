@@ -8,6 +8,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/app_snackbar.dart';
 import '../providers/review_provider.dart';
+import 'package:menly_app/core/widgets/app_image.dart';
 
 class ReviewFormPage extends StatefulWidget {
   final String? orderItemId;
@@ -207,13 +208,12 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
             child: SizedBox(
               width: 56,
               height: 56,
-              child: widget.thumbnailUrl.isNotEmpty
-                  ? Image.network(
-                      widget.thumbnailUrl,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Container(color: c.surfaceVariant),
-                    )
-                  : Container(color: c.surfaceVariant),
+              child: AppImage(
+                url: widget.thumbnailUrl,
+                fit: BoxFit.cover,
+                placeholder: (_) => Container(color: c.surfaceVariant),
+                errorWidget: (_) => Container(color: c.surfaceVariant),
+              ),
             ),
           ),
           const SizedBox(width: 12),

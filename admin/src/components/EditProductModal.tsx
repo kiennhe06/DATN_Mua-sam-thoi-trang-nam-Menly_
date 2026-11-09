@@ -38,12 +38,16 @@ export function EditProductModal({ product, categories, onClose, onSaved }: Edit
     setLoading(true);
 
     try {
+      const anhDaiDien = thumbnailUrl.trim();
       const updated = await updateProduct(product.id, {
         name: name.trim(),
         categoryId,
         description: description.trim() || null,
         price: Number(price),
-        thumbnailUrl: thumbnailUrl.trim() || null,
+        thumbnailUrl: anhDaiDien || null,
+        // Gui kem danh sach anh de gallery khop voi anh dai dien vua sua,
+        // neu khong thi anh cu van con nam lai va hien thanh o anh trong.
+        images: anhDaiDien ? [anhDaiDien] : [],
         isActive,
       });
       onSaved(updated);

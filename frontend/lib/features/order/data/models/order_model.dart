@@ -1,12 +1,4 @@
-String _realThumbnail(dynamic raw) {
-  final url = raw?.toString().trim() ?? '';
-  if (url.isEmpty) return '';
-  final lower = url.toLowerCase();
-  if (lower.contains('unsplash') || lower.contains('picsum') || lower.contains('placeholder')) {
-    return '';
-  }
-  return url;
-}
+import 'package:menly_app/core/utils/image_url.dart';
 
 /// Item trong don hang
 class OrderItemModel {
@@ -38,7 +30,7 @@ class OrderItemModel {
       color: json['color']?.toString() ?? '',
       unitPrice: (json['unit_price'] is num) ? (json['unit_price'] as num).toInt() : 0,
       quantity: (json['quantity'] is num) ? (json['quantity'] as num).toInt() : 1,
-      thumbnailUrl: _realThumbnail(
+      thumbnailUrl: duongDanAnhThat(
         json['thumbnail_url'] ?? json['thumbnailUrl'],
       ),
     );

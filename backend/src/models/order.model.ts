@@ -43,6 +43,8 @@ export interface OrderRow {
   cancel_reason?: string;
   created_at: string;
   order_items?: OrderItemRow[];
+  /** Ban sao cua order_items, ten ma ung dung doc. Do enrichOrders gan vao. */
+  items?: OrderItemRow[];
 }
 
 export interface OrderItemRow {
@@ -210,10 +212,16 @@ export class OrderModel {
   private static readonly ORDER_DETAIL_SELECT =
     '*, order_items(*, product_variants(size, color, products(name, thumbnail_url))), order_status_history(from_status, to_status, created_at)';
 
+  /**
+   * Bo cac dia chi sinh anh ngau nhien (picsum, placeholder) vi moi lan goi tra
+   * ve mot anh khac, khong phai anh cua san pham. Anh unsplash van duoc giu vi
+   * do la anh that cua kho hang, dang hien o trang chu va trang chi tiet; bo no
+   * thi don hang tro thanh o trong trong khi cac man khac van co anh.
+   */
   private realImageUrl(url: unknown): string {
     const value = String(url ?? '').trim();
     if (!value) return '';
-    if (/unsplash|picsum|placeholder/i.test(value)) return '';
+    if (/picsum|placeholder/i.test(value)) return '';
     return value;
   }
 
@@ -237,8 +245,17 @@ export class OrderModel {
         };
       });
 
+      // Bang orders khong co cot giam gia; phan chenh giua (tam tinh + phi ship)
+      // va tong thanh toan chinh la so da giam. Khong tra ve thi man chi tiet
+      // hien tam tinh 299k, ship 25k nhung tong 274k, nguoi dung thay nhu sai.
+      const giamGia = Math.max(
+        0,
+        Number(order.subtotal ?? 0) + Number(order.shipping_fee ?? 0) - Number(order.total ?? 0),
+      );
+
       return {
         ...order,
+        discount_amount: giamGia,
         order_items: items,
         items,
       };
@@ -268,14 +285,16 @@ export class OrderModel {
     if (!normalizedCode && !normalizedPhone) return null;
 
     try {
+      // Dung chung select va buoc lam giau voi cac man khac, neu khong thi tra
+      // cuu don bang ma se khong co anh san pham va khong co dong giam gia.
       const { data, error } = await this.db
         .from('orders')
-        .select('*, order_items(*)')
+        .select(OrderModel.ORDER_WITH_ITEMS_SELECT)
         .order('created_at', { ascending: false });
 
       if (error) return null;
 
-      const orders = (data ?? []) as OrderRow[];
+      const orders = this.enrichOrders(data ?? []);
 
       return (
         orders.find((order) => {
@@ -551,16 +570,47 @@ export class OrderModel {
     return cancelledOrder;
   }
 
+  /**
+   * Huy cac don VNPay qua han tra tien va tra hang ve kho.
+   *
+   * Don VNPay duoc tao truoc khi khach sang cong thanh toan va da tru kho ngay
+   * de giu cho. Khach bo ngang thi so hang do bi giu mai neu khong co ai don.
+   * Ham SQL expire_pending_orders lam viec do, nhung phai co cho goi dinh ky.
+   *
+   * Tra ve false khi khong don duoc, de noi goi tu quyet dinh ghi log hay bo qua.
+   */
+  async expirePendingOrders(): Promise<boolean> {
+    const { error } = await this.db.rpc('expire_pending_orders');
+    if (error) {
+      console.error('Khong huy duoc don qua han:', error.message);
+      return false;
+    }
+    return true;
+  }
+
   // =========== ADMIN: QUAN LY DON HANG ===========
 
-  /** [Admin] Danh sach tat ca don hang (kem items), loc theo trang thai, gioi han so luong */
-  async adminListOrders(params: { status?: string; limit?: number }): Promise<OrderRow[]> {
+  /**
+   * [Admin] Danh sach don hang (kem items), loc theo trang thai va khoang ngay.
+   *
+   * from / to la moc thoi gian dang ISO do trang quan tri tinh san theo mui gio
+   * cua may admin, nen "hom nay" o Viet Nam khong bi lech 7 tieng so voi UTC.
+   * to la moc KHONG tinh vao ket qua (dau ngay hom sau).
+   */
+  async adminListOrders(params: {
+    status?: string;
+    limit?: number;
+    from?: string;
+    to?: string;
+  }): Promise<OrderRow[]> {
     let query = this.db
       .from('orders')
       .select('*, order_items(*)')
       .order('created_at', { ascending: false });
 
     if (params.status) query = query.eq('status', params.status);
+    if (params.from) query = query.gte('created_at', params.from);
+    if (params.to) query = query.lt('created_at', params.to);
     if (params.limit && params.limit > 0) query = query.limit(params.limit);
 
     const { data, error } = await query;

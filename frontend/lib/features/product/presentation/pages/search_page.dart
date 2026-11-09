@@ -1,4 +1,3 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:menly_app/core/theme/app_theme.dart';
@@ -7,6 +6,7 @@ import 'package:menly_app/features/product/data/models/product_model.dart';
 import 'package:menly_app/features/product/presentation/pages/product_detail_page.dart';
 import 'package:menly_app/features/product/presentation/pages/product_list_page.dart';
 import '../providers/product_provider.dart';
+import 'package:menly_app/core/widgets/app_image.dart';
 
 /// Trang tim kiem san pham Menly kem hinh anh, gia, danh muc va lich su
 class SearchPage extends StatefulWidget {
@@ -285,11 +285,11 @@ class _SearchPageState extends State<SearchPage> {
                 height: 58,
                 color: Colors.grey.shade100,
                 child: p.thumbnailUrl.isNotEmpty
-                    ? CachedNetworkImage(
-                        imageUrl: p.thumbnailUrl,
+                    ? AppImage(
+                        url: p.thumbnailUrl,
                         fit: BoxFit.cover,
-                        placeholder: (_, __) => Container(color: Colors.grey.shade200),
-                        errorWidget: (_, __, ___) => Container(
+                        placeholder: (_) => Container(color: Colors.grey.shade200),
+                        errorWidget: (_) => Container(
                           color: Colors.grey.shade200,
                           child: const Icon(Icons.checkroom, size: 24, color: Colors.grey),
                         ),

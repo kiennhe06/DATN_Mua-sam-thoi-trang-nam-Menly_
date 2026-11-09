@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../product/data/models/product_model.dart';
 import '../../../product/presentation/pages/product_detail_page.dart';
+import 'package:menly_app/core/widgets/app_image.dart';
 
 class HomeRecentlyViewed extends StatelessWidget {
   final List<ProductModel> items;
@@ -77,12 +78,17 @@ class HomeRecentlyViewed extends StatelessWidget {
                         borderRadius: const BorderRadius.vertical(
                           top: Radius.circular(10),
                         ),
-                        child: Image.network(
-                          item.thumbnailUrl,
+                        child: AppImage(
+                          url: item.thumbnailUrl,
                           width: 80,
                           height: 60,
                           fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => Container(
+                          placeholder: (_) => Container(
+                            width: 80,
+                            height: 60,
+                            color: Colors.grey.shade100,
+                          ),
+                          errorWidget: (_) => Container(
                             width: 80,
                             height: 60,
                             color: Colors.grey.shade100,

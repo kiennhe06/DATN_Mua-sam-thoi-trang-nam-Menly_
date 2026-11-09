@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../data/models/banner_model.dart';
+import 'package:menly_app/core/widgets/app_image.dart';
 
 class HomeBannerSlider extends StatelessWidget {
   final PageController controller;
@@ -30,14 +31,14 @@ class HomeBannerSlider extends StatelessWidget {
             onPageChanged: onPageChanged,
             itemBuilder: (ctx, i) {
               final b = banners[i];
+              final anhNen = appImageProvider(b.imageUrl);
               return Container(
                 margin: const EdgeInsets.symmetric(horizontal: 16),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(12),
-                  image: DecorationImage(
-                    image: NetworkImage(b.imageUrl),
-                    fit: BoxFit.cover,
-                  ),
+                  image: anhNen == null
+                      ? null
+                      : DecorationImage(image: anhNen, fit: BoxFit.cover),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withValues(alpha: 0.08),

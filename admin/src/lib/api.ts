@@ -113,9 +113,19 @@ export async function fetchProductDetail(id: string): Promise<Product | null> {
   return raw && raw.id ? normalizeProduct(raw) : null;
 }
 
+/**
+ * Du lieu gui len khi sua san pham. Khac voi Product o cho 'images' la danh sach
+ * duong dan, dung dang may chu nhan chu khong phai dang doc ve.
+ */
+export type UpdateProductInput = Partial<
+  Omit<Product, 'id' | 'createdAt' | 'variants' | 'images'>
+> & {
+  images?: string[];
+};
+
 export async function updateProduct(
   id: string,
-  payload: Partial<Product>
+  payload: UpdateProductInput
 ): Promise<Product> {
   const res = await apiFetch<any>(`/api/v1/admin/products/${id}`, {
     method: 'PUT',
@@ -164,8 +174,17 @@ export async function createAdminProduct(payload: CreateProductInput): Promise<P
 }
 
 // ========== ORDERS ==========
+export interface AdminOrderQuery {
+  status?: string;
+  limit?: number;
+  /** Moc dau khoang, dang ISO. Tinh san theo mui gio may admin. */
+  from?: string;
+  /** Moc cuoi khoang, dang ISO, KHONG tinh vao ket qua. */
+  to?: string;
+}
+
 export async function fetchAdminOrders(
-  params?: { status?: string; limit?: number } | OrderStatus | string
+  params?: AdminOrderQuery | OrderStatus | string
 ): Promise<Order[]> {
   const statusFilter =
     typeof params === 'string'
@@ -178,8 +197,10 @@ export async function fetchAdminOrders(
 
   const query = new URLSearchParams();
   if (statusFilter) query.set('status', statusFilter);
-  if (typeof params === 'object' && params.limit) {
-    query.set('limit', String(params.limit));
+  if (typeof params === 'object') {
+    if (params.limit) query.set('limit', String(params.limit));
+    if (params.from) query.set('from', params.from);
+    if (params.to) query.set('to', params.to);
   }
   const qs = query.toString() ? `?${query.toString()}` : '';
 

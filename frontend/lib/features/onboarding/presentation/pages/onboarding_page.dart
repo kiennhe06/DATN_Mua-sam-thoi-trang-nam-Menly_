@@ -9,6 +9,7 @@ import '../../../../core/widgets/app_buttons.dart';
 import '../../../home/data/models/banner_model.dart';
 import '../../../product/data/models/category_model.dart';
 import '../../../product/presentation/providers/product_provider.dart';
+import 'package:menly_app/core/widgets/app_image.dart';
 
 /// Man hinh gioi thieu (chi hien lan dau) duoc dung tu du lieu that:
 /// banner dang hoat dong hoac danh muc san pham lay tu backend.
@@ -334,26 +335,23 @@ class _SlideBackground extends StatelessWidget {
           ),
         ),
         if (imageUrl != null)
-          Image.network(
-            imageUrl,
+          AppImage(
+            url: imageUrl,
             fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) => Center(
+            errorWidget: (_) => Center(
               child: Icon(
                 slide.icon,
                 size: 130,
                 color: Colors.white.withValues(alpha: 0.12),
               ),
             ),
-            loadingBuilder: (context, child, progress) {
-              if (progress == null) return child;
-              return Center(
-                child: Icon(
-                  slide.icon,
-                  size: 130,
-                  color: Colors.white.withValues(alpha: 0.10),
-                ),
-              );
-            },
+            placeholder: (_) => Center(
+              child: Icon(
+                slide.icon,
+                size: 130,
+                color: Colors.white.withValues(alpha: 0.10),
+              ),
+            ),
           )
         else
           Center(

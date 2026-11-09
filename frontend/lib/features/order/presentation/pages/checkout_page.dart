@@ -7,15 +7,16 @@ import '../../../auth/presentation/providers/auth_provider.dart';
 import 'order_success_page.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:menly_app/features/address/data/models/address_model.dart';
 import 'package:menly_app/features/cart/data/models/cart_item_model.dart';
 import '../../../address/presentation/pages/address_page.dart';
 import '../../../address/presentation/providers/address_provider.dart';
+import '../../../address/presentation/widgets/administrative_unit_picker.dart';
 import '../../../cart/presentation/providers/cart_provider.dart';
 import '../../../voucher/presentation/widgets/voucher_select_sheet.dart';
 import '../providers/order_provider.dart';
 import 'vnpay_payment_page.dart';
 import 'package:menly_app/features/notification/presentation/providers/notification_provider.dart';
+import 'package:menly_app/core/widgets/app_image.dart';
 
 /// Man hinh Dat hang & Thanh toan (AP-DH2, AP-TT1, AP-VC1, AP-DC1)
 /// Ho tro:
@@ -40,7 +41,20 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
   final _nameCtrl = TextEditingController();
   final _phoneCtrl = TextEditingController();
+
+  /// Chi chua so nha va ten duong. Phuong / quan / tinh nam o _donViHanhChinh.
   final _addressCtrl = TextEditingController();
+
+  DonViHanhChinh _donViHanhChinh = DonViHanhChinh.chuanHoa();
+
+  /// Khoi dia chi mo san khi chua du thong tin, con lai thu gon cho do dai.
+  bool _moRongDiaChi = false;
+
+  /// Dia chi day du gui len may chu va luu lai cho lan sau.
+  String get _diaChiDayDu => [
+        _addressCtrl.text.trim(),
+        _donViHanhChinh.moTa,
+      ].where((phan) => phan.isNotEmpty).join(', ');
 
   int get _currentSubtotal {
     final items = widget.customItems ?? context.read<CartProvider>().selectedItems;
@@ -83,7 +97,13 @@ class _CheckoutPageState extends State<CheckoutPage> {
     if (defaultAddr != null) {
       _nameCtrl.text = defaultAddr.recipientName;
       _phoneCtrl.text = defaultAddr.phone;
-      _addressCtrl.text = defaultAddr.fullAddress;
+      _addressCtrl.text = defaultAddr.detailAddress;
+      _donViHanhChinh = DonViHanhChinh.chuanHoa(
+        province: defaultAddr.province,
+        district: defaultAddr.district,
+        ward: defaultAddr.ward,
+      );
+      _capNhatTrangThaiMoRong();
     } else {
       final user = context.read<AuthProvider>().user;
       if (user != null) {
@@ -107,16 +127,42 @@ class _CheckoutPageState extends State<CheckoutPage> {
               '';
         }
         if (_addressCtrl.text.isEmpty) {
-          _addressCtrl.text = prefs.getString('last_ship_address') ?? '';
+          _addressCtrl.text = prefs.getString('last_ship_detail') ??
+              prefs.getString('last_ship_address') ??
+              '';
         }
+        setState(() {
+          _donViHanhChinh = DonViHanhChinh.chuanHoa(
+            province: prefs.getString('last_ship_province') ?? '',
+            district: prefs.getString('last_ship_district') ?? '',
+            ward: prefs.getString('last_ship_ward') ?? '',
+          );
+        });
+        _capNhatTrangThaiMoRong();
+        _recalculateShippingFee();
       });
     }
+  }
+
+  /// Chua du ten, so dien thoai hoac dia chi thi mo san de nguoi dung dien
+  /// ngay, khong bat ho phai tim nut mo ra.
+  void _capNhatTrangThaiMoRong() {
+    final duThongTin = _nameCtrl.text.trim().isNotEmpty &&
+        _phoneCtrl.text.trim().isNotEmpty &&
+        _addressCtrl.text.trim().isNotEmpty &&
+        _donViHanhChinh.dayDu;
+    if (!mounted) return;
+    setState(() => _moRongDiaChi = !duThongTin);
   }
 
   void _recalculateShippingFee() {
     final cart = context.read<CartProvider>();
     final addrProv = context.read<AddressProvider>();
-    final province = addrProv.selectedAddress?.province ?? '';
+    // Lay tinh dang chon tren man nay, vi nguoi dung co the doi truc tiep o day
+    // ma khong luu vao so dia chi.
+    final province = _donViHanhChinh.province.isNotEmpty
+        ? _donViHanhChinh.province
+        : (addrProv.selectedAddress?.province ?? '');
     cart.calculateShippingFeeApi(
       province: province,
       shippingMethod: _shippingMethod,
@@ -154,9 +200,11 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
     final name = _nameCtrl.text.trim();
     final phone = _phoneCtrl.text.trim();
-    final address = _addressCtrl.text.trim();
+    final detail = _addressCtrl.text.trim();
+    final address = _diaChiDayDu;
 
-    if (name.isEmpty || phone.isEmpty || address.isEmpty) {
+    if (name.isEmpty || phone.isEmpty || detail.isEmpty || !_donViHanhChinh.dayDu) {
+      setState(() => _moRongDiaChi = true);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
@@ -184,6 +232,11 @@ class _CheckoutPageState extends State<CheckoutPage> {
       await prefs.setString('last_ship_name', name);
       await prefs.setString('last_ship_phone', phone);
       await prefs.setString('last_ship_address', address);
+      // Luu rieng tung phan de lan sau mo lai dung o chon tinh / quan / phuong.
+      await prefs.setString('last_ship_detail', detail);
+      await prefs.setString('last_ship_province', _donViHanhChinh.province);
+      await prefs.setString('last_ship_district', _donViHanhChinh.district);
+      await prefs.setString('last_ship_ward', _donViHanhChinh.ward);
 
       // Dong bo lai sdt vao ho so nguoi dung neu chua co
       if (authProv.user != null) {
@@ -333,7 +386,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
   @override
   Widget build(BuildContext context) {
     final cart = context.watch<CartProvider>();
-    final addrProv = context.watch<AddressProvider>();
+    // Van theo doi so dia chi de man nay ve lai khi nguoi dung sua dia chi
+    // o cho khac, du du lieu hien thi lay tu cac o nhap tren man nay.
+    context.watch<AddressProvider>();
     final items = widget.customItems ?? cart.selectedItems;
     final totalAmount = _calculateTotal(cart);
 
@@ -375,7 +430,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                     _recalculateShippingFee();
                   }, actionLabel: 'Thay đổi'),
                   const SizedBox(height: 8),
-                  _buildAddressCard(addrProv.selectedAddress),
+                  _buildAddressCard(),
                   const SizedBox(height: 20),
 
                   // 2. SAN PHAM DAT HANG
@@ -501,7 +556,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
     );
   }
 
-  Widget _buildAddressCard(AddressModel? selectedAddr) {
+  Widget _buildAddressCard() {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -509,54 +564,112 @@ class _CheckoutPageState extends State<CheckoutPage> {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.grey.shade200),
       ),
-      child: Column(
+      child: _moRongDiaChi ? _buildAddressForm() : _buildAddressSummary(),
+    );
+  }
+
+  /// Dang thu gon: chi mot dong nguoi nhan va mot dong dia chi.
+  Widget _buildAddressSummary() {
+    final ten = _nameCtrl.text.trim();
+    final sdt = _phoneCtrl.text.trim();
+
+    return InkWell(
+      onTap: () => setState(() => _moRongDiaChi = true),
+      borderRadius: BorderRadius.circular(8),
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _nameCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'Tên người nhận',
-                    border: OutlineInputBorder(),
-                    isDense: true,
-                    contentPadding:
-                        EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                  ),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  [ten, sdt].where((phan) => phan.isNotEmpty).join(' · '),
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                 ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: TextField(
-                  controller: _phoneCtrl,
-                  keyboardType: TextInputType.phone,
-                  decoration: const InputDecoration(
-                    labelText: 'Số điện thoại',
-                    border: OutlineInputBorder(),
-                    isDense: true,
-                    contentPadding:
-                        EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                  ),
+                const SizedBox(height: 4),
+                Text(
+                  _diaChiDayDu,
+                  style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          TextField(
-            controller: _addressCtrl,
-            maxLines: 2,
-            decoration: const InputDecoration(
-              labelText: 'Địa chỉ nhận hàng chi tiết',
-              hintText:
-                  'Số nhà, tên đường, phường/xã, quận/huyện, tỉnh/thành...',
-              border: OutlineInputBorder(),
-              isDense: true,
-              contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              ],
             ),
           ),
+          const SizedBox(width: 8),
+          Icon(Icons.edit_outlined, size: 18, color: Colors.grey.shade600),
         ],
       ),
+    );
+  }
+
+  /// Dang mo: sua duoc ten, so dien thoai, tinh / quan / phuong va so nha.
+  Widget _buildAddressForm() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _nameCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Tên người nhận',
+                  border: OutlineInputBorder(),
+                  isDense: true,
+                  contentPadding:
+                      EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: TextField(
+                controller: _phoneCtrl,
+                keyboardType: TextInputType.phone,
+                decoration: const InputDecoration(
+                  labelText: 'Số điện thoại',
+                  border: OutlineInputBorder(),
+                  isDense: true,
+                  contentPadding:
+                      EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        AdministrativeUnitPicker(
+          giaTri: _donViHanhChinh,
+          onChanged: (chon) {
+            setState(() => _donViHanhChinh = chon);
+            // Phi ship tinh theo tinh / thanh nen phai tinh lai ngay.
+            _recalculateShippingFee();
+          },
+        ),
+        const SizedBox(height: 10),
+        TextField(
+          controller: _addressCtrl,
+          decoration: const InputDecoration(
+            labelText: 'Địa chỉ cụ thể (Số nhà, tên đường)',
+            border: OutlineInputBorder(),
+            isDense: true,
+            contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Align(
+          alignment: Alignment.centerRight,
+          child: TextButton.icon(
+            onPressed: () => setState(() => _moRongDiaChi = false),
+            icon: const Icon(Icons.expand_less, size: 18),
+            label: const Text('Thu gọn'),
+            style: TextButton.styleFrom(
+              visualDensity: VisualDensity.compact,
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -580,12 +693,12 @@ class _CheckoutPageState extends State<CheckoutPage> {
             children: [
               ClipRRect(
                 borderRadius: BorderRadius.circular(10),
-                child: Image.network(
-                  item.product.thumbnailUrl,
+                child: AppImage(
+                  url: item.product.thumbnailUrl,
                   width: 55,
                   height: 55,
                   fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Container(
+                  errorWidget: (_) => Container(
                     width: 55,
                     height: 55,
                     color: Colors.grey.shade100,

@@ -8,6 +8,7 @@ import '../../../../models/order_model.dart';
 import '../pages/review_form_page.dart';
 import '../providers/review_provider.dart';
 import 'review_image_gallery.dart';
+import 'package:menly_app/core/widgets/app_image.dart';
 
 class OrderReviewSection extends StatefulWidget {
   final OrderModel order;
@@ -122,13 +123,12 @@ class _OrderReviewSectionState extends State<OrderReviewSection>
           child: SizedBox(
             width: 48,
             height: 48,
-            child: item.thumbnailUrl.isNotEmpty
-                ? Image.network(
-                    item.thumbnailUrl,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(color: c.surfaceVariant),
-                  )
-                : Container(color: c.surfaceVariant),
+            child: AppImage(
+              url: item.thumbnailUrl,
+              fit: BoxFit.cover,
+              placeholder: (_) => Container(color: c.surfaceVariant),
+              errorWidget: (_) => Container(color: c.surfaceVariant),
+            ),
           ),
         ),
         const SizedBox(width: 10),

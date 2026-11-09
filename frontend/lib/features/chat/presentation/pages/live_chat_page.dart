@@ -11,6 +11,7 @@ import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../product/presentation/pages/product_detail_page.dart';
 import '../../data/models/chat_message_model.dart';
 import '../../data/services/ai_chat_service.dart';
+import 'package:menly_app/core/widgets/app_image.dart';
 
 class LiveChatPage extends StatefulWidget {
   const LiveChatPage({super.key});
@@ -714,12 +715,17 @@ class _LiveChatPageState extends State<LiveChatPage> {
                           ),
                           child: p.thumbnailUrl != null &&
                                   p.thumbnailUrl!.isNotEmpty
-                              ? Image.network(
-                                  p.thumbnailUrl!,
+                              ? AppImage(
+                                  url: p.thumbnailUrl!,
                                   height: 95,
                                   width: 130,
                                   fit: BoxFit.cover,
-                                  errorBuilder: (_, __, ___) => Container(
+                                  placeholder: (_) => Container(
+                                    height: 95,
+                                    width: 130,
+                                    color: c.surface,
+                                  ),
+                                  errorWidget: (_) => Container(
                                     height: 95,
                                     width: 130,
                                     color: c.surface,
