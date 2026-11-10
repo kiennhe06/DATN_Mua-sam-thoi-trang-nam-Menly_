@@ -115,7 +115,6 @@ class AddressPage extends StatelessWidget {
                               phoneCtrl.text.trim().isEmpty ||
                               detailCtrl.text.trim().isEmpty ||
                               finalProvince.trim().isEmpty ||
-                              finalDistrict.trim().isEmpty ||
                               finalWard.trim().isEmpty) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(content: Text('Vui lòng điền đầy đủ thông tin địa chỉ')),

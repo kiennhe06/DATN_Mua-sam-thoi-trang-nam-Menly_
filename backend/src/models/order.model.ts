@@ -109,8 +109,14 @@ export const DEFAULT_SHIPPING_POLICY: ShippingPolicy = {
     'ho chi minh',
     'tphcm',
     'sài gòn',
+    'hải phòng',
+    'hai phong',
     'đà nẵng',
     'da nang',
+    'cần thơ',
+    'can tho',
+    'huế',
+    'hue',
   ],
 };
 

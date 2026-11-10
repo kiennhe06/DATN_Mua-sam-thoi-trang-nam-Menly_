@@ -1,5 +1,8 @@
 library;
 
+import 'vietnam_ward_merge_data.dart';
+export 'vietnam_ward_merge_data.dart';
+
 /// Dữ liệu hành chính Việt Nam theo Nghị quyết 202/2025/QH15
 /// Nguồn cơ sở dữ liệu: quangtam/vietnam-address-database (34 Tỉnh/Thành phố, 3.321 Phường/Xã)
 
@@ -110,8 +113,7 @@ const Map<String, List<String>> kVietnamDistricts = {
   "Điện Biên": [
     "Huyện Điện Biên",
     "Huyện Điện Biên Đông",
-    "Huyện Đi��n Biên Đông",
-    "Huyện Mường Ảng",
+        "Huyện Mường Ảng",
     "Huyện Mường Chà",
     "Huyện Mường Nhé",
     "Huyện Nậm Pồ",
@@ -159,7 +161,7 @@ const Map<String, List<String>> kVietnamDistricts = {
     "Huyện Văn Chấn",
     "Huyện Văn Yên",
     "Huyện Yên Bình",
-    "Huy��n Trấn Yên",
+    "Huyện Trấn Yên",
     "Thành phố Lào Cai",
     "Thành phố Yên Bái",
     "Thị xã Nghĩa Lộ",
@@ -5022,10 +5024,6 @@ const Map<String, List<String>> kVietnamDistrictWards = {
     "Xã Vân Hà",
     "Xã Việt Tiến"
   ],
-  "B��c Ninh__Huyện Hiệp Hòa": [
-    "Xã Đông Lỗ",
-    "Xã Hiệp Hòa"
-  ],
   "Cà Mau__Huyện Cái Nước": [
     "Thị trấn Cái Nước",
     "Xã Cái Nước",
@@ -5895,10 +5893,6 @@ const Map<String, List<String>> kVietnamDistrictWards = {
     "Xã Pú Nhi",
     "Xã Tìa Dình",
     "Xã Xa Dung"
-  ],
-  "Điện Biên__Huyện Đi��n Biên Đông": [
-    "Thị trấn Điện Biên Đông",
-    "Xã Na Son"
   ],
   "Điện Biên__Huyện Mường Ảng": [
     "Thị trấn Mường Ảng",
@@ -9148,10 +9142,6 @@ const Map<String, List<String>> kVietnamDistrictWards = {
     "Xã Yên Bình",
     "Xã Yên Thành"
   ],
-  "Lào Cai__Huy��n Trấn Yên": [
-    "Thị trấn Cổ Phúc",
-    "Xã Trấn Yên"
-  ],
   "Lào Cai__Thành phố Lào Cai": [
     "Phường Bắc Cường",
     "Phường Bắc Lệnh",
@@ -10506,8 +10496,7 @@ const Map<String, List<String>> kVietnamDistrictWards = {
     "Thị trấn Quỹ Nhất",
     "Thị trấn Rạng Đông",
     "Xã Đồng Thịnh",
-    "Xã Đồng Th��nh",
-    "Xã Hoàng Nam",
+        "Xã Hoàng Nam",
     "Xã Hồng Phong",
     "Xã Nam Điền",
     "Xã Nghĩa Châu",
@@ -15603,8 +15592,7 @@ const Map<String, List<String>> kVietnamDistrictWards = {
     "Phường Biên Giang",
     "Phường Chương Mỹ",
     "Phường Dương Nội",
-    "Phường Dương N���i",
-    "Phường Đồng Mai",
+        "Phường Đồng Mai",
     "Phường Hà Cầu",
     "Phường Hà Đông",
     "Phường Kiến Hưng",
@@ -15757,10 +15745,6 @@ const Map<String, List<String>> kVietnamDistrictWards = {
     "Xã Sơn Đông",
     "Xã Thanh Mỹ",
     "Xã Xuân Sơn"
-  ],
-  "Thành phố Hà N��i__Quận Thanh Xuân": [
-    "Phường Khương Đình",
-    "Phường Thượng Đình"
   ],
   "Thành phố Hải Phòng__Huyện An Dương": [
     "Phường An Dương",
@@ -16337,8 +16321,7 @@ const Map<String, List<String>> kVietnamDistrictWards = {
     "Phường Quảng Thanh",
     "Phường Tam Hưng",
     "Phường Thiên Hương",
-    "Phường Thiên H��ơng",
-    "Phường Thuỷ Đường",
+        "Phường Thuỷ Đường",
     "Phường Thủy Hà",
     "Phường Thủy Nguyên",
     "Phường Trần Hưng Đạo",
@@ -17285,10 +17268,6 @@ const Map<String, List<String>> kVietnamDistrictWards = {
     "Xã Phong Thạnh",
     "Xã Phong Thu",
     "Xã Phong Xuân"
-  ],
-  "Thành ph�� Hà Nội__Huyện Đan Phượng": [
-    "Xã Đan Phượng",
-    "Xã Song Phượng"
   ],
   "Tuyên Quang__Huyện Bắc Mê": [
     "Thị trấn Yên Phú",
@@ -18282,8 +18261,6 @@ const Map<String, String> kOldProvinceToNewMapping = {
   "Kon Tum": "Quảng Ngãi",
   "Tỉnh Lạng Sơn": "Lạng Sơn",
   "Lạng Sơn": "Lạng Sơn",
-  "Tỉnh L��m Đồng": "Lâm Đồng",
-  "L��m Đồng": "Lâm Đồng",
   "Tỉnh Hậu Giang": "Thành phố Cần Thơ",
   "Hậu Giang": "Thành phố Cần Thơ",
   "Tỉnh Điện Biên": "Điện Biên",
@@ -18300,8 +18277,6 @@ const Map<String, String> kOldProvinceToNewMapping = {
   "Thái Bình": "Hưng Yên",
   "Tỉnh Lai Châu": "Lai Châu",
   "Lai Châu": "Lai Châu",
-  "T���nh Thái Bình": "Hưng Yên",
-  "T���nh Nghệ An": "Nghệ An",
   "TP. Hồ Chí Minh": "Thành phố Hồ Chí Minh",
   "TP Hồ Chí Minh": "Thành phố Hồ Chí Minh",
   "TP.HCM": "Thành phố Hồ Chí Minh",
@@ -18372,4 +18347,187 @@ List<String> getWardsForProvince(String province) {
   final list = kVietnamWards[normalized];
   if (list != null && list.isNotEmpty) return list;
   return kVietnamWards[province] ?? const [];
+}
+
+
+/// Ghi chú sáp nhập và đặc điểm của 34 Tỉnh / Thành phố mới theo Nghị quyết 202/2025/QH15
+const Map<String, String> kMergedProvinceNotes = {
+  "Thành phố Hà Nội": "Thủ đô Hà Nội (Giữ nguyên)",
+  "Thành phố Hồ Chí Minh": "Hợp nhất TP.HCM, Bình Dương và Bà Rịa - Vũng Tàu",
+  "Thành phố Hải Phòng": "Hợp nhất TP. Hải Phòng và tỉnh Hải Dương",
+  "Thành phố Đà Nẵng": "Hợp nhất TP. Đà Nẵng và tỉnh Quảng Nam",
+  "Thành phố Cần Thơ": "Hợp nhất TP. Cần Thơ, Sóc Trăng và Hậu Giang",
+  "Thành phố Huế": "Thừa Thiên Huế thành lập Thành phố trực thuộc Trung ương",
+  "Bắc Ninh": "Hợp nhất tỉnh Bắc Ninh và tỉnh Bắc Giang",
+  "Ninh Bình": "Hợp nhất tỉnh Ninh Bình, Nam Định và Hà Nam",
+  "Phú Thọ": "Hợp nhất tỉnh Phú Thọ, Vĩnh Phúc và Hòa Bình",
+  "Hưng Yên": "Hợp nhất tỉnh Hưng Yên và tỉnh Thái Bình",
+  "Tuyên Quang": "Hợp nhất tỉnh Tuyên Quang và tỉnh Hà Giang",
+  "Lào Cai": "Hợp nhất tỉnh Lào Cai và tỉnh Yên Bái",
+  "Thái Nguyên": "Hợp nhất tỉnh Thái Nguyên và tỉnh Bắc Kạn",
+  "Quảng Trị": "Hợp nhất tỉnh Quảng Trị và tỉnh Quảng Bình",
+  "Quảng Ngãi": "Hợp nhất tỉnh Quảng Ngãi và tỉnh Kon Tum",
+  "Gia Lai": "Hợp nhất tỉnh Gia Lai và tỉnh Bình Định",
+  "Khánh Hòa": "Hợp nhất tỉnh Khánh Hòa và tỉnh Ninh Thuận",
+  "Lâm Đồng": "Hợp nhất tỉnh Lâm Đồng, Đắk Nông và Bình Thuận",
+  "Đắk Lắk": "Hợp nhất tỉnh Đắk Lắk và tỉnh Phú Yên",
+  "Đồng Nai": "Hợp nhất tỉnh Đồng Nai và tỉnh Bình Phước",
+  "Tây Ninh": "Hợp nhất tỉnh Tây Ninh và tỉnh Long An",
+  "Đồng Tháp": "Hợp nhất tỉnh Đồng Tháp và tỉnh Tiền Giang",
+  "Vĩnh Long": "Hợp nhất tỉnh Vĩnh Long, Bến Tre và Trà Vinh",
+  "An Giang": "Hợp nhất tỉnh An Giang và tỉnh Kiên Giang",
+  "Cà Mau": "Hợp nhất tỉnh Cà Mau và tỉnh Bạc Liêu",
+  "Cao Bằng": "Giữ nguyên đơn vị hành chính",
+  "Điện Biên": "Giữ nguyên đơn vị hành chính",
+  "Lai Châu": "Giữ nguyên đơn vị hành chính",
+  "Sơn La": "Giữ nguyên đơn vị hành chính",
+  "Lạng Sơn": "Giữ nguyên đơn vị hành chính",
+  "Quảng Ninh": "Giữ nguyên đơn vị hành chính",
+  "Thanh Hóa": "Giữ nguyên đơn vị hành chính",
+  "Nghệ An": "Giữ nguyên đơn vị hành chính",
+  "Hà Tĩnh": "Giữ nguyên đơn vị hành chính",
+};
+
+
+/// Lấy ghi chú sáp nhập của một Phường / Xã mới theo Nghị quyết 202/2025/QH15
+String? getWardMergeNote(String province, String ward) {
+  final normProvince = normalizeProvince(province);
+  final key = "${normProvince}__${ward.trim()}";
+  return kWardMergeNotes[key];
+}
+
+/// Kết quả tìm kiếm đơn vị hành chính thông minh
+class AddressSearchResult {
+  final String province;
+  final String district;
+  final String ward;
+  final String? mergeNote;
+  final String matchReason;
+
+  const AddressSearchResult({
+    required this.province,
+    required this.district,
+    required this.ward,
+    this.mergeNote,
+    this.matchReason = '',
+  });
+
+  String get fullAddress => [ward, district, province].where((p) => p.trim().isNotEmpty).join(', ');
+}
+
+/// Helper loại bỏ dấu tiếng Việt để tìm kiếm không dấu chính xác
+String removeVietnameseDiacritics(String str) {
+  var result = str.toLowerCase();
+  result = result.replaceAll(RegExp(r'[àáạảãâầấậẩẫăằắặẳẵ]'), 'a');
+  result = result.replaceAll(RegExp(r'[èéẹẻẽêềếệểễ]'), 'e');
+  result = result.replaceAll(RegExp(r'[ìíịỉĩ]'), 'i');
+  result = result.replaceAll(RegExp(r'[òóọỏõôồốộổỗơờớợởỡ]'), 'o');
+  result = result.replaceAll(RegExp(r'[ùúụủũưừứựửữ]'), 'u');
+  result = result.replaceAll(RegExp(r'[ỳýỵỷỹ]'), 'y');
+  result = result.replaceAll(RegExp(r'[đ]'), 'd');
+  result = result.replaceAll(RegExp(r'[\u0300-\u036f]'), '');
+  return result;
+}
+
+/// Tìm kiếm đơn vị hành chính thông minh trên toàn quốc (34 Tỉnh, 3.321 Phường/Xã và 10.977 quy tắc mapping)
+List<AddressSearchResult> searchVietnameseAdministrativeUnits(String query, {int limit = 30}) {
+  final q = removeVietnameseDiacritics(query.trim());
+  if (q.isEmpty) return const [];
+
+  final results = <AddressSearchResult>[];
+  final seenKeys = <String>{};
+
+  // 1. Tìm theo Phường / Xã và ghi chú sáp nhập (ward_mappings)
+  for (final provEntry in kVietnamWards.entries) {
+    final prov = provEntry.key;
+    for (final ward in provEntry.value) {
+      final key = "${prov}__$ward";
+      final wardNorm = removeVietnameseDiacritics(ward);
+      final note = kWardMergeNotes[key];
+      final noteNorm = note != null ? removeVietnameseDiacritics(note) : '';
+
+      // Tìm quận tương ứng nếu có
+      String matchedDist = '';
+      for (final distEntry in kVietnamDistrictWards.entries) {
+        if (distEntry.key.startsWith("${prov}__") && distEntry.value.contains(ward)) {
+          matchedDist = distEntry.key.split("__").last;
+          break;
+        }
+      }
+
+      if (wardNorm.contains(q)) {
+        if (seenKeys.add(key)) {
+          results.add(AddressSearchResult(
+            province: prov,
+            district: matchedDist,
+            ward: ward,
+            mergeNote: note,
+            matchReason: 'Trùng tên phường/xã',
+          ));
+        }
+      } else if (noteNorm.contains(q)) {
+        if (seenKeys.add(key)) {
+          results.add(AddressSearchResult(
+            province: prov,
+            district: matchedDist,
+            ward: ward,
+            mergeNote: note,
+            matchReason: 'Sáp nhập từ đơn vị cũ trùng khớp',
+          ));
+        }
+      }
+
+      if (results.length >= limit) return results;
+    }
+  }
+
+  // 2. Tìm theo Quận / Huyện
+  for (final distEntry in kVietnamDistrictWards.entries) {
+    final parts = distEntry.key.split("__");
+    final prov = parts[0];
+    final dist = parts[1];
+    final distNorm = removeVietnameseDiacritics(dist);
+
+    if (distNorm.contains(q)) {
+      for (final ward in distEntry.value) {
+        final key = "${prov}__$ward";
+        if (seenKeys.add(key)) {
+          results.add(AddressSearchResult(
+            province: prov,
+            district: dist,
+            ward: ward,
+            mergeNote: kWardMergeNotes[key],
+            matchReason: 'Thuộc khu vực $dist',
+          ));
+        }
+        if (results.length >= limit) return results;
+      }
+    }
+  }
+
+  // 3. Tìm theo Tỉnh / Thành phố mới hoặc cũ
+  for (final prov in kVietnamProvinces) {
+    final provNorm = removeVietnameseDiacritics(prov);
+    final note = kMergedProvinceNotes[prov];
+    final noteNorm = note != null ? removeVietnameseDiacritics(note) : '';
+
+    if (provNorm.contains(q) || noteNorm.contains(q)) {
+      final wards = kVietnamWards[prov] ?? const [];
+      for (final ward in wards.take(5)) {
+        final key = "${prov}__$ward";
+        if (seenKeys.add(key)) {
+          results.add(AddressSearchResult(
+            province: prov,
+            district: '',
+            ward: ward,
+            mergeNote: kWardMergeNotes[key],
+            matchReason: 'Thuộc $prov',
+          ));
+        }
+        if (results.length >= limit) return results;
+      }
+    }
+  }
+
+  return results;
 }
