@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/widgets/app_buttons.dart';
+import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/product_card.dart';
+import '../../../../core/widgets/state_views.dart';
 import '../../../../core/navigation/main_navigation_shell.dart';
 import '../../../cart/presentation/providers/cart_provider.dart';
 import '../../../product/presentation/pages/product_detail_page.dart';
@@ -33,15 +35,38 @@ class WishlistPage extends StatelessWidget {
         actions: [
           if (wishlist.favorites.isNotEmpty)
             TextButton(
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.md,
+                  vertical: AppSpacing.sm,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppTheme.radiusPill),
+                ),
+              ),
               onPressed: () {
                 showDialog(
                   context: context,
                   builder: (ctx) => AlertDialog(
+                    shape: RoundedRectangleBorder(
+                      borderRadius:
+                          BorderRadius.circular(AppTheme.radiusXl),
+                    ),
                     title: const Text('Xác nhận xóa'),
                     content: const Text(
                         'Bạn có chắc muốn xóa tất cả sản phẩm khỏi danh sách yêu thích?'),
                     actions: [
                       TextButton(
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.lg,
+                            vertical: AppSpacing.md,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius:
+                                BorderRadius.circular(AppTheme.radiusPill),
+                          ),
+                        ),
                         onPressed: () => Navigator.pop(ctx),
                         child: Text(
                           'Hủy',
@@ -51,8 +76,16 @@ class WishlistPage extends StatelessWidget {
                       ElevatedButton(
                         style: ElevatedButton.styleFrom(
                           backgroundColor: c.danger,
-                          foregroundColor: Colors.white,
+                          foregroundColor: c.onPrimary,
                           elevation: 0,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.xl,
+                            vertical: AppSpacing.md,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius:
+                                BorderRadius.circular(AppTheme.radiusPill),
+                          ),
                         ),
                         onPressed: () {
                           wishlist.clearAll();
@@ -76,65 +109,29 @@ class WishlistPage extends StatelessWidget {
         ],
       ),
       body: wishlist.favorites.isEmpty
-          ? Center(
-              child: Padding(
-                padding: const EdgeInsets.all(32),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Container(
-                      width: 80,
-                      height: 80,
-                      decoration: BoxDecoration(
-                        color: c.surfaceVariant,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Center(
-                        child: Icon(
-                          Icons.favorite_border,
-                          size: 38,
-                          color: c.textMuted,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    Text(
-                      'Chưa có sản phẩm yêu thích',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                        color: c.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Chạm vào biểu tượng trái tim để lưu lại những món đồ bạn yêu thích nhé!',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: c.textSecondary,
-                        fontSize: 13.5,
-                        height: 1.5,
-                      ),
-                    ),
-                    const SizedBox(height: 28),
-                    PrimaryButton(
-                      label: 'Khám phá sản phẩm',
-                      expanded: false,
-                      onPressed: () {
-                        const TabSwitchNotification(0).dispatch(context);
-                      },
-                    ),
-                  ],
-                ),
-              ),
+          ? StatusView(
+              icon: Icons.favorite_border,
+              title: 'Chưa có sản phẩm yêu thích',
+              message:
+                  'Chạm vào biểu tượng trái tim để lưu lại những món đồ bạn yêu thích nhé!',
+              actionLabel: 'Khám phá sản phẩm',
+              onAction: () {
+                const TabSwitchNotification(0).dispatch(context);
+              },
             )
           : GridView.builder(
-              padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.lg,
+                AppSpacing.lg,
+                AppSpacing.lg,
+                AppSpacing.xxxl,
+              ),
+              // Nhieu khoang trang giua cac the, giong luoi o trang chu.
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2,
                 childAspectRatio: 0.5,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
+                crossAxisSpacing: AppSpacing.lg,
+                mainAxisSpacing: AppSpacing.xl,
               ),
               itemCount: wishlist.favorites.length,
               itemBuilder: (ctx, i) {
@@ -185,7 +182,7 @@ class WishlistPage extends StatelessWidget {
                             ? 'Đã thêm "${p.name}" vào giỏ hàng'
                             : cart.errorMessage ??
                                 'Không thể thêm sản phẩm vào giỏ'),
-                        backgroundColor: added ? c.primary : Colors.red,
+                        backgroundColor: added ? c.primary : c.danger,
                         duration: const Duration(seconds: 2),
                       ),
                     );

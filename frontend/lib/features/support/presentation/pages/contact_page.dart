@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/widgets/app_buttons.dart';
+import 'about_page.dart';
 
 /// Trang Lien he ho tro khach hang Menly
 class ContactPage extends StatefulWidget {
@@ -36,31 +40,34 @@ class _ContactPageState extends State<ContactPage> {
     _emailController.clear();
     _messageController.clear();
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Đã gửi liên hệ. Menly sẽ phản hồi sớm nhất có thể.'),
-        backgroundColor: Colors.black87,
+      SnackBar(
+        content: const Text('Đã gửi liên hệ. Menly sẽ phản hồi sớm nhất có thể.'),
+        backgroundColor: AppColors.of(context).inkCard,
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     return Scaffold(
+      backgroundColor: c.background,
       appBar: AppBar(
         title: const Text('Liên hệ'),
         centerTitle: true,
       ),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppSpacing.lg),
         children: [
-          const Text('Kênh hỗ trợ', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
+          const SupportSectionTitle('Kênh hỗ trợ'),
           _contactTile(
+            context,
             title: 'Hotline',
             subtitle: '1900 6868 (8:00 – 22:00 hàng ngày)',
             onTap: _copyHotline,
           ),
           _contactTile(
+            context,
             title: 'Email',
             subtitle: 'support@menly.vn',
             onTap: () {
@@ -71,73 +78,58 @@ class _ContactPageState extends State<ContactPage> {
             },
           ),
           _contactTile(
+            context,
             title: 'Địa chỉ',
             subtitle: '12 Nguyễn Trãi, Quận 5, TP. Hồ Chí Minh',
           ),
-          const SizedBox(height: 20),
-          const Text('Gửi tin nhắn', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
-          Card(
-            elevation: 0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-              side: BorderSide(color: Colors.grey.shade200),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  children: [
-                    TextFormField(
-                      controller: _nameController,
-                      decoration: const InputDecoration(
-                        labelText: 'Họ tên',
-                        border: OutlineInputBorder(),
-                      ),
-                      validator: (v) => (v == null || v.trim().isEmpty) ? 'Nhập họ tên' : null,
+          const SizedBox(height: AppSpacing.lg),
+          const SupportSectionTitle('Gửi tin nhắn'),
+          SupportCard(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                children: [
+                  TextFormField(
+                    controller: _nameController,
+                    decoration: const InputDecoration(
+                      labelText: 'Họ tên',
+                      border: OutlineInputBorder(),
                     ),
-                    const SizedBox(height: 12),
-                    TextFormField(
-                      controller: _emailController,
-                      keyboardType: TextInputType.emailAddress,
-                      decoration: const InputDecoration(
-                        labelText: 'Email',
-                        border: OutlineInputBorder(),
-                      ),
-                      validator: (v) {
-                        if (v == null || v.trim().isEmpty) return 'Nhập email';
-                        if (!v.contains('@')) return 'Email chưa hợp lệ';
-                        return null;
-                      },
+                    validator: (v) => (v == null || v.trim().isEmpty) ? 'Nhập họ tên' : null,
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  TextFormField(
+                    controller: _emailController,
+                    keyboardType: TextInputType.emailAddress,
+                    decoration: const InputDecoration(
+                      labelText: 'Email',
+                      border: OutlineInputBorder(),
                     ),
-                    const SizedBox(height: 12),
-                    TextFormField(
-                      controller: _messageController,
-                      maxLines: 4,
-                      decoration: const InputDecoration(
-                        labelText: 'Nội dung',
-                        alignLabelWithHint: true,
-                        border: OutlineInputBorder(),
-                      ),
-                      validator: (v) => (v == null || v.trim().isEmpty) ? 'Nhập nội dung' : null,
+                    validator: (v) {
+                      if (v == null || v.trim().isEmpty) return 'Nhập email';
+                      if (!v.contains('@')) return 'Email chưa hợp lệ';
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  TextFormField(
+                    controller: _messageController,
+                    maxLines: 4,
+                    decoration: const InputDecoration(
+                      labelText: 'Nội dung',
+                      alignLabelWithHint: true,
+                      border: OutlineInputBorder(),
                     ),
-                    const SizedBox(height: 16),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.black87,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                        ),
-                        onPressed: _submit,
-                        child: const Text('Gửi liên hệ', style: TextStyle(fontWeight: FontWeight.bold)),
-                      ),
-                    ),
-                  ],
-                ),
+                    validator: (v) => (v == null || v.trim().isEmpty) ? 'Nhập nội dung' : null,
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  PrimaryButton(
+                    label: 'Gửi liên hệ',
+                    height: 48,
+                    onPressed: _submit,
+                  ),
+                ],
               ),
             ),
           ),
@@ -146,26 +138,35 @@ class _ContactPageState extends State<ContactPage> {
     );
   }
 
-  Widget _contactTile({
+  Widget _contactTile(
+    BuildContext context, {
     required String title,
     required String subtitle,
     VoidCallback? onTap,
   }) {
-    return Card(
-      elevation: 0,
-      margin: const EdgeInsets.only(bottom: 8),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Colors.grey.shade200),
-      ),
+    final c = AppColors.of(context);
+    return SupportCard(
       child: ListTile(
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
-        subtitle: Text(subtitle),
+        title: Text(
+          title,
+          style: TextStyle(
+            fontWeight: FontWeight.w700,
+            fontSize: 14,
+            color: c.textPrimary,
+          ),
+        ),
+        subtitle: Text(
+          subtitle,
+          style: TextStyle(color: c.textSecondary),
+        ),
         trailing: onTap == null
             ? null
             : TextButton(
                 onPressed: onTap,
-                child: const Text('Sao chép', style: TextStyle(fontSize: 12)),
+                child: Text(
+                  'Sao chép',
+                  style: TextStyle(fontSize: 12, color: c.primary),
+                ),
               ),
         onTap: onTap,
       ),

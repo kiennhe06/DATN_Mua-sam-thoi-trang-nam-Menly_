@@ -50,6 +50,9 @@ class StatusView extends StatelessWidget {
   final VoidCallback? onAction;
   final bool danger;
 
+  /// Dung nut chinh (dac) thay vi nut phu cho loi keu goi hanh dong.
+  final bool primaryAction;
+
   const StatusView({
     super.key,
     this.icon,
@@ -58,12 +61,14 @@ class StatusView extends StatelessWidget {
     this.actionLabel,
     this.onAction,
     this.danger = false,
+    this.primaryAction = false,
   });
 
   @override
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
-    final tint = danger ? c.danger : c.secondary;
+    // Tong binh thuong dung ink thay vi accent: accent be nhat gan trung nen
+    final tint = danger ? c.danger : c.primary;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.xxl),
@@ -106,11 +111,18 @@ class StatusView extends StatelessWidget {
             ],
             if (actionLabel != null && onAction != null) ...[
               const SizedBox(height: AppSpacing.xxl),
-              SecondaryButton(
-                label: actionLabel!,
-                expanded: false,
-                onPressed: onAction,
-              ),
+              if (primaryAction)
+                PrimaryButton(
+                  label: actionLabel!,
+                  expanded: false,
+                  onPressed: onAction,
+                )
+              else
+                SecondaryButton(
+                  label: actionLabel!,
+                  expanded: false,
+                  onPressed: onAction,
+                ),
             ],
           ],
         ),

@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../theme/app_colors.dart';
+import '../theme/app_spacing.dart';
+
 /// Hang sao danh gia theo rating_avg / rating_count that tu backend.
 class ProductRatingRow extends StatelessWidget {
   final double ratingAvg;
@@ -17,6 +20,7 @@ class ProductRatingRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     if (ratingCount <= 0) {
       return Text(
         'Chưa có đánh giá',
@@ -24,7 +28,7 @@ class ProductRatingRow extends StatelessWidget {
         overflow: TextOverflow.ellipsis,
         style: TextStyle(
           fontSize: fontSize,
-          color: Colors.grey.shade500,
+          color: c.textMuted,
           fontWeight: FontWeight.w500,
         ),
       );
@@ -43,9 +47,11 @@ class ProductRatingRow extends StatelessWidget {
           } else if (avg >= starValue - 0.75) {
             icon = Icons.star_half_rounded;
           }
-          return Icon(icon, size: iconSize, color: const Color(0xFFF59E0B));
+          // Sao to bang mau ink chu khong phai c.secondary: tong accent be nhat
+          // gan trung mau nen nen sao se chim hoan toan.
+          return Icon(icon, size: iconSize, color: c.textPrimary);
         }),
-        const SizedBox(width: 4),
+        const SizedBox(width: AppSpacing.xs),
         Flexible(
           child: Text(
             '$label ($ratingCount)',
@@ -54,7 +60,7 @@ class ProductRatingRow extends StatelessWidget {
             style: TextStyle(
               fontSize: fontSize,
               fontWeight: FontWeight.w600,
-              color: Colors.grey.shade700,
+              color: c.textSecondary,
             ),
           ),
         ),

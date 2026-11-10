@@ -1,7 +1,11 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:menly_app/core/theme/app_colors.dart';
+import 'package:menly_app/core/theme/app_spacing.dart';
+import 'package:menly_app/core/theme/app_theme.dart';
 import 'package:menly_app/core/utils/format.dart';
 import 'package:menly_app/core/network/api_client.dart';
+import 'package:menly_app/core/widgets/app_buttons.dart';
 import 'package:menly_app/features/order/data/models/order_model.dart';
 
 class OrderTrackPage extends StatefulWidget {
@@ -71,139 +75,148 @@ class _OrderTrackPageState extends State<OrderTrackPage> {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+
     return Scaffold(
+      backgroundColor: c.background,
       appBar: AppBar(
         title: const Text('Tra cứu đơn hàng'),
         centerTitle: true,
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(AppSpacing.lg),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'Nhập mã đơn hoặc số điện thoại người nhận',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  color: c.textPrimary,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-              const SizedBox(height: 6),
-              const Text(
+              const SizedBox(height: AppSpacing.sm),
+              Text(
                 'Bạn có thể tra cứu nhanh tình trạng đơn hàng của mình mà không cần đăng nhập.',
-                style: TextStyle(fontSize: 13, color: Colors.grey),
+                style: TextStyle(fontSize: 13, color: c.textMuted),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: AppSpacing.xl),
               TextField(
                 controller: _codeController,
                 textCapitalization: TextCapitalization.characters,
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   labelText: 'Mã đơn hàng',
                   hintText: 'Ví dụ: MNL-12345 hoặc 12345',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                  prefixIcon: const Icon(Icons.confirmation_num_outlined),
+                  prefixIcon: Icon(Icons.confirmation_num_outlined),
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: AppSpacing.md),
               TextField(
                 controller: _phoneController,
                 keyboardType: TextInputType.phone,
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   labelText: 'Số điện thoại',
                   hintText: 'Ví dụ: 0901234567',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                  prefixIcon: const Icon(Icons.phone_outlined),
+                  prefixIcon: Icon(Icons.phone_outlined),
                 ),
               ),
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: _isLoading ? null : _searchOrder,
-                  icon: _isLoading
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                        )
-                      : const Icon(Icons.search),
-                  label: Text(_isLoading ? 'Đang tra cứu...' : 'Tra cứu đơn hàng'),
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    backgroundColor: Colors.black87,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                ),
+              const SizedBox(height: AppSpacing.lg),
+              PrimaryButton(
+                // Giu nguyen chu "Dang tra cuu..." nhu truoc, khong thay bang
+                // vong xoay, de nguoi dung doc duoc may chu dang lam gi.
+                label: _isLoading ? 'Đang tra cứu...' : 'Tra cứu đơn hàng',
+                icon: Icons.search,
+                onPressed: _isLoading ? null : _searchOrder,
               ),
               if (_error != null) ...[
-                const SizedBox(height: 18),
+                const SizedBox(height: AppSpacing.xl),
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(AppSpacing.md),
                   decoration: BoxDecoration(
-                    color: Colors.red.shade50,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.red.shade200),
+                    color: c.danger.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                    border: Border.all(color: c.danger.withValues(alpha: 0.35)),
                   ),
                   child: Text(
                     _error!,
-                    style: const TextStyle(color: Colors.red, fontWeight: FontWeight.w600),
+                    style: TextStyle(color: c.danger, fontWeight: FontWeight.w600),
                   ),
                 ),
               ],
               if (_order != null) ...[
-                const SizedBox(height: 24),
+                const SizedBox(height: AppSpacing.xxl),
                 Card(
                   elevation: 0,
                   margin: EdgeInsets.zero,
-                  color: Colors.white,
+                  color: c.surface,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    side: BorderSide(color: Colors.grey.shade200),
+                    borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+                    side: BorderSide(color: c.border),
                   ),
                   child: Padding(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(AppSpacing.lg),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text('Kết quả tra cứu', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                              decoration: BoxDecoration(
-                                color: _order!.status == OrderStatus.canceled
-                                    ? Colors.red.shade50
-                                    : Colors.green.shade50,
-                                borderRadius: BorderRadius.circular(999),
-                              ),
-                              child: Text(
-                                _order!.status.label,
+                            Text('Kết quả tra cứu',
                                 style: TextStyle(
-                                  color: _order!.status == OrderStatus.canceled ? Colors.red : Colors.green,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 11,
+                                    color: c.textPrimary,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16)),
+                            Builder(builder: (context) {
+                              // Don huy to mau canh bao, cac trang thai con lai
+                              // deu la dien bien binh thuong nen to mau thanh cong.
+                              final statusColor =
+                                  _order!.status == OrderStatus.canceled
+                                      ? c.danger
+                                      : c.success;
+                              return Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: AppSpacing.md,
+                                    vertical: AppSpacing.sm),
+                                decoration: BoxDecoration(
+                                  color: statusColor.withValues(alpha: 0.12),
+                                  borderRadius:
+                                      BorderRadius.circular(AppTheme.radiusPill),
                                 ),
-                              ),
-                            ),
+                                child: Text(
+                                  _order!.status.label,
+                                  style: TextStyle(
+                                    color: statusColor,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 11,
+                                  ),
+                                ),
+                              );
+                            }),
                           ],
                         ),
-                        const SizedBox(height: 12),
-                        _infoRow('Mã đơn', _order!.code),
-                        _infoRow('Người nhận', _order!.shipName),
-                        _infoRow('SĐT', _order!.shipPhone),
-                        _infoRow('Tổng tiền', formatPrice(_order!.total)),
-                        _infoRow('Ngày đặt', _formatDate(_order!.createdAt)),
-                        _infoRow('Địa chỉ', _order!.shipAddress),
-                        const SizedBox(height: 16),
-                        const Text('Sản phẩm', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: AppSpacing.md),
+                        _infoRow(c, 'Mã đơn', _order!.code),
+                        _infoRow(c, 'Người nhận', _order!.shipName),
+                        _infoRow(c, 'SĐT', _order!.shipPhone),
+                        _infoRow(c, 'Tổng tiền', formatPrice(_order!.total)),
+                        _infoRow(c, 'Ngày đặt', _formatDate(_order!.createdAt)),
+                        _infoRow(c, 'Địa chỉ', _order!.shipAddress),
+                        const SizedBox(height: AppSpacing.lg),
+                        Text('Sản phẩm',
+                            style: TextStyle(
+                                color: c.textPrimary,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14)),
+                        const SizedBox(height: AppSpacing.sm),
                         ..._order!.items.map((item) => Container(
-                          margin: const EdgeInsets.only(bottom: 8),
-                          padding: const EdgeInsets.all(10),
+                          margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+                          padding: const EdgeInsets.all(AppSpacing.md),
                           decoration: BoxDecoration(
-                            color: Colors.grey.shade50,
-                            borderRadius: BorderRadius.circular(10),
+                            color: c.surfaceVariant,
+                            borderRadius: BorderRadius.circular(AppTheme.radiusSm),
                           ),
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -212,13 +225,20 @@ class _OrderTrackPageState extends State<OrderTrackPage> {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text(item.productName, style: const TextStyle(fontWeight: FontWeight.bold)),
-                                    const SizedBox(height: 3),
-                                    Text('${item.size} • ${item.color}', style: TextStyle(color: Colors.grey.shade700)),
+                                    Text(item.productName,
+                                        style: TextStyle(
+                                            color: c.textPrimary,
+                                            fontWeight: FontWeight.bold)),
+                                    const SizedBox(height: AppSpacing.xs),
+                                    Text('${item.size} • ${item.color}',
+                                        style: TextStyle(color: c.textSecondary)),
                                   ],
                                 ),
                               ),
-                              Text('x${item.quantity}', style: const TextStyle(fontWeight: FontWeight.w600)),
+                              Text('x${item.quantity}',
+                                  style: TextStyle(
+                                      color: c.textPrimary,
+                                      fontWeight: FontWeight.w600)),
                             ],
                           ),
                         )),
@@ -234,18 +254,23 @@ class _OrderTrackPageState extends State<OrderTrackPage> {
     );
   }
 
-  Widget _infoRow(String label, String value) {
+  Widget _infoRow(AppColors c, String label, String value) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
             width: 90,
-            child: Text(label, style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+            child: Text(label,
+                style: TextStyle(color: c.textSecondary, fontSize: 12)),
           ),
           Expanded(
-            child: Text(value, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+            child: Text(value,
+                style: TextStyle(
+                    color: c.textPrimary,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13)),
           ),
         ],
       ),

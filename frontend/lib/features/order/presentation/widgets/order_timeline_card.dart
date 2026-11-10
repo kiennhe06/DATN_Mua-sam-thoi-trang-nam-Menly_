@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_theme.dart';
 import 'package:menly_app/features/order/data/models/order_model.dart';
 
@@ -82,15 +83,22 @@ class OrderTimelineCard extends StatelessWidget {
     final isCancelled = order.status == OrderStatus.canceled;
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSpacing.xl),
       decoration: BoxDecoration(
         color: c.surface,
-        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
         border: Border.all(
           color: isCancelled
               ? c.danger.withValues(alpha: 0.3)
               : c.border.withValues(alpha: 0.6),
         ),
+        boxShadow: [
+          BoxShadow(
+            color: c.shadow,
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -98,11 +106,12 @@ class OrderTimelineCard extends StatelessWidget {
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.md, vertical: AppSpacing.xs),
                 decoration: BoxDecoration(
                   color: (isCancelled ? c.danger : c.secondary)
                       .withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: BorderRadius.circular(AppTheme.radiusPill),
                 ),
                 child: Text(
                   isCancelled ? 'ĐÃ HỦY' : 'TIẾN TRÌNH',
@@ -113,7 +122,7 @@ class OrderTimelineCard extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: Text(
                   'Hành trình giao hàng',
@@ -125,29 +134,17 @@ class OrderTimelineCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              const SizedBox(width: 8),
-              Flexible(
-                child: Text(
-                  order.code,
-                  style: TextStyle(
-                    color: c.textMuted,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.end,
-                ),
-              ),
+              // Khong lap lai order.code o day: AppBar cua man chi tiet don
+              // da hien dung ma nay, nhet them vao lam tieu de bi cat cut.
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.lg),
           if (isCancelled) ...[
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(AppSpacing.lg),
               decoration: BoxDecoration(
                 color: c.danger.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(AppTheme.radiusLg),
                 border: Border.all(color: c.danger.withValues(alpha: 0.2)),
               ),
               child: Row(
@@ -159,15 +156,15 @@ class OrderTimelineCard extends StatelessWidget {
                       color: c.danger,
                       shape: BoxShape.circle,
                     ),
-                    child: const Center(
+                    child: Center(
                       child: Text('✕',
                           style: TextStyle(
-                              color: Colors.white,
+                              color: c.onInk,
                               fontSize: 13,
                               fontWeight: FontWeight.bold)),
                     ),
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: AppSpacing.md),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -229,8 +226,10 @@ class OrderTimelineCard extends StatelessWidget {
     required bool isLast,
     required AppColors c,
   }) {
-    final activeColor =
-        isCurrent ? c.secondary : (isDone ? c.success : c.border);
+    // Mot bo mau duy nhat cho ca cot moc: da qua va dang o day deu to ink,
+    // chua toi thi de rong vien xam. Truoc day moc da qua to xanh la con moc
+    // hien tai to mau nhan, nhin nhu hai he mau khac nhau tren cung mot cot.
+    final activeColor = (isDone || isCurrent) ? c.primary : c.border;
     return IntrinsicHeight(
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -238,15 +237,16 @@ class OrderTimelineCard extends StatelessWidget {
           // Dot & vertical line
           Column(
             children: [
+              // Cham da qua: to dac. Cham chua toi: de rong, chi co vien.
               Container(
-                width: 22,
-                height: 22,
+                width: 20,
+                height: 20,
                 decoration: BoxDecoration(
-                  color: isDone ? activeColor : c.surfaceVariant,
+                  color: isDone ? activeColor : Colors.transparent,
                   shape: BoxShape.circle,
                   border: Border.all(
                     color: isDone ? activeColor : c.border,
-                    width: 2,
+                    width: 1.5,
                   ),
                 ),
                 child: Center(
@@ -254,7 +254,7 @@ class OrderTimelineCard extends StatelessWidget {
                       ? Text(
                           '✓',
                           style: TextStyle(
-                            color: isCurrent ? c.inkCard : Colors.white,
+                            color: isCurrent ? c.inkCard : c.onInk,
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
                           ),
@@ -270,21 +270,22 @@ class OrderTimelineCard extends StatelessWidget {
                 ),
               ),
               if (!isLast)
+                // Duong noi manh giua hai cham.
                 Expanded(
                   child: Container(
-                    width: 2,
+                    width: 1.5,
                     color:
                         isDone ? activeColor.withValues(alpha: 0.5) : c.border,
-                    margin: const EdgeInsets.symmetric(vertical: 4),
+                    margin: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
                   ),
                 ),
             ],
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: AppSpacing.md),
           // Texts
           Expanded(
             child: Padding(
-              padding: EdgeInsets.only(bottom: isLast ? 0 : 16),
+              padding: EdgeInsets.only(bottom: isLast ? 0 : AppSpacing.xl),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -298,7 +299,7 @@ class OrderTimelineCard extends StatelessWidget {
                       fontSize: 13.5,
                     ),
                   ),
-                  const SizedBox(height: 2),
+                  const SizedBox(height: AppSpacing.xs),
                   Text(
                     subtitle,
                     style: TextStyle(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/format.dart';
 import 'package:menly_app/features/order/data/models/order_model.dart';
@@ -38,11 +39,16 @@ class OrderPaymentSummaryCard extends StatelessWidget {
     final c = AppColors.of(context);
     final isVnpay = order.paymentMethod.toLowerCase() == 'vnpay';
 
+    // Hai hinh thuc thanh toan phan biet bang hai tong mau doc duoc tren the:
+    // VNPay dung ink, COD dung mau chu phu.
+    final badgeColor = isVnpay ? c.primary : c.textSecondary;
+
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSpacing.xl),
+      // Cung kieu the voi cac khoi khac: bo goc manh, vien mong
       decoration: BoxDecoration(
         color: c.surface,
-        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
         border: Border.all(color: c.border.withValues(alpha: 0.6)),
       ),
       child: Column(
@@ -60,15 +66,16 @@ class OrderPaymentSummaryCard extends StatelessWidget {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
                 decoration: BoxDecoration(
-                  color: isVnpay ? Colors.blue.withValues(alpha: 0.12) : Colors.orange.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(6),
+                  color: badgeColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(AppTheme.radiusPill),
                 ),
                 child: Text(
                   isVnpay ? 'VNPAY' : 'COD (Tiền mặt)',
                   style: TextStyle(
-                    color: isVnpay ? Colors.blue.shade700 : Colors.orange.shade800,
+                    color: badgeColor,
                     fontWeight: FontWeight.bold,
                     fontSize: 11,
                   ),
@@ -76,15 +83,16 @@ class OrderPaymentSummaryCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: AppSpacing.lg),
           _summaryRow('Tạm tính:', formatVnd(order.subtotal), c),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.md),
           _summaryRow('Phí vận chuyển:', formatVnd(order.shippingFee), c),
           if (order.discountAmount > 0) ...[
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.md),
             _summaryRow('Mã giảm giá:', '-${formatVnd(order.discountAmount)}', c, valueColor: c.success),
           ],
-          Divider(color: c.border.withValues(alpha: 0.6), height: 20),
+          // Duong ke manh ngan cach truoc dong tong
+          Divider(color: c.border.withValues(alpha: 0.6), height: AppSpacing.xxl),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [

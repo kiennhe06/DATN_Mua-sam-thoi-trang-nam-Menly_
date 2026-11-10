@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../theme/app_accent.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_spacing.dart';
 import '../theme/app_theme.dart';
 import '../theme/theme_controller.dart';
 
@@ -27,10 +28,16 @@ class _DisplaySettingsSheet extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: c.background,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: const BorderRadius.vertical(
+          top: Radius.circular(AppTheme.radiusXl),
+        ),
       ),
       padding: EdgeInsets.fromLTRB(
-          24, 14, 24, MediaQuery.of(context).padding.bottom + 24),
+        AppSpacing.xxl,
+        AppSpacing.lg,
+        AppSpacing.xxl,
+        MediaQuery.of(context).padding.bottom + AppSpacing.xxl,
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -41,11 +48,11 @@ class _DisplaySettingsSheet extends StatelessWidget {
               height: 4,
               decoration: BoxDecoration(
                 color: c.border,
-                borderRadius: BorderRadius.circular(999),
+                borderRadius: BorderRadius.circular(AppTheme.radiusPill),
               ),
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: AppSpacing.xl),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -63,16 +70,16 @@ class _DisplaySettingsSheet extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: AppSpacing.xs),
           Text(
             'Tùy chỉnh tông màu chủ đạo và chế độ hiển thị',
             style: TextStyle(color: c.textSecondary, fontSize: 13),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: AppSpacing.xl),
 
           // Che do Sang / Toi
           Text('Chế độ', style: _labelStyle(c)),
-          const SizedBox(height: 10),
+          const SizedBox(height: AppSpacing.sm),
           Row(
             children: [
               _ModeChip(
@@ -80,7 +87,7 @@ class _DisplaySettingsSheet extends StatelessWidget {
                 selected: controller.mode == ThemeMode.light,
                 onTap: () => controller.setMode(ThemeMode.light),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: AppSpacing.md),
               _ModeChip(
                 label: 'Chế độ Tối',
                 selected: controller.mode == ThemeMode.dark,
@@ -88,14 +95,14 @@ class _DisplaySettingsSheet extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 22),
+          const SizedBox(height: AppSpacing.xxl),
 
           // Bang chon mau chu dao (AppAccent)
           Text('Màu điểm nhấn', style: _labelStyle(c)),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.md),
           Wrap(
-            spacing: 14,
-            runSpacing: 14,
+            spacing: AppSpacing.lg,
+            runSpacing: AppSpacing.lg,
             children: [
               for (final accent in AppAccent.values)
                 _AccentDot(
@@ -105,7 +112,7 @@ class _DisplaySettingsSheet extends StatelessWidget {
                 ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.sm),
         ],
       ),
     );
@@ -199,15 +206,22 @@ class _AccentDot extends StatelessWidget {
               ],
             ),
             child: selected
-                ? const Center(
+                ? Center(
                     child: Text(
                       '✓',
-                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                      style: TextStyle(
+                        // Tong sang (vi du be nhat) can dau tich mau muc moi doc duoc
+                        color: accent.color.computeLuminance() > 0.5
+                            ? c.inkCard
+                            : c.onInk,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
                     ),
                   )
                 : null,
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: AppSpacing.sm),
           Text(
             accent.label,
             style: TextStyle(

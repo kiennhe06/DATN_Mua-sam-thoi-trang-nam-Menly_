@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/format.dart';
 import '../../../../core/widgets/app_buttons.dart';
 import '../providers/cart_provider.dart';
@@ -22,9 +24,18 @@ class CartBottomBar extends StatelessWidget {
     final hasSelection = selectedCount > 0;
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(20, 14, 20, 14),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.xl,
+        AppSpacing.xl,
+        AppSpacing.xl,
+        AppSpacing.lg,
+      ),
+      // Khoi tong tien bo tron manh o canh tren, bong do rat nhe.
       decoration: BoxDecoration(
         color: c.surface,
+        borderRadius: const BorderRadius.vertical(
+          top: Radius.circular(AppTheme.radiusXl),
+        ),
         border: Border(top: BorderSide(color: c.border)),
         boxShadow: [
           BoxShadow(
@@ -47,18 +58,20 @@ class CartBottomBar extends StatelessWidget {
               Text(
                 formatVnd(cart.finalTotal),
                 style: TextStyle(
-                  color: c.secondary,
-                  fontSize: 19,
-                  fontWeight: FontWeight.w900,
+                  // Tong tien to mau ink giong gia trong the san pham
+                  color: c.textPrimary,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.lg),
           PrimaryButton(
             label: hasSelection
                 ? 'Thanh toán ($selectedCount món)'
                 : 'Chọn sản phẩm để mua',
+            height: 56,
             onPressed: hasSelection ? onCheckout : null,
           ),
         ],

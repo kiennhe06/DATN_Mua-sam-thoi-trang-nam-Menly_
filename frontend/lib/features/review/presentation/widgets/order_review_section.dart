@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/app_snackbar.dart';
 import '../../../../models/order_model.dart';
@@ -9,6 +10,7 @@ import '../pages/review_form_page.dart';
 import '../providers/review_provider.dart';
 import 'review_image_gallery.dart';
 import 'package:menly_app/core/widgets/app_image.dart';
+import 'package:menly_app/core/widgets/state_views.dart';
 
 class OrderReviewSection extends StatefulWidget {
   final OrderModel order;
@@ -74,7 +76,7 @@ class _OrderReviewSectionState extends State<OrderReviewSection>
     final reviewProv = context.watch<ReviewProvider>();
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
         color: c.surface,
         borderRadius: BorderRadius.circular(AppTheme.radiusLg),
@@ -86,25 +88,29 @@ class _OrderReviewSectionState extends State<OrderReviewSection>
           Row(
             children: [
               Icon(Icons.rate_review_outlined, size: 18, color: c.secondary),
-              const SizedBox(width: 6),
+              const SizedBox(width: AppSpacing.sm),
               Text(
                 'Đánh giá sản phẩm',
                 style: TextStyle(color: c.textPrimary, fontSize: 15, fontWeight: FontWeight.w700),
               ),
             ],
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: AppSpacing.xs),
           Text(
             'Chia sẻ cảm nhận và ảnh thực tế để giúp người mua sau chọn đúng sản phẩm.',
             style: TextStyle(color: c.textMuted, fontSize: 12, height: 1.4),
           ),
           if (reviewProv.isLoadingMine) ...[
-            const SizedBox(height: 16),
-            const Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))),
+            const SizedBox(height: AppSpacing.lg),
+            const LoadingView(),
           ],
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.sm),
           for (int i = 0; i < widget.order.items.length; i++) ...[
-            if (i > 0) Divider(color: c.border.withValues(alpha: 0.5), height: 20),
+            if (i > 0)
+              Divider(
+                color: c.border.withValues(alpha: 0.5),
+                height: AppSpacing.xl,
+              ),
             _buildItemRow(widget.order.items[i], c, reviewProv),
           ],
         ],
@@ -119,7 +125,7 @@ class _OrderReviewSectionState extends State<OrderReviewSection>
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         ClipRRect(
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(AppTheme.radiusSm),
           child: SizedBox(
             width: 48,
             height: 48,
@@ -131,7 +137,7 @@ class _OrderReviewSectionState extends State<OrderReviewSection>
             ),
           ),
         ),
-        const SizedBox(width: 10),
+        const SizedBox(width: AppSpacing.md),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -142,36 +148,42 @@ class _OrderReviewSectionState extends State<OrderReviewSection>
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(color: c.textPrimary, fontSize: 13, fontWeight: FontWeight.w600),
               ),
-              const SizedBox(height: 3),
+              const SizedBox(height: AppSpacing.xs),
               Text(
                 'Size: ${item.size} · Màu: ${item.color}',
                 style: TextStyle(color: c.textMuted, fontSize: 11.5),
               ),
               if (review != null) ...[
-                const SizedBox(height: 4),
+                const SizedBox(height: AppSpacing.xs),
                 Row(
                   children: [
                     for (int star = 0; star < 5; star++)
                       Icon(
                         star < review.rating ? Icons.star_rounded : Icons.star_border_rounded,
                         size: 14,
-                        color: Colors.amber,
+                        color: c.secondary,
                       ),
                   ],
                 ),
                 if (review.images.isNotEmpty) ...[
-                  const SizedBox(height: 6),
-                  ReviewImageGallery(images: review.images, size: 40, spacing: 6),
+                  const SizedBox(height: AppSpacing.sm),
+                  ReviewImageGallery(
+                    images: review.images,
+                    size: 40,
+                    spacing: AppSpacing.sm,
+                  ),
                 ],
                 if (review.replyComment != null &&
                     review.replyComment!.trim().isNotEmpty) ...[
-                  const SizedBox(height: 6),
+                  const SizedBox(height: AppSpacing.sm),
                   Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 7),
+                      horizontal: AppSpacing.md,
+                      vertical: AppSpacing.sm,
+                    ),
                     decoration: BoxDecoration(
                       color: c.surfaceVariant,
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(AppTheme.radiusSm),
                       border: Border(
                         left: BorderSide(color: c.secondary, width: 2),
                       ),
@@ -190,19 +202,22 @@ class _OrderReviewSectionState extends State<OrderReviewSection>
             ],
           ),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: AppSpacing.sm),
         if (review != null)
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md,
+              vertical: AppSpacing.sm,
+            ),
             decoration: BoxDecoration(
               color: c.success.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(AppTheme.radiusSm),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(Icons.check_circle, size: 14, color: c.success),
-                const SizedBox(width: 4),
+                const SizedBox(width: AppSpacing.xs),
                 Text(
                   'Đã đánh giá',
                   style: TextStyle(color: c.success, fontSize: 11.5, fontWeight: FontWeight.w700),
@@ -213,8 +228,12 @@ class _OrderReviewSectionState extends State<OrderReviewSection>
         else
           OutlinedButton(
             style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md,
+                vertical: AppSpacing.sm,
+              ),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppTheme.radiusSm)),
             ),
             onPressed: () => _openReviewForm(item),
             child: const Text('Đánh giá', style: TextStyle(fontSize: 12)),

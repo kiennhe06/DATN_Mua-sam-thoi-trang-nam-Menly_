@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_spacing.dart';
+import '../theme/app_theme.dart';
 import 'pressable.dart';
 
-/// Tab chon danh muc.
+/// Chip chon danh muc.
 ///
-/// Chi la chu voi mot gach chan mong khi duoc chon, khong to nen. Danh muc la
-/// thu de loc nhanh chu khong phai noi dung chinh, nen khong can hut mat.
+/// Dang vien thuoc: dang chon thi to nen ink chu sang, chua chon thi nen the
+/// co vien mong. Cung mot kieu chip dung cho moi cho loc trong ung dung.
 class CategoryTab extends StatelessWidget {
   final String label;
   final bool selected;
@@ -24,25 +26,27 @@ class CategoryTab extends StatelessWidget {
     return Pressable(
       onTap: onTap,
       scale: 0.95,
+      borderRadius: BorderRadius.circular(AppTheme.radiusPill),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOut,
         alignment: Alignment.center,
-        padding: const EdgeInsets.only(bottom: 5),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.sm,
+        ),
         decoration: BoxDecoration(
-          border: Border(
-            bottom: BorderSide(
-              color: selected ? c.textPrimary : Colors.transparent,
-              width: 2,
-            ),
-          ),
+          color: selected ? c.primary : c.surface,
+          borderRadius: BorderRadius.circular(AppTheme.radiusPill),
+          border: Border.all(color: selected ? c.primary : c.border),
         ),
         child: Text(
           label,
           maxLines: 1,
           style: TextStyle(
-            color: selected ? c.textPrimary : c.textSecondary,
+            color: selected ? c.onPrimary : c.textSecondary,
             fontSize: 13,
-            fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+            fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
             letterSpacing: 0.2,
           ),
         ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/format.dart';
 import 'package:menly_app/features/order/data/models/order_model.dart';
@@ -21,16 +22,18 @@ class OrderCard extends StatelessWidget {
     this.onCancelled,
   });
 
+  /// Mau nhan trang thai, gom bon nhom theo bang mau chung: cho (trung tinh),
+  /// dang chay (ink), xong (success), that bai (danger). Khong dung c.secondary
+  /// lam mau chu vi sac nhan be nhat gan trung voi nen the.
   Color _statusColor(OrderStatus status, AppColors c) {
     switch (status) {
       case OrderStatus.pendingPayment:
-        return Colors.orange;
+        return c.textSecondary;
       case OrderStatus.paid:
-        return Colors.teal;
+        return c.success;
       case OrderStatus.processing:
-        return c.secondary;
       case OrderStatus.shipping:
-        return Colors.blue;
+        return c.primary;
       case OrderStatus.delivered:
         return c.success;
       case OrderStatus.canceled:
@@ -42,13 +45,25 @@ class OrderCard extends StatelessWidget {
     }
   }
 
+  /// Nut chi co chu trong the don: vung cham dang vien thuoc cho dong bo voi
+  /// cac nut khac.
+  ButtonStyle _nutChuVienThuoc() {
+    return TextButton.styleFrom(
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md, vertical: AppSpacing.md),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppTheme.radiusPill),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
     final statusColor = _statusColor(order.status, c);
 
     return InkWell(
-      borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+      borderRadius: BorderRadius.circular(AppTheme.radiusXl),
       onTap: () {
         Navigator.push(
           context,
@@ -58,24 +73,25 @@ class OrderCard extends StatelessWidget {
         );
       },
       child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
+        margin: const EdgeInsets.only(bottom: AppSpacing.lg),
         decoration: BoxDecoration(
           color: c.surface,
-          borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+          borderRadius: BorderRadius.circular(AppTheme.radiusXl),
           border: Border.all(
             color: order.status == OrderStatus.canceled
                 ? c.danger.withValues(alpha: 0.3)
                 : c.border.withValues(alpha: 0.6),
           ),
+          // Bong rat nhe, the van phang nhung tach khoi nen be.
           boxShadow: [
             BoxShadow(
               color: c.shadow,
-              blurRadius: 12,
-              offset: const Offset(0, 4),
+              blurRadius: 16,
+              offset: const Offset(0, 6),
             ),
           ],
         ),
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppSpacing.xl),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -91,37 +107,39 @@ class OrderCard extends StatelessWidget {
                     fontSize: 14,
                   ),
                 ),
+                // Chip trang thai dang vien thuoc: nen mo cua chinh mau
+                // trang thai, chu dam cung mau.
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.md, vertical: AppSpacing.sm),
                   decoration: BoxDecoration(
                     color: statusColor.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(6),
-                    border:
-                        Border.all(color: statusColor.withValues(alpha: 0.3)),
+                    borderRadius: BorderRadius.circular(AppTheme.radiusPill),
                   ),
                   child: Text(
                     order.status.label,
                     style: TextStyle(
                       color: statusColor,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w800,
                       fontSize: 11.5,
+                      letterSpacing: 0.2,
                     ),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: AppSpacing.sm),
             Text(
               'Đặt ngày: ${order.createdAt.day}/${order.createdAt.month}/${order.createdAt.year}',
               style: TextStyle(color: c.textMuted, fontSize: 12),
             ),
-            Divider(color: c.border.withValues(alpha: 0.6), height: 18),
+            Divider(
+                color: c.border.withValues(alpha: 0.6), height: AppSpacing.xxl),
 
             // Danh sach san pham tom tat
             for (final item in order.items.take(2))
               Padding(
-                padding: const EdgeInsets.only(bottom: 4),
+                padding: const EdgeInsets.only(bottom: AppSpacing.sm),
                 child: Row(
                   children: [
                     Expanded(
@@ -147,31 +165,41 @@ class OrderCard extends StatelessWidget {
                     fontSize: 11,
                     fontStyle: FontStyle.italic),
               ),
-            const SizedBox(height: 10),
+            const SizedBox(height: AppSpacing.lg),
 
-            // Footer: Tong tien & Thao tac
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            // Footer: Tong tien o tren, cac nut o hang rieng ben duoi va luon
+            // can phai.
+            //
+            // Truoc day tong tien va nut nam chung mot hang: don co mot nut thi
+            // nut dinh ngay sau so tien, don co ba nut thi nut rot xuong dong
+            // moi sat le trai. Ba the lien nhau ra ba kieu xep khac nhau.
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Tổng thanh toán:',
-                        style: TextStyle(color: c.textSecondary, fontSize: 11)),
-                    Text(
-                      formatVnd(order.total),
-                      style: TextStyle(
-                        color: c.secondary,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                  ],
+                Text('Tổng thanh toán:',
+                    style: TextStyle(color: c.textSecondary, fontSize: 11)),
+                Text(
+                  formatVnd(order.total),
+                  style: TextStyle(
+                    color: c.secondary,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
-                Row(
-                  children: [
+                const SizedBox(height: AppSpacing.md),
+                // Phai chiem het be ngang thi can phai moi co tac dung: Wrap tu
+                // co lai bang dung be rong cac nut, luc do alignment vo nghia.
+                SizedBox(
+                  width: double.infinity,
+                  child: Wrap(
+                    alignment: WrapAlignment.end,
+                    spacing: AppSpacing.xs,
+                    runSpacing: AppSpacing.sm,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
                     if (order.canCancel) ...[
                       TextButton(
+                        style: _nutChuVienThuoc(),
                         onPressed: () {
                           OrderCancelDialog.show(
                             context: context,
@@ -188,7 +216,6 @@ class OrderCard extends StatelessWidget {
                               fontSize: 12.5),
                         ),
                       ),
-                      const SizedBox(width: 4),
                     ],
                     // Truoc day cho nay chi loai tru don da huy, het han va cho
                     // thanh toan, nen tra tien xong la danh gia duoc ngay khi
@@ -196,12 +223,14 @@ class OrderCard extends StatelessWidget {
                     if (order.canReview) ...[
                       ElevatedButton.icon(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: c.secondary,
-                          foregroundColor: Colors.white,
+                          backgroundColor: c.primary,
+                          foregroundColor: c.onPrimary,
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 8),
+                              horizontal: AppSpacing.lg,
+                              vertical: AppSpacing.md),
                           shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8)),
+                              borderRadius:
+                                  BorderRadius.circular(AppTheme.radiusPill)),
                           elevation: 0,
                         ),
                         icon: const Icon(Icons.star_rate_rounded, size: 15),
@@ -217,10 +246,11 @@ class OrderCard extends StatelessWidget {
                           );
                         },
                       ),
-                      const SizedBox(width: 6),
+                      const SizedBox(width: AppSpacing.sm),
                     ],
                     if (orderProv.canRequestReturn(order)) ...[
                       TextButton(
+                        style: _nutChuVienThuoc(),
                         onPressed: () {
                           Navigator.push(
                             context,
@@ -238,14 +268,14 @@ class OrderCard extends StatelessWidget {
                           ),
                         ),
                       ),
-                      const SizedBox(width: 4),
                     ],
                     OutlinedButton(
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 14, vertical: 8),
+                            horizontal: AppSpacing.lg, vertical: AppSpacing.md),
                         shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10)),
+                            borderRadius:
+                                BorderRadius.circular(AppTheme.radiusPill)),
                       ),
                       onPressed: () {
                         Navigator.push(
@@ -258,7 +288,8 @@ class OrderCard extends StatelessWidget {
                       child: const Text('Chi tiết',
                           style: TextStyle(fontSize: 12.5)),
                     ),
-                  ],
+                    ],
+                  ),
                 ),
               ],
             ),

@@ -1,6 +1,9 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:menly_app/core/network/api_client.dart';
+import 'package:menly_app/core/theme/app_colors.dart';
+import 'package:menly_app/core/theme/app_spacing.dart';
+import 'package:menly_app/core/widgets/app_buttons.dart';
 
 class ForgotPasswordPage extends StatefulWidget {
   const ForgotPasswordPage({super.key});
@@ -29,9 +32,9 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Yêu cầu đặt lại mật khẩu đã được gửi. Hãy kiểm tra email của bạn.'),
-          backgroundColor: Colors.green,
+        SnackBar(
+          content: const Text('Yêu cầu đặt lại mật khẩu đã được gửi. Hãy kiểm tra email của bạn.'),
+          backgroundColor: AppColors.of(context).success,
         ),
       );
       Navigator.of(context).pop();
@@ -40,7 +43,10 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
           'Không thể gửi yêu cầu đặt lại mật khẩu. Vui lòng thử lại.';
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message), backgroundColor: Colors.red),
+        SnackBar(
+          content: Text(message),
+          backgroundColor: AppColors.of(context).danger,
+        ),
       );
     } finally {
       if (mounted) {
@@ -57,6 +63,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     return Scaffold(
       appBar: AppBar(
         title: const Text('Quên mật khẩu'),
@@ -64,7 +71,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(AppSpacing.xxl),
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 420),
               child: Form(
@@ -72,28 +79,23 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    
-                    const SizedBox(height: 20),
+                    const SizedBox(height: AppSpacing.xl),
                     const Text(
                       'Khôi phục mật khẩu',
                       textAlign: TextAlign.center,
                       style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
                     ),
-                    const SizedBox(height: 12),
-                    const Text(
+                    const SizedBox(height: AppSpacing.md),
+                    Text(
                       'Nhập email đã đăng ký để gửi hướng dẫn đặt lại mật khẩu.',
                       textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.grey, fontSize: 15),
+                      style: TextStyle(color: c.textMuted, fontSize: 15),
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: AppSpacing.xxl),
                     TextFormField(
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
-                      decoration: const InputDecoration(
-                        labelText: 'Email',
-                        
-                        border: OutlineInputBorder(),
-                      ),
+                      decoration: const InputDecoration(labelText: 'Email'),
                       validator: (value) {
                         final email = value?.trim() ?? '';
                         if (email.isEmpty) return 'Vui lòng nhập email';
@@ -101,15 +103,10 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                         return null;
                       },
                     ),
-                    const SizedBox(height: 20),
-                    FilledButton(
+                    const SizedBox(height: AppSpacing.xl),
+                    PrimaryButton(
+                      label: _isSubmitting ? 'Đang gửi...' : 'Gửi hướng dẫn',
                       onPressed: _isSubmitting ? null : _submit,
-                      style: FilledButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        backgroundColor: Colors.black87,
-                      ),
-                      
-                      child: Text(_isSubmitting ? 'Đang gửi...' : 'Gửi hướng dẫn'),
                     ),
                   ],
                 ),

@@ -5,6 +5,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../../core/navigation/main_navigation_shell.dart';
 import '../../../../core/navigation/staff_navigation_shell.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../product/presentation/providers/product_provider.dart';
@@ -128,10 +130,11 @@ class _SplashPageState extends State<SplashPage>
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: Scaffold(
-        backgroundColor: AppTheme.primary,
+        backgroundColor: c.inkCard,
         body: Stack(
           fit: StackFit.expand,
           children: [
@@ -146,9 +149,9 @@ class _SplashPageState extends State<SplashPage>
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    AppTheme.primary.withValues(alpha: 0.45),
-                    AppTheme.primary.withValues(alpha: 0.30),
-                    AppTheme.primary.withValues(alpha: 0.94),
+                    c.inkCard.withValues(alpha: 0.45),
+                    c.inkCard.withValues(alpha: 0.30),
+                    c.inkCard.withValues(alpha: 0.94),
                   ],
                   stops: const [0.0, 0.42, 1.0],
                 ),
@@ -160,7 +163,12 @@ class _SplashPageState extends State<SplashPage>
                 duration: const Duration(milliseconds: 700),
                 curve: Curves.easeOut,
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(28, 22, 28, 30),
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.xxl,
+                    AppSpacing.xxl,
+                    AppSpacing.xxl,
+                    AppSpacing.xxxl,
+                  ),
                   child: Column(
                     children: [
                       const _TopMark(),
@@ -188,6 +196,7 @@ class _TopMark extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     return Row(
       children: [
         Container(
@@ -195,24 +204,24 @@ class _TopMark extends StatelessWidget {
           height: 30,
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.14),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
+            color: c.onInk.withValues(alpha: 0.14),
+            borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+            border: Border.all(color: c.onInk.withValues(alpha: 0.25)),
           ),
-          child: const Text(
+          child: Text(
             'M',
             style: TextStyle(
-              color: Colors.white,
+              color: c.onInk,
               fontSize: 16,
               fontWeight: FontWeight.w900,
             ),
           ),
         ),
-        const SizedBox(width: 10),
+        const SizedBox(width: AppSpacing.sm),
         Text(
           'MENLY',
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.92),
+            color: c.onInk.withValues(alpha: 0.92),
             fontSize: 13,
             fontWeight: FontWeight.w800,
             letterSpacing: 4,
@@ -222,7 +231,7 @@ class _TopMark extends StatelessWidget {
         Text(
           'EST. 2025',
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.55),
+            color: c.onInk.withValues(alpha: 0.55),
             fontSize: 10,
             fontWeight: FontWeight.w600,
             letterSpacing: 2,
@@ -238,6 +247,7 @@ class _BrandBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -245,9 +255,10 @@ class _BrandBlock extends StatelessWidget {
           width: 82,
           height: 82,
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
+            color: c.onInk,
+            borderRadius: BorderRadius.circular(AppTheme.radiusXl),
             boxShadow: [
+              // Lop phu toi duoi logo de noi bat tren anh nen.
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.28),
                 blurRadius: 26,
@@ -255,46 +266,46 @@ class _BrandBlock extends StatelessWidget {
               ),
             ],
           ),
-          child: const Icon(
+          child: Icon(
             Icons.checkroom_rounded,
-            color: AppTheme.primary,
+            color: c.inkCard,
             size: 40,
           ),
         ),
-        const SizedBox(height: 22),
-        const Text(
+        const SizedBox(height: AppSpacing.xxl),
+        Text(
           'MENLY',
           style: TextStyle(
-            color: Colors.white,
+            color: c.onInk,
             fontSize: 34,
             fontWeight: FontWeight.w900,
             letterSpacing: 12,
           ),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: AppSpacing.sm),
         Text(
           'FASHION FOR MEN',
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.72),
+            color: c.onInk.withValues(alpha: 0.72),
             fontSize: 11,
             fontWeight: FontWeight.w700,
             letterSpacing: 5,
           ),
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: AppSpacing.lg),
         Container(
           width: 34,
           height: 2,
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.4),
+            color: c.onInk.withValues(alpha: 0.4),
             borderRadius: BorderRadius.circular(2),
           ),
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: AppSpacing.lg),
         Text(
           'Chuẩn mực phái mạnh',
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.82),
+            color: c.onInk.withValues(alpha: 0.82),
             fontSize: 13,
             letterSpacing: 0.5,
           ),
@@ -312,19 +323,20 @@ class _LoadingBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         ClipRRect(
-          borderRadius: BorderRadius.circular(99),
+          borderRadius: BorderRadius.circular(AppTheme.radiusPill),
           child: LinearProgressIndicator(
             value: progress.clamp(0.0, 1.0),
             minHeight: 3,
-            backgroundColor: Colors.white.withValues(alpha: 0.2),
-            valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+            backgroundColor: c.onInk.withValues(alpha: 0.2),
+            valueColor: AlwaysStoppedAnimation<Color>(c.onInk),
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: AppSpacing.lg),
         AnimatedSwitcher(
           duration: const Duration(milliseconds: 250),
           child: Text(
@@ -332,7 +344,7 @@ class _LoadingBlock extends StatelessWidget {
             key: ValueKey(status),
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.8),
+              color: c.onInk.withValues(alpha: 0.8),
               fontSize: 12.5,
               height: 1.4,
               letterSpacing: 0.2,

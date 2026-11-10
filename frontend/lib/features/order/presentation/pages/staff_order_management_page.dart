@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:menly_app/core/theme/app_colors.dart';
+import 'package:menly_app/core/theme/app_spacing.dart';
+import 'package:menly_app/core/theme/app_theme.dart';
 import 'package:menly_app/core/utils/format.dart';
+import 'package:menly_app/core/widgets/state_views.dart';
 import 'package:menly_app/features/order/data/models/order_model.dart';
 import 'package:menly_app/features/auth/presentation/providers/auth_provider.dart';
 import 'package:menly_app/features/auth/presentation/pages/login_page.dart';
@@ -40,102 +44,67 @@ class _StaffOrderManagementPageState extends State<StaffOrderManagementPage> {
     super.dispose();
   }
 
-  Color _getStatusColor(OrderStatus status) {
+
+  /// Mau nhan trang thai, gom bon nhom theo bang mau chung: cho (trung tinh),
+  /// dang chay (ink), xong (success), that bai (danger). Khong dung c.secondary
+  /// lam mau chu vi sac nhan be nhat gan trung voi nen the.
+  Color _getStatusColor(OrderStatus status, AppColors c) {
     switch (status) {
       case OrderStatus.pendingPayment:
-        return Colors.orange;
+        return c.textSecondary;
       case OrderStatus.paid:
-        return Colors.teal;
+        return c.success;
       case OrderStatus.processing:
-        return Colors.blue;
       case OrderStatus.shipping:
-        return Colors.purple;
+        return c.primary;
       case OrderStatus.delivered:
-        return Colors.green;
+        return c.success;
       case OrderStatus.canceled:
       case OrderStatus.returned:
       case OrderStatus.expired:
-        return Colors.red;
+        return c.danger;
       case OrderStatus.completed:
-        return Colors.green;
+        return c.success;
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     final auth = context.watch<AuthProvider>();
     final isStaffOrAdmin = auth.isLoggedIn &&
         (auth.user?.role == 'admin' || auth.user?.role == 'staff');
 
     if (!isStaffOrAdmin) {
       return Scaffold(
+        backgroundColor: c.background,
         appBar: AppBar(
           title: const Text('Quản lý đơn hàng (Nhân viên)'),
           centerTitle: true,
         ),
-        body: Center(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.amber.shade50,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.admin_panel_settings_outlined,
-                    size: 64,
-                    color: Colors.amber.shade800,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                Text(
-                  !auth.isLoggedIn
-                      ? 'Yêu cầu đăng nhập tài khoản Quản trị'
-                      : 'Không có quyền truy cập',
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  !auth.isLoggedIn
-                      ? 'Tính năng Quản lý đơn hàng nội bộ chỉ dành cho Quản trị viên và Nhân viên cửa hàng.\n\nVui lòng đăng nhập với tài khoản Quản trị để tiếp tục.'
-                      : 'Tài khoản hiện tại (${auth.user?.email}) là tài khoản Khách hàng, không thể quản lý đơn hàng.\n\nVui lòng đăng nhập với tài khoản Quản trị viên (admin@gmail.com / 123456).',
-                  style: TextStyle(fontSize: 14, color: Colors.grey.shade700, height: 1.4),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 28),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.black87,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    ),
-                    icon: const Icon(Icons.login),
-                    label: Text(!auth.isLoggedIn ? 'Đăng nhập ngay' : 'Đăng nhập tài khoản Quản trị'),
-                    onPressed: () async {
-                      await Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const LoginPage()),
-                      );
-                      if (!context.mounted) return;
-                      final updatedAuth = context.read<AuthProvider>();
-                      if (updatedAuth.isLoggedIn &&
-                          (updatedAuth.user?.role == 'admin' || updatedAuth.user?.role == 'staff')) {
-                        context.read<OrderProvider>().loadStaffOrders();
-                      }
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
+        body: StatusView(
+          icon: Icons.admin_panel_settings_outlined,
+          title: !auth.isLoggedIn
+              ? 'Yêu cầu đăng nhập tài khoản Quản trị'
+              : 'Không có quyền truy cập',
+          message: !auth.isLoggedIn
+              ? 'Tính năng Quản lý đơn hàng nội bộ chỉ dành cho Quản trị viên và Nhân viên cửa hàng.\n\nVui lòng đăng nhập với tài khoản Quản trị để tiếp tục.'
+              : 'Tài khoản hiện tại (${auth.user?.email}) là tài khoản Khách hàng, không thể quản lý đơn hàng.\n\nVui lòng đăng nhập với tài khoản Quản trị viên (admin@gmail.com / 123456).',
+          actionLabel:
+              !auth.isLoggedIn ? 'Đăng nhập ngay' : 'Đăng nhập tài khoản Quản trị',
+          onAction: () async {
+            await Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const LoginPage()),
+            );
+            if (!context.mounted) return;
+            final updatedAuth = context.read<AuthProvider>();
+            if (updatedAuth.isLoggedIn &&
+                (updatedAuth.user?.role == 'admin' ||
+                    updatedAuth.user?.role == 'staff')) {
+              context.read<OrderProvider>().loadStaffOrders();
+            }
+          },
         ),
       );
     }
@@ -145,6 +114,7 @@ class _StaffOrderManagementPageState extends State<StaffOrderManagementPage> {
     final orders = orderProv.staffOrders;
 
     return Scaffold(
+      backgroundColor: c.background,
       appBar: AppBar(
         title: const Text('Quản lý đơn hàng'),
         centerTitle: true,
@@ -154,11 +124,11 @@ class _StaffOrderManagementPageState extends State<StaffOrderManagementPage> {
         children: [
           if (orderProv.errorMessage != null)
             MaterialBanner(
-              backgroundColor: Colors.red.shade50,
-              leading: const Icon(Icons.info_outline, color: Colors.red),
+              backgroundColor: c.danger.withValues(alpha: 0.1),
+              leading: Icon(Icons.info_outline, color: c.danger),
               content: Text(
                 orderProv.errorMessage!,
-                style: const TextStyle(color: Colors.red),
+                style: TextStyle(color: c.danger),
               ),
               actions: [
                 if (orderProv.isUnauthorized)
@@ -172,104 +142,48 @@ class _StaffOrderManagementPageState extends State<StaffOrderManagementPage> {
                         orderProv.loadStaffOrders();
                       }
                     },
-                    child: const Text('Đăng nhập', style: TextStyle(fontWeight: FontWeight.bold)),
+                    child: const Text('Đăng nhập',
+                        style: TextStyle(fontWeight: FontWeight.bold)),
                   )
                 else
                   TextButton(
                     onPressed: orderProv.loadStaffOrders,
-                    child: const Text('Thử lại', style: TextStyle(fontWeight: FontWeight.bold)),
+                    child: const Text('Thử lại',
+                        style: TextStyle(fontWeight: FontWeight.bold)),
                   ),
               ],
             ),
           // Thong ke nhanh danh cho nhan vien
           Container(
-            padding: const EdgeInsets.all(12),
-            color: Colors.grey.shade100,
+            padding: const EdgeInsets.all(AppSpacing.md),
+            color: c.surfaceVariant,
             child: Row(
               children: [
-                Expanded(
-                  child: Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: Colors.grey.shade300),
-                    ),
-                    child: Column(
-                      children: [
-                        const Text('Tổng đơn',
-                            style: TextStyle(fontSize: 11, color: Colors.grey)),
-                        const SizedBox(height: 2),
-                        Text('${stats['totalOrders']}',
-                            style: const TextStyle(
-                                fontWeight: FontWeight.bold, fontSize: 16)),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: Colors.grey.shade300),
-                    ),
-                    child: Column(
-                      children: [
-                        const Text('Chờ xử lý',
-                            style: TextStyle(fontSize: 11, color: Colors.blue)),
-                        const SizedBox(height: 2),
-                        Text('${stats['pendingCount']}',
-                            style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                                color: Colors.blue)),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: Colors.grey.shade300),
-                    ),
-                    child: Column(
-                      children: [
-                        const Text('Đang giao',
-                            style:
-                                TextStyle(fontSize: 11, color: Colors.purple)),
-                        const SizedBox(height: 2),
-                        Text('${stats['shippingCount']}',
-                            style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                                color: Colors.purple)),
-                      ],
-                    ),
-                  ),
-                ),
+                _buildStatTile(c, 'Tổng đơn', '${stats['totalOrders']}',
+                    c.textPrimary),
+                const SizedBox(width: AppSpacing.sm),
+                _buildStatTile(
+                    c, 'Chờ xử lý', '${stats['pendingCount']}', c.primary),
+                const SizedBox(width: AppSpacing.sm),
+                _buildStatTile(
+                    c, 'Đang giao', '${stats['shippingCount']}', c.success),
               ],
             ),
           ),
 
           // Thanh tim kiem don theo ma / sdt / ten khach
           Padding(
-            padding: const EdgeInsets.fromLTRB(12, 10, 12, 6),
+            padding: const EdgeInsets.fromLTRB(
+                AppSpacing.md, AppSpacing.md, AppSpacing.md, AppSpacing.sm),
             child: TextField(
               controller: _searchCtrl,
               decoration: InputDecoration(
                 hintText: 'Tìm theo mã đơn, SĐT hoặc tên khách...',
                 suffixIcon: _searchCtrl.text.isNotEmpty
                     ? IconButton(
-                        icon: const Text('✕',
+                        icon: Text('✕',
                             style: TextStyle(
-                                color: Colors.grey,
+                                color: c.textMuted,
                                 fontWeight: FontWeight.bold)),
                         onPressed: () {
                           _searchCtrl.clear();
@@ -277,9 +191,8 @@ class _StaffOrderManagementPageState extends State<StaffOrderManagementPage> {
                         },
                       )
                     : null,
-                border:
-                    OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                contentPadding:
+                    const EdgeInsets.symmetric(vertical: AppSpacing.md),
                 isDense: true,
               ),
               onChanged: (val) => orderProv.setStaffSearchQuery(val),
@@ -289,41 +202,47 @@ class _StaffOrderManagementPageState extends State<StaffOrderManagementPage> {
           // Chips loc trang thai
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md, vertical: AppSpacing.xs),
             child: Row(
               children: [
-                _buildFilterChip(orderProv, 'all', 'Tất cả'),
+                _buildFilterChip(c, orderProv, 'all', 'Tất cả'),
                 _buildFilterChip(
-                    orderProv, 'processing', 'Chờ duyệt & Đóng gói'),
-                _buildFilterChip(orderProv, 'shipping', 'Đang vận chuyển'),
-                _buildFilterChip(orderProv, 'delivered', 'Hoàn thành'),
-                _buildFilterChip(orderProv, 'canceled', 'Đã hủy'),
+                    c, orderProv, 'processing', 'Chờ duyệt & Đóng gói'),
+                _buildFilterChip(c, orderProv, 'shipping', 'Đang vận chuyển'),
+                _buildFilterChip(c, orderProv, 'delivered', 'Hoàn thành'),
+                _buildFilterChip(c, orderProv, 'canceled', 'Đã hủy'),
               ],
             ),
           ),
-          const Divider(height: 12),
+          const Divider(height: AppSpacing.md),
 
           // Danh sach don hang
           Expanded(
             child: orders.isEmpty
-                ? const Center(
-                    child: Text('Không tìm thấy đơn hàng nào phù hợp'))
+                ? const StatusView(
+                    icon: Icons.receipt_long_outlined,
+                    title: 'Không tìm thấy đơn hàng nào phù hợp',
+                  )
                 : ListView.separated(
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(AppSpacing.md),
                     itemCount: orders.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 12),
+                    separatorBuilder: (_, __) =>
+                        const SizedBox(height: AppSpacing.md),
                     itemBuilder: (ctx, i) {
                       final order = orders[i];
+                      final statusColor = _getStatusColor(order.status, c);
 
                       return Container(
-                        padding: const EdgeInsets.all(14),
+                        padding: const EdgeInsets.all(AppSpacing.lg),
                         decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.grey.shade200),
+                          color: c.surface,
+                          borderRadius:
+                              BorderRadius.circular(AppTheme.radiusMd),
+                          border: Border.all(color: c.border),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.04),
+                              color: c.shadow,
                               blurRadius: 6,
                               offset: const Offset(0, 2),
                             ),
@@ -338,22 +257,25 @@ class _StaffOrderManagementPageState extends State<StaffOrderManagementPage> {
                               children: [
                                 Text(
                                   order.code,
-                                  style: const TextStyle(
+                                  style: TextStyle(
+                                      color: c.textPrimary,
                                       fontWeight: FontWeight.bold,
                                       fontSize: 15),
                                 ),
                                 Container(
                                   padding: const EdgeInsets.symmetric(
-                                      horizontal: 8, vertical: 3),
+                                      horizontal: AppSpacing.sm,
+                                      vertical: AppSpacing.xs),
                                   decoration: BoxDecoration(
-                                    color: _getStatusColor(order.status)
-                                        .withValues(alpha: 0.12),
-                                    borderRadius: BorderRadius.circular(6),
+                                    color:
+                                        statusColor.withValues(alpha: 0.12),
+                                    borderRadius: BorderRadius.circular(
+                                        AppTheme.radiusXs),
                                   ),
                                   child: Text(
                                     order.status.label,
                                     style: TextStyle(
-                                      color: _getStatusColor(order.status),
+                                      color: statusColor,
                                       fontWeight: FontWeight.bold,
                                       fontSize: 11,
                                     ),
@@ -361,28 +283,28 @@ class _StaffOrderManagementPageState extends State<StaffOrderManagementPage> {
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 6),
+                            const SizedBox(height: AppSpacing.sm),
 
                             // Thong tin khach hang
                             Text(
                                 'Khách hàng: ${order.shipName} • SĐT: ${order.shipPhone}',
-                                style: const TextStyle(
-                                    fontSize: 13, fontWeight: FontWeight.w500)),
+                                style: TextStyle(
+                                    color: c.textPrimary,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w500)),
                             Text('Địa chỉ: ${order.shipAddress}',
                                 style: TextStyle(
-                                    fontSize: 12, color: Colors.grey.shade700)),
-                            const SizedBox(height: 6),
+                                    fontSize: 12, color: c.textSecondary)),
+                            const SizedBox(height: AppSpacing.sm),
                             Text(
                               'Tổng thu: ${formatPrice(order.total)} (${order.paymentMethod.toUpperCase()} • ${order.isPaid ? 'Đã thanh toán' : 'Thu tiền khi giao'})',
                               style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.bold,
-                                color: order.isPaid
-                                    ? Colors.green
-                                    : Colors.deepOrange,
+                                color: order.isPaid ? c.success : c.primary,
                               ),
                             ),
-                            const Divider(height: 16),
+                            const Divider(height: AppSpacing.lg),
 
                             // Nut thao tac cua nhan vien (AP-QT9)
                             Row(
@@ -413,83 +335,41 @@ class _StaffOrderManagementPageState extends State<StaffOrderManagementPage> {
                                   child: const Text('Hóa đơn',
                                       style: TextStyle(fontSize: 12)),
                                 ),
-                                const SizedBox(width: 8),
+                                const SizedBox(width: AppSpacing.sm),
 
                                 if (order.status == OrderStatus.paid)
-                                  ElevatedButton(
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.teal,
-                                      foregroundColor: Colors.white,
-                                      visualDensity: VisualDensity.compact,
+                                  _buildStaffActionButton(
+                                    label: 'Xử lý đơn',
+                                    onPressed: () => _updateStatus(
+                                      orderProv,
+                                      order,
+                                      OrderStatus.processing,
+                                      'Đã xác nhận xử lý đơn ${order.code}',
                                     ),
-                                    onPressed: () async {
-                                      final updated = await orderProv
-                                          .updateOrderStatusByStaff(
-                                              order.id, OrderStatus.processing);
-                                      if (!context.mounted) return;
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
-                                        SnackBar(
-                                            content: Text(updated
-                                                ? 'Đã xác nhận xử lý đơn ${order.code}'
-                                                : orderProv.errorMessage ??
-                                                    'Không cập nhật được đơn hàng')),
-                                      );
-                                    },
-                                    child: const Text('Xử lý đơn',
-                                        style: TextStyle(fontSize: 12)),
                                   ),
 
                                 // Neu dang cho xu ly -> Chuyen sang giao hang
                                 if (order.status == OrderStatus.processing)
-                                  ElevatedButton(
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.blue.shade700,
-                                      foregroundColor: Colors.white,
-                                      visualDensity: VisualDensity.compact,
+                                  _buildStaffActionButton(
+                                    label: 'Giao hàng',
+                                    onPressed: () => _updateStatus(
+                                      orderProv,
+                                      order,
+                                      OrderStatus.shipping,
+                                      'Đã chuyển đơn ${order.code} sang Đang giao',
                                     ),
-                                    child: const Text('Giao hàng',
-                                        style: TextStyle(fontSize: 12)),
-                                    onPressed: () async {
-                                      final updated = await orderProv
-                                          .updateOrderStatusByStaff(
-                                              order.id, OrderStatus.shipping);
-                                      if (!context.mounted) return;
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
-                                        SnackBar(
-                                            content: Text(updated
-                                                ? 'Đã chuyển đơn ${order.code} sang Đang giao'
-                                                : orderProv.errorMessage ??
-                                                    'Không cập nhật được đơn hàng')),
-                                      );
-                                    },
                                   ),
 
                                 // Neu dang giao hang -> Xac nhan hoan thanh
                                 if (order.status == OrderStatus.shipping)
-                                  ElevatedButton(
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.green,
-                                      foregroundColor: Colors.white,
-                                      visualDensity: VisualDensity.compact,
+                                  _buildStaffActionButton(
+                                    label: 'Đã giao xong',
+                                    onPressed: () => _updateStatus(
+                                      orderProv,
+                                      order,
+                                      OrderStatus.delivered,
+                                      'Đơn ${order.code} đã hoàn thành!',
                                     ),
-                                    child: const Text('Đã giao xong',
-                                        style: TextStyle(fontSize: 12)),
-                                    onPressed: () async {
-                                      final updated = await orderProv
-                                          .updateOrderStatusByStaff(
-                                              order.id, OrderStatus.delivered);
-                                      if (!context.mounted) return;
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
-                                        SnackBar(
-                                            content: Text(updated
-                                                ? 'Đơn ${order.code} đã hoàn thành!'
-                                                : orderProv.errorMessage ??
-                                                    'Không cập nhật được đơn hàng')),
-                                      );
-                                    },
                                   ),
                               ],
                             ),
@@ -504,18 +384,79 @@ class _StaffOrderManagementPageState extends State<StaffOrderManagementPage> {
     );
   }
 
-  Widget _buildFilterChip(OrderProvider prov, String key, String label) {
+  /// Doi trang thai don roi bao ket qua cho nhan vien.
+  Future<void> _updateStatus(
+    OrderProvider orderProv,
+    OrderModel order,
+    OrderStatus nextStatus,
+    String successMessage,
+  ) async {
+    final updated =
+        await orderProv.updateOrderStatusByStaff(order.id, nextStatus);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(updated
+            ? successMessage
+            : orderProv.errorMessage ?? 'Không cập nhật được đơn hàng'),
+      ),
+    );
+  }
+
+  /// Nut thao tac nho nam trong hang nut cua the don, dung mau nut chinh cua
+  /// theme nen khong can to mau rieng.
+  Widget _buildStaffActionButton({
+    required String label,
+    required VoidCallback onPressed,
+  }) {
+    return ElevatedButton(
+      style: ElevatedButton.styleFrom(
+        visualDensity: VisualDensity.compact,
+      ),
+      onPressed: onPressed,
+      child: Text(label, style: const TextStyle(fontSize: 12)),
+    );
+  }
+
+  /// Mot o thong ke trong hang tom tat dau man.
+  Widget _buildStatTile(
+      AppColors c, String label, String value, Color valueColor) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        decoration: BoxDecoration(
+          color: c.surface,
+          borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+          border: Border.all(color: c.border),
+        ),
+        child: Column(
+          children: [
+            Text(label, style: TextStyle(fontSize: 11, color: c.textMuted)),
+            const SizedBox(height: AppSpacing.xs),
+            Text(value,
+                style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: valueColor)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFilterChip(
+      AppColors c, OrderProvider prov, String key, String label) {
     final isSelected = prov.staffStatusFilter == key;
     return Padding(
-      padding: const EdgeInsets.only(right: 6),
+      padding: const EdgeInsets.only(right: AppSpacing.sm),
       child: FilterChip(
         selected: isSelected,
         label: Text(label,
             style: TextStyle(
                 fontSize: 12,
-                color: isSelected ? Colors.white : Colors.black87)),
-        backgroundColor: Colors.grey.shade100,
-        selectedColor: Colors.black87,
+                color: isSelected ? c.onPrimary : c.textPrimary)),
+        backgroundColor: c.surfaceVariant,
+        selectedColor: c.primary,
         onSelected: (_) => prov.setStaffStatusFilter(key),
       ),
     );

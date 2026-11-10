@@ -108,7 +108,7 @@ class ProductCard extends StatelessWidget {
       fit: StackFit.expand,
       children: [
         ClipRRect(
-          borderRadius: BorderRadius.circular(AppTheme.radiusCard),
+          borderRadius: BorderRadius.circular(AppTheme.radiusXl),
           child: _image(c),
         ),
         if (badge != null)

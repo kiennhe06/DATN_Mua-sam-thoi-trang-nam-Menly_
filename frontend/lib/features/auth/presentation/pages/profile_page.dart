@@ -5,7 +5,10 @@ import '../widgets/profile_stat_item.dart';
 import 'package:menly_app/core/widgets/display_settings.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:menly_app/core/theme/app_colors.dart';
+import 'package:menly_app/core/theme/app_spacing.dart';
 import 'package:menly_app/core/theme/app_theme.dart';
+import 'package:menly_app/core/widgets/app_buttons.dart';
 import 'package:menly_app/features/address/presentation/pages/address_page.dart';
 import 'package:menly_app/features/auth/presentation/pages/change_password_page.dart';
 import 'package:menly_app/features/auth/presentation/pages/login_page.dart';
@@ -31,6 +34,7 @@ class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
 
   void _showEditProfileModal(BuildContext context, AuthProvider auth) {
+    final c = AppColors.of(context);
     final user = auth.user;
     final nameCtrl = TextEditingController(text: user?.fullName ?? '');
     final phoneCtrl = TextEditingController(text: user?.phone ?? '');
@@ -45,7 +49,8 @@ class ProfilePage extends StatelessWidget {
 
     const avatarPresets = AvatarPreset.presets;
 
-    Future<void> pickAvatar(StateSetter setModalState, ImageSource source) async {
+    Future<void> pickAvatar(
+        StateSetter setModalState, ImageSource source) async {
       try {
         final picker = ImagePicker();
         final picked = await picker.pickImage(
@@ -76,12 +81,15 @@ class ProfilePage extends StatelessWidget {
       }
     }
 
-    Future<void> showSourceSheet(BuildContext context, StateSetter setModalState) async {
+    Future<void> showSourceSheet(
+        BuildContext context, StateSetter setModalState) async {
       final source = await showModalBottomSheet<ImageSource>(
         context: context,
-        backgroundColor: Colors.white,
+        backgroundColor: c.surface,
         shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+          borderRadius: BorderRadius.vertical(
+            top: Radius.circular(AppTheme.radiusLg),
+          ),
         ),
         builder: (sheetCtx) => SafeArea(
           child: Column(
@@ -90,31 +98,35 @@ class ProfilePage extends StatelessWidget {
               Container(
                 width: 40,
                 height: 4,
-                margin: const EdgeInsets.symmetric(vertical: 10),
+                margin: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
+                  color: c.border,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 6),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 6),
                 child: Text(
                   'Chọn ảnh đại diện',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: c.textPrimary,
+                  ),
                 ),
               ),
               const Divider(height: 1),
               ListTile(
-                leading: const Icon(Icons.camera_alt_outlined, color: AppTheme.primary),
+                leading: Icon(Icons.camera_alt_outlined, color: c.primary),
                 title: const Text('Chụp ảnh từ máy ảnh (Camera)'),
                 onTap: () => Navigator.pop(sheetCtx, ImageSource.camera),
               ),
               ListTile(
-                leading: const Icon(Icons.photo_library_outlined, color: AppTheme.primary),
+                leading: Icon(Icons.photo_library_outlined, color: c.primary),
                 title: const Text('Chọn ảnh từ bộ sưu tập (Thư viện)'),
                 onTap: () => Navigator.pop(sheetCtx, ImageSource.gallery),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: AppSpacing.sm),
             ],
           ),
         ),
@@ -128,19 +140,21 @@ class ProfilePage extends StatelessWidget {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: c.surface,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppTheme.radiusXl),
+        ),
       ),
       builder: (ctx) {
         return StatefulBuilder(
           builder: (ctx, setModalState) {
             return Padding(
               padding: EdgeInsets.only(
-                top: 20,
-                left: 20,
-                right: 20,
-                bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
+                top: AppSpacing.xl,
+                left: AppSpacing.xl,
+                right: AppSpacing.xl,
+                bottom: MediaQuery.of(ctx).viewInsets.bottom + AppSpacing.xl,
               ),
               child: SingleChildScrollView(
                 child: Column(
@@ -150,20 +164,34 @@ class ProfilePage extends StatelessWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text(
+                        Text(
                           'Chỉnh sửa thông tin cá nhân',
-                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: c.textPrimary,
+                          ),
                         ),
                         TextButton(
                           onPressed: () => Navigator.pop(ctx),
-                          child: const Text('Đóng', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+                          child: Text('Đóng',
+                              style: TextStyle(
+                                  color: c.textMuted,
+                                  fontWeight: FontWeight.bold)),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: AppSpacing.lg),
 
-                    const Text('Chọn ảnh đại diện:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                    const SizedBox(height: 10),
+                    Text(
+                      'Chọn ảnh đại diện:',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                        color: c.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
 
                     // Avatar preview & Nut chup anh / chon tu bo suu tap
                     Row(
@@ -179,7 +207,9 @@ class ProfilePage extends StatelessWidget {
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
                                   border: Border.all(
-                                    color: pickedAvatarBytes != null ? Colors.green : AppTheme.primary,
+                                    color: pickedAvatarBytes != null
+                                        ? c.success
+                                        : c.primary,
                                     width: 2.5,
                                   ),
                                 ),
@@ -194,7 +224,9 @@ class ProfilePage extends StatelessWidget {
                                       )
                                     : ProfileAvatar(
                                         avatarUrl: selectedPresetId ??
-                                            (avatarCtrl.text.trim().isEmpty ? null : avatarCtrl.text.trim()),
+                                            (avatarCtrl.text.trim().isEmpty
+                                                ? null
+                                                : avatarCtrl.text.trim()),
                                         radius: 36,
                                         fallbackText: user?.fullName ?? 'M',
                                       ),
@@ -203,23 +235,28 @@ class ProfilePage extends StatelessWidget {
                                 right: 0,
                                 bottom: 0,
                                 child: Container(
-                                  padding: const EdgeInsets.all(4),
+                                  padding: const EdgeInsets.all(AppSpacing.xs),
                                   decoration: BoxDecoration(
-                                    color: pickedAvatarBytes != null ? Colors.green : AppTheme.primary,
+                                    color: pickedAvatarBytes != null
+                                        ? c.success
+                                        : c.primary,
                                     shape: BoxShape.circle,
-                                    border: Border.all(color: Colors.white, width: 1.5),
+                                    border: Border.all(
+                                        color: c.surface, width: 1.5),
                                   ),
                                   child: Icon(
-                                    pickedAvatarBytes != null ? Icons.check : Icons.camera_alt,
+                                    pickedAvatarBytes != null
+                                        ? Icons.check
+                                        : Icons.camera_alt,
                                     size: 13,
-                                    color: Colors.white,
+                                    color: c.onPrimary,
                                   ),
                                 ),
                               ),
                             ],
                           ),
                         ),
-                        const SizedBox(width: 14),
+                        const SizedBox(width: AppSpacing.lg),
                         // 2 nut: Chup anh & Bo suu tap
                         Expanded(
                           child: Column(
@@ -229,29 +266,51 @@ class ProfilePage extends StatelessWidget {
                                 children: [
                                   Expanded(
                                     child: OutlinedButton.icon(
-                                      icon: const Icon(Icons.camera_alt_outlined, size: 15),
-                                      label: const Text('Chụp ảnh', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                                      icon: const Icon(
+                                          Icons.camera_alt_outlined,
+                                          size: 15),
+                                      label: const Text('Chụp ảnh',
+                                          style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 12)),
                                       style: OutlinedButton.styleFrom(
-                                        foregroundColor: AppTheme.primary,
-                                        side: const BorderSide(color: AppTheme.primary),
-                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
-                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                        foregroundColor: c.primary,
+                                        side: BorderSide(color: c.primary),
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 6,
+                                            vertical: AppSpacing.sm),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                              AppTheme.radiusSm),
+                                        ),
                                       ),
-                                      onPressed: () => pickAvatar(setModalState, ImageSource.camera),
+                                      onPressed: () => pickAvatar(
+                                          setModalState, ImageSource.camera),
                                     ),
                                   ),
                                   const SizedBox(width: 8),
                                   Expanded(
                                     child: OutlinedButton.icon(
-                                      icon: const Icon(Icons.photo_library_outlined, size: 15),
-                                      label: const Text('Bộ sưu tập', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                                      icon: const Icon(
+                                          Icons.photo_library_outlined,
+                                          size: 15),
+                                      label: const Text('Bộ sưu tập',
+                                          style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 12)),
                                       style: OutlinedButton.styleFrom(
-                                        foregroundColor: AppTheme.primary,
-                                        side: const BorderSide(color: AppTheme.primary),
-                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
-                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                        foregroundColor: c.primary,
+                                        side: BorderSide(color: c.primary),
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 6,
+                                            vertical: AppSpacing.sm),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                              AppTheme.radiusSm),
+                                        ),
                                       ),
-                                      onPressed: () => pickAvatar(setModalState, ImageSource.gallery),
+                                      onPressed: () => pickAvatar(
+                                          setModalState, ImageSource.gallery),
                                     ),
                                   ),
                                 ],
@@ -260,12 +319,16 @@ class ProfilePage extends StatelessWidget {
                                 const SizedBox(height: 6),
                                 Row(
                                   children: [
-                                    const Icon(Icons.check_circle, size: 14, color: Colors.green),
-                                    const SizedBox(width: 4),
+                                    Icon(Icons.check_circle,
+                                        size: 14, color: c.success),
+                                    const SizedBox(width: AppSpacing.xs),
                                     Expanded(
                                       child: Text(
                                         'Đã chọn: ${pickedAvatarFile!.name}',
-                                        style: const TextStyle(fontSize: 11, color: Colors.green, fontWeight: FontWeight.w500),
+                                        style: TextStyle(
+                                            fontSize: 11,
+                                            color: c.success,
+                                            fontWeight: FontWeight.w500),
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
                                       ),
@@ -275,18 +338,21 @@ class ProfilePage extends StatelessWidget {
                                         pickedAvatarFile = null;
                                         pickedAvatarBytes = null;
                                       }),
-                                      child: const Padding(
-                                        padding: EdgeInsets.symmetric(horizontal: 4),
-                                        child: Icon(Icons.close, size: 15, color: Colors.grey),
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: AppSpacing.xs),
+                                        child: Icon(Icons.close,
+                                            size: 15, color: c.textMuted),
                                       ),
                                     ),
                                   ],
                                 ),
                               ] else ...[
                                 const SizedBox(height: 5),
-                                const Text(
+                                Text(
                                   'Chụp trực tiếp hoặc tải từ máy (tối đa 5MB)',
-                                  style: TextStyle(fontSize: 10.5, color: Colors.grey),
+                                  style: TextStyle(
+                                      fontSize: 10.5, color: c.textMuted),
                                 ),
                               ],
                             ],
@@ -294,16 +360,20 @@ class ProfilePage extends StatelessWidget {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 14),
+                    const SizedBox(height: AppSpacing.lg),
 
                     // Mau anh co san
-                    const Text('Hoặc chọn ảnh đại diện có sẵn:', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                    Text(
+                      'Hoặc chọn ảnh đại diện có sẵn:',
+                      style: TextStyle(fontSize: 11, color: c.textMuted),
+                    ),
                     const SizedBox(height: 6),
                     Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
+                      spacing: AppSpacing.sm,
+                      runSpacing: AppSpacing.sm,
                       children: avatarPresets.map((preset) {
-                        final isSelected = selectedPresetId == preset.id && pickedAvatarFile == null;
+                        final isSelected = selectedPresetId == preset.id &&
+                            pickedAvatarFile == null;
                         return Tooltip(
                           message: preset.label,
                           child: InkWell(
@@ -319,11 +389,14 @@ class ProfilePage extends StatelessWidget {
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
                                 border: Border.all(
-                                  color: isSelected ? AppTheme.primary : Colors.transparent,
+                                  color: isSelected
+                                      ? c.primary
+                                      : Colors.transparent,
                                   width: 2,
                                 ),
                               ),
-                              child: ProfileAvatar(avatarUrl: preset.id, radius: 19),
+                              child: ProfileAvatar(
+                                  avatarUrl: preset.id, radius: 19),
                             ),
                           ),
                         );
@@ -336,7 +409,6 @@ class ProfilePage extends StatelessWidget {
                       controller: avatarCtrl,
                       decoration: const InputDecoration(
                         labelText: 'Hoặc nhập liên kết (URL) ảnh đại diện',
-                        border: OutlineInputBorder(),
                         isDense: true,
                       ),
                       onChanged: (_) => setModalState(() {
@@ -345,18 +417,17 @@ class ProfilePage extends StatelessWidget {
                         pickedAvatarBytes = null;
                       }),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: AppSpacing.lg),
 
                     // Ho va ten
                     TextField(
                       controller: nameCtrl,
                       decoration: const InputDecoration(
                         labelText: 'Họ và tên',
-                        border: OutlineInputBorder(),
                         isDense: true,
                       ),
                     ),
-                    const SizedBox(height: 14),
+                    const SizedBox(height: AppSpacing.lg),
 
                     // So dien thoai
                     TextField(
@@ -364,86 +435,80 @@ class ProfilePage extends StatelessWidget {
                       keyboardType: TextInputType.phone,
                       decoration: const InputDecoration(
                         labelText: 'Số điện thoại',
-                        border: OutlineInputBorder(),
                         isDense: true,
                       ),
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: AppSpacing.xl),
 
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.black87,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                        ),
-                        onPressed: isSaving ? null : () async {
-                          if (nameCtrl.text.trim().isEmpty) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Họ tên không được để trống')),
-                            );
-                            return;
-                          }
+                    PrimaryButton(
+                      label: 'Lưu thông tin',
+                      loading: isSaving,
+                      onPressed: isSaving
+                          ? null
+                          : () async {
+                              if (nameCtrl.text.trim().isEmpty) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                      content:
+                                          Text('Họ tên không được để trống')),
+                                );
+                                return;
+                              }
 
-                          setModalState(() => isSaving = true);
+                              setModalState(() => isSaving = true);
 
-                          String? avatarUrlToSave = selectedPresetId ?? avatarCtrl.text.trim();
+                              String? avatarUrlToSave =
+                                  selectedPresetId ?? avatarCtrl.text.trim();
 
-                          // 1. Neu co chon anh tu bo suu tap -> Tai len server
-                          if (pickedAvatarFile != null) {
-                            final uploadedUrl = await auth.uploadAvatar(pickedAvatarFile!);
-                            if (uploadedUrl == null) {
-                              setModalState(() => isSaving = false);
+                              // 1. Neu co chon anh tu bo suu tap -> Tai len server
+                              if (pickedAvatarFile != null) {
+                                final uploadedUrl =
+                                    await auth.uploadAvatar(pickedAvatarFile!);
+                                if (uploadedUrl == null) {
+                                  setModalState(() => isSaving = false);
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(auth.profileUpdateError ??
+                                            'Không thể tải ảnh đại diện lên máy chủ'),
+                                        backgroundColor: c.danger,
+                                      ),
+                                    );
+                                  }
+                                  return;
+                                }
+                                avatarUrlToSave = uploadedUrl;
+                              }
+
+                              // 2. Cap nhat ho so nguoi dung
+                              final updated = await auth.updateProfile(
+                                fullName: nameCtrl.text,
+                                phone: phoneCtrl.text,
+                                avatarUrl: avatarUrlToSave,
+                              );
+
                               if (context.mounted) {
+                                if (!updated) {
+                                  setModalState(() => isSaving = false);
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(auth.profileUpdateError ??
+                                          'Không thể cập nhật hồ sơ'),
+                                      backgroundColor: c.danger,
+                                    ),
+                                  );
+                                  return;
+                                }
+                                Navigator.pop(ctx);
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
-                                    content: Text(auth.profileUpdateError ?? 'Không thể tải ảnh đại diện lên máy chủ'),
-                                    backgroundColor: Colors.red,
+                                    content: const Text(
+                                        'Cập nhật thông tin thành công!'),
+                                    backgroundColor: c.success,
                                   ),
                                 );
                               }
-                              return;
-                            }
-                            avatarUrlToSave = uploadedUrl;
-                          }
-
-                          // 2. Cap nhat ho so nguoi dung
-                          final updated = await auth.updateProfile(
-                            fullName: nameCtrl.text,
-                            phone: phoneCtrl.text,
-                            avatarUrl: avatarUrlToSave,
-                          );
-
-                          if (context.mounted) {
-                            if (!updated) {
-                              setModalState(() => isSaving = false);
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(auth.profileUpdateError ?? 'Không thể cập nhật hồ sơ'),
-                                  backgroundColor: Colors.red,
-                                ),
-                              );
-                              return;
-                            }
-                            Navigator.pop(ctx);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Cập nhật thông tin thành công!'),
-                                backgroundColor: Colors.green,
-                              ),
-                            );
-                          }
-                        },
-                        child: isSaving
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                              )
-                            : const Text('Lưu thông tin', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-                      ),
+                            },
                     ),
                   ],
                 ),
@@ -462,26 +527,35 @@ class ProfilePage extends StatelessWidget {
     final wishlist = context.watch<WishlistProvider>();
     final voucherProv = context.watch<VoucherProvider>();
     final user = auth.user;
+    final c = AppColors.of(context);
 
     return Scaffold(
-      backgroundColor: AppTheme.scaffoldBackground,
+      backgroundColor: c.background,
       appBar: AppBar(
         title: const Text('Tài khoản cá nhân'),
         centerTitle: true,
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // 1. THE THONG TIN NGUOI DUNG & AVATAR
+            //
+            // The nay to nen ink dam de lam diem neo cho ca man: phan con lai
+            // deu la the trang tren nen trang, khong co gi dan mat.
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(AppSpacing.xl),
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppTheme.border),
-                boxShadow: AppTheme.softShadow,
+                color: c.inkCard,
+                borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+                boxShadow: [
+                  BoxShadow(
+                    color: c.shadow,
+                    blurRadius: 18,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
               ),
               child: Column(
                 children: [
@@ -489,13 +563,15 @@ class ProfilePage extends StatelessWidget {
                     children: [
                       // Avatar (co the click truc tiep de chinh sua)
                       GestureDetector(
-                        onTap: auth.isLoggedIn ? () => _showEditProfileModal(context, auth) : null,
+                        onTap: auth.isLoggedIn
+                            ? () => _showEditProfileModal(context, auth)
+                            : null,
                         child: Stack(
                           children: [
                             Container(
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                border: Border.all(color: AppTheme.primary, width: 2),
+                                border: Border.all(color: c.onInk, width: 2),
                               ),
                               child: ProfileAvatar(
                                 avatarUrl: user?.avatarUrl,
@@ -508,18 +584,19 @@ class ProfilePage extends StatelessWidget {
                                 right: 0,
                                 bottom: 0,
                                 child: Container(
-                                  padding: const EdgeInsets.all(4),
-                                  decoration: const BoxDecoration(
-                                    color: AppTheme.primary,
+                                  padding: const EdgeInsets.all(AppSpacing.xs),
+                                  decoration: BoxDecoration(
+                                    color: c.surface,
                                     shape: BoxShape.circle,
                                   ),
-                                  child: const Icon(Icons.camera_alt, size: 13, color: Colors.white),
+                                  child: Icon(Icons.camera_alt,
+                                      size: 13, color: c.textPrimary),
                                 ),
                               ),
                           ],
                         ),
                       ),
-                      const SizedBox(width: 16),
+                      const SizedBox(width: AppSpacing.lg),
                       // Thong tin ca nhan
                       Expanded(
                         child: Column(
@@ -527,32 +604,48 @@ class ProfilePage extends StatelessWidget {
                           children: [
                             Text(
                               user?.fullName ?? 'Khách hàng Menly',
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17),
+                              style: TextStyle(
+                                fontWeight: FontWeight.w800,
+                                fontSize: 18,
+                                color: c.onInk,
+                              ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
                             const SizedBox(height: 3),
                             Text(
                               user?.email ?? 'Chưa đăng nhập',
-                              style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                              style: TextStyle(
+                                color: c.onInk.withValues(alpha: 0.72),
+                                fontSize: 13,
+                              ),
                             ),
                             const SizedBox(height: 2),
                             Text(
                               user?.phone ?? 'Chưa cập nhật SĐT',
-                              style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                              style: TextStyle(
+                                color: c.onInk.withValues(alpha: 0.72),
+                                fontSize: 12,
+                              ),
                             ),
                             const SizedBox(height: 6),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: AppSpacing.sm,
+                                vertical: 2,
+                              ),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFF0E4D4),
-                                borderRadius: BorderRadius.circular(6),
+                                color: c.onInk.withValues(alpha: 0.16),
+                                borderRadius:
+                                    BorderRadius.circular(AppTheme.radiusPill),
                               ),
                               child: Text(
-                                user?.role == 'admin' ? 'Quản trị viên' : 'Thành viên Menly VIP',
-                                style: const TextStyle(
-                                  fontSize: 10,
-                                  color: Color(0xFF8A6234),
+                                user?.role == 'admin'
+                                    ? 'Quản trị viên'
+                                    : 'Thành viên Menly VIP',
+                                style: TextStyle(
+                                  fontSize: 10.5,
+                                  color: c.onInk,
                                   fontWeight: FontWeight.w700,
                                 ),
                               ),
@@ -562,144 +655,192 @@ class ProfilePage extends StatelessWidget {
                       ),
                     ],
                   ),
-                  const Divider(height: 24),
-                  // Nut doi thong tin & avatar hoac Dang nhap / Dang ky ngay
+                  Divider(
+                    height: AppSpacing.xxl,
+                    color: c.onInk.withValues(alpha: 0.18),
+                  ),
+                  // Nut doi thong tin & avatar hoac Dang nhap / Dang ky ngay.
+                  // Nam tren nen ink nen phai dao mau: nen sang, chu toi.
                   if (!auth.isLoggedIn)
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppTheme.primary,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          elevation: 0,
-                        ),
-                        onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LoginPage())),
-                        child: const Text('Đăng nhập / Đăng ký ngay', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                    PrimaryButton(
+                      label: 'Đăng nhập / Đăng ký ngay',
+                      height: 48,
+                      background: c.onInk,
+                      foreground: c.inkCard,
+                      onPressed: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const LoginPage()),
                       ),
                     )
                   else
-                    SizedBox(
-                      width: double.infinity,
-                      child: OutlinedButton(
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: AppTheme.primary,
-                          side: const BorderSide(color: AppTheme.primary),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                          padding: const EdgeInsets.symmetric(vertical: 10),
-                        ),
-                        onPressed: () => _showEditProfileModal(context, auth),
-                        child: const Text('Chỉnh sửa thông tin & Avatar', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                      ),
+                    PrimaryButton(
+                      label: 'Chỉnh sửa thông tin & Avatar',
+                      height: 48,
+                      background: c.onInk,
+                      foreground: c.inkCard,
+                      onPressed: () => _showEditProfileModal(context, auth),
                     ),
                 ],
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.lg),
 
             // 2. THANH THONG KE NHANH
             Container(
-              padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+              padding: const EdgeInsets.symmetric(
+                vertical: AppSpacing.lg,
+                horizontal: AppSpacing.lg,
+              ),
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: AppTheme.border),
+                color: c.surface,
+                borderRadius: BorderRadius.circular(AppTheme.radiusCard),
+                border: Border.all(color: c.border),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
                   ProfileStatItem(
+                    icon: Icons.receipt_long_rounded,
                     label: 'Đơn hàng',
                     value: '${orderProv.allOrders.length}',
-                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MyOrdersPage())),
+                    onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const MyOrdersPage())),
                   ),
-                  Container(height: 28, width: 1, color: Colors.grey.shade200),
+                  Container(height: 32, width: 1, color: c.border),
                   ProfileStatItem(
+                    icon: Icons.favorite_border_rounded,
                     label: 'Yêu thích',
                     value: '${wishlist.count}',
-                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const WishlistPage())),
+                    onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const WishlistPage())),
                   ),
-                  Container(height: 28, width: 1, color: Colors.grey.shade200),
+                  Container(height: 32, width: 1, color: c.border),
                   ProfileStatItem(
+                    icon: Icons.confirmation_number_outlined,
                     label: 'Voucher',
                     value: '${voucherProv.vouchers.length}',
-                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const VoucherListPage())),
+                    onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const VoucherListPage())),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: AppSpacing.xl),
 
             // 3. NHOM: QUAN LY DON HANG & MUA SAM
-            const Text('Đơn hàng & Mua sắm', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-            const SizedBox(height: 8),
+            Text(
+              'Đơn hàng & Mua sắm',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 15,
+                color: c.textPrimary,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
             Container(
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: AppTheme.border),
+                color: c.surface,
+                borderRadius: BorderRadius.circular(AppTheme.radiusCard),
+                border: Border.all(color: c.border),
               ),
               child: Column(
                 children: [
                   ProfileMenuItem(
+                    icon: Icons.receipt_long_rounded,
                     title: 'Đơn hàng của tôi',
-                    subtitle: 'Theo dõi tiến trình giao hàng và lịch sử mua sắm',
+                    subtitle:
+                        'Theo dõi tiến trình giao hàng và lịch sử mua sắm',
                     badge: '${orderProv.allOrders.length}',
-                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MyOrdersPage())),
+                    onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const MyOrdersPage())),
                   ),
                   const Divider(height: 1),
                   ProfileMenuItem(
+                    icon: Icons.travel_explore_rounded,
                     title: 'Tra cứu đơn hàng',
-                    subtitle: 'Nhập mã đơn hoặc số điện thoại để xem tình trạng đơn hàng',
+                    subtitle:
+                        'Nhập mã đơn hoặc số điện thoại để xem tình trạng đơn hàng',
                     badge: 'Mới',
-                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const OrderTrackPage())),
+                    onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const OrderTrackPage())),
                   ),
                   const Divider(height: 1),
                   ProfileMenuItem(
+                    icon: Icons.notifications_none_rounded,
                     title: 'Thông báo',
                     subtitle: 'Xem khuyến mãi, tin tức và thông báo từ shop',
                     badge: context.watch<NotificationProvider>().unreadCount > 0
                         ? context.watch<NotificationProvider>().unreadCountLabel
                         : null,
-                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationsPage())),
+                    onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const NotificationsPage())),
                   ),
                   const Divider(height: 1),
                   ProfileMenuItem(
+                    icon: Icons.confirmation_number_outlined,
                     title: 'Kho Voucher giảm giá',
                     subtitle: 'Xem các mã khuyến mãi áp dụng khi thanh toán',
                     badge: 'Mới',
-                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const VoucherListPage())),
+                    onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const VoucherListPage())),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: AppSpacing.xl),
 
             // 4. NHOM: CAI DAT TAI KHOAN
-            const Text('Cài đặt tài khoản', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-            const SizedBox(height: 8),
+            Text(
+              'Cài đặt tài khoản',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 15,
+                color: c.textPrimary,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
             Container(
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: AppTheme.border),
+                color: c.surface,
+                borderRadius: BorderRadius.circular(AppTheme.radiusCard),
+                border: Border.all(color: c.border),
               ),
               child: Column(
                 children: [
                   ProfileMenuItem(
+                    icon: Icons.location_on_outlined,
                     title: 'Địa chỉ của tôi',
                     subtitle: 'Quản lý danh sách địa chỉ nhận hàng',
-                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AddressPage())),
+                    onTap: () => Navigator.push(context,
+                        MaterialPageRoute(builder: (_) => const AddressPage())),
                   ),
                   const Divider(height: 1),
                   ProfileMenuItem(
+                    icon: Icons.lock_outline_rounded,
                     title: 'Đổi mật khẩu',
                     subtitle: 'Cập nhật mật khẩu mới bảo mật tài khoản',
-                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ChangePasswordPage())),
+                    onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const ChangePasswordPage())),
                   ),
                   const Divider(height: 1),
                   ProfileMenuItem(
+                    icon: Icons.palette_outlined,
                     title: 'Giao diện & Hiển thị',
                     subtitle: 'Tùy chỉnh màu chủ đạo và chế độ Sáng / Tối',
                     onTap: () => showDisplaySettings(context),
@@ -707,37 +848,51 @@ class ProfilePage extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: AppSpacing.xl),
 
             // 5. NHOM: HO TRO & QUAN TRI
-            const Text('Hỗ trợ & Quản trị', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-            const SizedBox(height: 8),
+            Text(
+              'Hỗ trợ & Quản trị',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 15,
+                color: c.textPrimary,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
             Container(
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: AppTheme.border),
+                color: c.surface,
+                borderRadius: BorderRadius.circular(AppTheme.radiusCard),
+                border: Border.all(color: c.border),
               ),
               child: Column(
                 children: [
                   ProfileMenuItem(
+                    icon: Icons.inventory_2_outlined,
                     title: 'Quản lý đơn hàng (Admin/Nhân viên)',
                     subtitle: 'Xem danh sách và cập nhật trạng thái giao hàng',
-                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const StaffOrderManagementPage())),
+                    onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const StaffOrderManagementPage())),
                   ),
                   if (user?.role == 'staff' || user?.role == 'admin') ...[
                     const Divider(height: 1),
                     ProfileMenuItem(
+                      icon: Icons.forum_outlined,
                       title: 'Hội thoại CSKH',
                       subtitle: 'Trả lời tin nhắn từ khách hàng',
                       onTap: () => Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (_) => const StaffSupportInboxPage()),
+                        MaterialPageRoute(
+                            builder: (_) => const StaffSupportInboxPage()),
                       ),
                     ),
                   ],
                   const Divider(height: 1),
                   ProfileMenuItem(
+                    icon: Icons.support_agent_rounded,
                     title: 'Chat với nhân viên',
                     subtitle: 'Tư vấn chọn size & phối đồ tức thì 24/7',
                     onTap: () => Navigator.push(
@@ -747,65 +902,60 @@ class ProfilePage extends StatelessWidget {
                   ),
                   const Divider(height: 1),
                   ProfileMenuItem(
+                    icon: Icons.help_outline_rounded,
                     title: 'Trung tâm trợ giúp & CSKH',
                     subtitle: 'Hotline 1900 6868, giải đáp thắc mắc thường gặp',
-                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const FAQPage())),
+                    onTap: () => Navigator.push(context,
+                        MaterialPageRoute(builder: (_) => const FAQPage())),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: AppSpacing.xxl),
 
             // 6. NUT DANG XUAT / DANG NHAP
-            SizedBox(
-              width: double.infinity,
-              child: auth.isLoggedIn
-                  ? OutlinedButton(
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.red,
-                        side: const BorderSide(color: Colors.red),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                      ),
-                      onPressed: () {
-                        showDialog(
-                          context: context,
-                          builder: (ctx) => AlertDialog(
-                            title: const Text('Xác nhận đăng xuất'),
-                            content: const Text('Bạn có chắc chắn muốn đăng xuất tài khoản?'),
-                            actions: [
-                              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Hủy')),
-                              ElevatedButton(
-                                style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
-                                onPressed: () async {
-                                  // Xoa luon du lieu trong bo nho, khong chi
-                                  // phien dang nhap: nguoi vao sau tren cung
-                                  // mot may khong duoc thay gio hang, dia chi
-                                  // hay danh sach yeu thich cua nguoi truoc.
-                                  clearUserDataInMemory(context);
-                                  await auth.logout();
-                                  if (ctx.mounted) Navigator.pop(ctx);
-                                },
-                                child: const Text('Đăng xuất'),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                      child: const Text('Đăng xuất', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                    )
-                  : ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.black87,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                      ),
-                      onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LoginPage())),
-                      child: const Text('Đăng nhập / Đăng ký', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+            auth.isLoggedIn
+                ? SecondaryButton(
+                    label: 'Đăng xuất',
+                    foreground: c.danger,
+                    onPressed: () {
+                      showDialog(
+                        context: context,
+                        builder: (ctx) => AlertDialog(
+                          title: const Text('Xác nhận đăng xuất'),
+                          content: const Text(
+                              'Bạn có chắc chắn muốn đăng xuất tài khoản?'),
+                          actions: [
+                            TextButton(
+                                onPressed: () => Navigator.pop(ctx),
+                                child: const Text('Hủy')),
+                            DestructiveButton(
+                              label: 'Đăng xuất',
+                              expanded: false,
+                              height: 40,
+                              onPressed: () async {
+                                // Xoa luon du lieu trong bo nho, khong chi
+                                // phien dang nhap: nguoi vao sau tren cung
+                                // mot may khong duoc thay gio hang, dia chi
+                                // hay danh sach yeu thich cua nguoi truoc.
+                                clearUserDataInMemory(context);
+                                await auth.logout();
+                                if (ctx.mounted) Navigator.pop(ctx);
+                              },
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  )
+                : PrimaryButton(
+                    label: 'Đăng nhập / Đăng ký',
+                    onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const LoginPage()),
                     ),
-            ),
-            const SizedBox(height: 24),
+                  ),
+            const SizedBox(height: AppSpacing.xxl),
           ],
         ),
       ),

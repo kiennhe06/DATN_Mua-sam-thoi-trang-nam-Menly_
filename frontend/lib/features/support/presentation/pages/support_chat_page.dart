@@ -1,6 +1,9 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/state_views.dart';
 import '../../data/support_chat_service.dart';
 import 'package:menly_app/features/chat/presentation/pages/live_chat_page.dart';
 
@@ -89,7 +92,7 @@ class _SupportChatPageState extends State<SupportChatPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(error.toString().replaceFirst('Exception: ', '')),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.of(context).danger,
           ),
         );
       }
@@ -105,6 +108,7 @@ class _SupportChatPageState extends State<SupportChatPage> {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     final conversation = _conversation;
     final title = widget.isStaffConversation
         ? (conversation?.customerName?.trim().isNotEmpty == true
@@ -113,7 +117,7 @@ class _SupportChatPageState extends State<SupportChatPage> {
         : 'Chat với CSKH';
 
     return Scaffold(
-      backgroundColor: AppTheme.scaffoldBackground,
+      backgroundColor: c.background,
       appBar: AppBar(
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -123,10 +127,10 @@ class _SupportChatPageState extends State<SupportChatPage> {
               widget.isStaffConversation
                   ? 'Hỗ trợ khách hàng'
                   : 'Nhân viên Menly sẽ phản hồi sớm',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.normal,
-                color: AppTheme.textSecondary,
+                color: c.textSecondary,
               ),
             ),
           ],
@@ -134,7 +138,7 @@ class _SupportChatPageState extends State<SupportChatPage> {
         actions: [
           IconButton(
             tooltip: 'Tư vấn AI Stylist 24/7',
-            icon: const Icon(Icons.auto_awesome, color: AppTheme.primaryAccent),
+            icon: Icon(Icons.auto_awesome, color: c.primary),
             onPressed: () {
               Navigator.push(
                 context,
@@ -153,15 +157,26 @@ class _SupportChatPageState extends State<SupportChatPage> {
         children: [
           Expanded(
             child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
+                ? const LoadingView()
                 : _error != null && conversation == null
-                    ? _ChatLoadError(message: _error!, onRetry: _loadChat)
+                    ? StatusView(
+                        icon: Icons.error_outline,
+                        title: _error!,
+                        danger: true,
+                        actionLabel: 'Thử lại',
+                        onAction: _loadChat,
+                      )
                     : _messages.isEmpty
-                        ? const _ChatWelcome()
+                        ? const StatusView(
+                            icon: Icons.support_agent_rounded,
+                            title: 'Menly sẵn sàng hỗ trợ bạn',
+                            message:
+                                'Gửi câu hỏi về đơn hàng, sản phẩm hoặc đổi trả. Nhân viên CSKH sẽ phản hồi tại đây.',
+                          )
                         : ListView.builder(
                             controller: _scrollController,
                             reverse: true,
-                            padding: const EdgeInsets.all(16),
+                            padding: const EdgeInsets.all(AppSpacing.lg),
                             itemCount: _messages.length,
                             itemBuilder: (context, index) {
                               final message =
@@ -189,10 +204,13 @@ class _SupportChatPageState extends State<SupportChatPage> {
           SafeArea(
             top: false,
             child: Container(
-              padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                border: Border(top: BorderSide(color: AppTheme.border)),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md,
+                vertical: AppSpacing.md,
+              ),
+              decoration: BoxDecoration(
+                color: c.surface,
+                border: Border(top: BorderSide(color: c.border)),
               ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.end,
@@ -210,33 +228,34 @@ class _SupportChatPageState extends State<SupportChatPage> {
                             : 'Nhập tin nhắn cho CSKH...',
                         counterText: '',
                         filled: true,
-                        fillColor: AppTheme.scaffoldBackground,
+                        fillColor: c.surfaceVariant,
                         contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
+                          horizontal: AppSpacing.lg,
+                          vertical: AppSpacing.md,
                         ),
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(22),
+                          borderRadius:
+                              BorderRadius.circular(AppTheme.radiusPill),
                           borderSide: BorderSide.none,
                         ),
                       ),
                       onSubmitted: (_) => _sendMessage(),
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: AppSpacing.sm),
                   IconButton.filled(
                     onPressed: _isSending ? null : _sendMessage,
                     style: IconButton.styleFrom(
-                      backgroundColor: AppTheme.primary,
-                      foregroundColor: Colors.white,
+                      backgroundColor: c.primary,
+                      foregroundColor: c.onPrimary,
                     ),
                     icon: _isSending
-                        ? const SizedBox(
+                        ? SizedBox(
                             width: 18,
                             height: 18,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              color: Colors.white,
+                              color: c.onPrimary,
                             ),
                           )
                         : const Icon(Icons.send_rounded),
@@ -264,23 +283,37 @@ class _ChatBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     return Align(
       alignment: isMine ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
         constraints: BoxConstraints(
           maxWidth: MediaQuery.sizeOf(context).width * 0.78,
         ),
-        margin: const EdgeInsets.only(bottom: 10),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        margin: const EdgeInsets.only(bottom: AppSpacing.md),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.md,
+        ),
         decoration: BoxDecoration(
-          color: isMine ? AppTheme.primary : Colors.white,
+          color: isMine ? c.primary : c.surface,
           borderRadius: BorderRadius.only(
-            topLeft: const Radius.circular(16),
-            topRight: const Radius.circular(16),
-            bottomLeft: Radius.circular(isMine ? 16 : 4),
-            bottomRight: Radius.circular(isMine ? 4 : 16),
+            topLeft: const Radius.circular(AppTheme.radiusLg),
+            topRight: const Radius.circular(AppTheme.radiusLg),
+            bottomLeft: Radius.circular(
+              isMine ? AppTheme.radiusLg : AppTheme.radiusXs,
+            ),
+            bottomRight: Radius.circular(
+              isMine ? AppTheme.radiusXs : AppTheme.radiusLg,
+            ),
           ),
-          boxShadow: AppTheme.softShadow,
+          boxShadow: [
+            BoxShadow(
+              color: c.shadow,
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.end,
@@ -288,87 +321,21 @@ class _ChatBubble extends StatelessWidget {
             Text(
               message.content,
               style: TextStyle(
-                color: isMine ? Colors.white : AppTheme.textPrimary,
+                color: isMine ? c.onPrimary : c.textPrimary,
                 fontSize: 14,
                 height: 1.35,
               ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: AppSpacing.xs),
             Text(
               time,
               style: TextStyle(
-                color: isMine ? Colors.white70 : AppTheme.textMuted,
+                color: isMine
+                    ? c.onPrimary.withValues(alpha: 0.7)
+                    : c.textMuted,
                 fontSize: 10,
               ),
             ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ChatWelcome extends StatelessWidget {
-  const _ChatWelcome();
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-                boxShadow: AppTheme.softShadow,
-              ),
-              child: const Icon(
-                Icons.support_agent_rounded,
-                color: AppTheme.primaryAccent,
-                size: 38,
-              ),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'Menly sẵn sàng hỗ trợ bạn',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17),
-            ),
-            const SizedBox(height: 6),
-            const Text(
-              'Gửi câu hỏi về đơn hàng, sản phẩm hoặc đổi trả. Nhân viên CSKH sẽ phản hồi tại đây.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: AppTheme.textSecondary, height: 1.4),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ChatLoadError extends StatelessWidget {
-  final String message;
-  final VoidCallback onRetry;
-
-  const _ChatLoadError({required this.message, required this.onRetry});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.error_outline, color: Colors.red, size: 40),
-            const SizedBox(height: 12),
-            Text(message, textAlign: TextAlign.center),
-            const SizedBox(height: 12),
-            OutlinedButton(onPressed: onRetry, child: const Text('Thử lại')),
           ],
         ),
       ),

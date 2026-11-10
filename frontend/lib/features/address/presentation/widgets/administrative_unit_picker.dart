@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/state_views.dart';
 import '../../data/vietnam_administrative_data.dart';
 
 /// Tỉnh chọn sẵn khi người dùng chưa nhập gì (theo 34 tỉnh thành mới)
@@ -110,12 +114,15 @@ class _AdministrativeUnitPickerState extends State<AdministrativeUnitPicker> {
     bool isProvinceSelection = false,
     bool isWardSelection = false,
   }) async {
+    final c = AppColors.of(context);
     return showModalBottomSheet<String>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: c.surface,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppTheme.radiusXl),
+        ),
       ),
       builder: (ctx) {
         String searchQuery = '';
@@ -161,33 +168,32 @@ class _AdministrativeUnitPickerState extends State<AdministrativeUnitPicker> {
                   children: [
                     // Thanh gạt modal
                     Container(
-                      margin: const EdgeInsets.symmetric(vertical: 10),
+                      margin: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
                       width: 40,
                       height: 4,
                       decoration: BoxDecoration(
-                        color: Colors.grey.shade300,
+                        color: c.border,
                         borderRadius: BorderRadius.circular(2),
                       ),
                     ),
 
                     // Tiêu đề modal
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
                       child: Row(
                         children: [
                           Expanded(
                             child: Text(
                               title,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
-                                color: Color(0xFF1C1B17),
+                                color: c.textPrimary,
                               ),
                             ),
                           ),
                           IconButton(
-                            icon: const Icon(Icons.close_rounded,
-                                color: Colors.grey),
+                            icon: Icon(Icons.close_rounded, color: c.textMuted),
                             onPressed: () => Navigator.pop(modalCtx),
                           ),
                         ],
@@ -196,15 +202,14 @@ class _AdministrativeUnitPickerState extends State<AdministrativeUnitPicker> {
 
                     // Search input
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
                       child: TextField(
                         autofocus: false,
                         decoration: InputDecoration(
                           hintText: 'Tìm kiếm...',
-                          hintStyle: TextStyle(
-                              fontSize: 13, color: Colors.grey.shade400),
-                          prefixIcon: const Icon(Icons.search_rounded,
-                              size: 20, color: Colors.grey),
+                          hintStyle: TextStyle(fontSize: 13, color: c.textMuted),
+                          prefixIcon: Icon(Icons.search_rounded,
+                              size: 20, color: c.textMuted),
                           suffixIcon: searchQuery.isNotEmpty
                               ? IconButton(
                                   icon: const Icon(Icons.clear_rounded,
@@ -214,11 +219,11 @@ class _AdministrativeUnitPickerState extends State<AdministrativeUnitPicker> {
                                 )
                               : null,
                           filled: true,
-                          fillColor: const Color(0xFFF6F4F1),
+                          fillColor: c.surfaceVariant,
                           contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 14, vertical: 12),
+                              horizontal: AppSpacing.lg, vertical: AppSpacing.md),
                           border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(AppTheme.radiusMd),
                             borderSide: BorderSide.none,
                           ),
                         ),
@@ -227,35 +232,21 @@ class _AdministrativeUnitPickerState extends State<AdministrativeUnitPicker> {
                       ),
                     ),
 
-                    const SizedBox(height: 10),
+                    const SizedBox(height: AppSpacing.sm),
                     const Divider(height: 1),
 
                     // Danh sách lựa chọn
                     Expanded(
                       child: filteredItems.isEmpty
-                          ? Center(
-                              child: Padding(
-                                padding: const EdgeInsets.all(24),
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(Icons.search_off_rounded,
-                                        size: 48, color: Colors.grey.shade400),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      'Không tìm thấy "$searchQuery"',
-                                      style: TextStyle(
-                                          color: Colors.grey.shade600,
-                                          fontWeight: FontWeight.w500),
-                                    ),
-                                  ],
-                                ),
-                              ),
+                          ? StatusView(
+                              icon: Icons.search_off_rounded,
+                              title: 'Không tìm thấy "$searchQuery"',
                             )
                           : ListView.separated(
                               controller: scrollController,
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 12, vertical: 8),
+                                  horizontal: AppSpacing.md,
+                                  vertical: AppSpacing.sm),
                               itemCount: filteredItems.length,
                               separatorBuilder: (_, __) =>
                                   const Divider(height: 1, indent: 16),
@@ -265,13 +256,12 @@ class _AdministrativeUnitPickerState extends State<AdministrativeUnitPicker> {
 
                                 return ListTile(
                                   contentPadding: const EdgeInsets.symmetric(
-                                      horizontal: 12, vertical: 2),
+                                      horizontal: AppSpacing.md, vertical: 2),
                                   shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(10),
+                                    borderRadius:
+                                        BorderRadius.circular(AppTheme.radiusSm),
                                   ),
-                                  tileColor: isSelected
-                                      ? const Color(0xFFF0E4D4)
-                                      : null,
+                                  tileColor: isSelected ? c.primarySoft : null,
                                   title: Text(
                                     item,
                                     style: TextStyle(
@@ -280,13 +270,13 @@ class _AdministrativeUnitPickerState extends State<AdministrativeUnitPicker> {
                                           ? FontWeight.bold
                                           : FontWeight.w500,
                                       color: isSelected
-                                          ? const Color(0xFFB8824A)
-                                          : const Color(0xFF1C1B17),
+                                          ? c.primary
+                                          : c.textPrimary,
                                     ),
                                   ),
                                   trailing: isSelected
-                                      ? const Icon(Icons.check_circle_rounded,
-                                          color: Color(0xFFB8824A), size: 20)
+                                      ? Icon(Icons.check_circle_rounded,
+                                          color: c.primary, size: 20)
                                       : null,
                                   onTap: () => Navigator.pop(modalCtx, item),
                                 );
@@ -386,24 +376,27 @@ class _AdministrativeUnitPickerState extends State<AdministrativeUnitPicker> {
     required VoidCallback onTap,
   }) {
     final hasValue = value.trim().isNotEmpty;
+    final c = AppColors.of(context);
 
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(AppTheme.radiusMd),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.md,
+        ),
         decoration: BoxDecoration(
-          color: const Color(0xFFF9FAFB),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: hasValue ? const Color(0xFFD1D5DB) : const Color(0xFFE5E7EB),
-            width: 1,
-          ),
+          // Nen the trang co vien chu khong phai khoi xam dac: xep bon nam o
+          // xam lien nhau tren mot the trang nhin rat nang va roi.
+          color: c.surface,
+          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+          border: Border.all(color: c.border, width: 1),
         ),
         child: Row(
           children: [
-            Icon(icon, size: 20, color: const Color(0xFF8A6234)),
-            const SizedBox(width: 10),
+            Icon(icon, size: 20, color: c.textMuted),
+            const SizedBox(width: AppSpacing.sm),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -414,7 +407,7 @@ class _AdministrativeUnitPickerState extends State<AdministrativeUnitPicker> {
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
-                      color: Colors.grey.shade600,
+                      color: c.textSecondary,
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -424,9 +417,7 @@ class _AdministrativeUnitPickerState extends State<AdministrativeUnitPicker> {
                       fontSize: 13.5,
                       fontWeight:
                           hasValue ? FontWeight.w600 : FontWeight.normal,
-                      color: hasValue
-                          ? const Color(0xFF1C1B17)
-                          : Colors.grey.shade400,
+                      color: hasValue ? c.textPrimary : c.textMuted,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -435,7 +426,7 @@ class _AdministrativeUnitPickerState extends State<AdministrativeUnitPicker> {
               ),
             ),
             Icon(Icons.keyboard_arrow_down_rounded,
-                size: 20, color: Colors.grey.shade500),
+                size: 20, color: c.textMuted),
           ],
         ),
       ),
@@ -455,33 +446,25 @@ class _AdministrativeUnitPickerState extends State<AdministrativeUnitPicker> {
           icon: Icons.location_city_rounded,
           onTap: _chonTinh,
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: AppSpacing.sm),
 
-        // 2 & 3. Hàng chọn Quận/Huyện và Phường/Xã
-        Row(
-          children: [
-            // Quận / Huyện
-            Expanded(
-              child: _buildSelectionBox(
-                label: 'Quận / Huyện',
-                value: _giaTri.district,
-                placeholder: 'Chọn Quận / Huyện...',
-                icon: Icons.apartment_rounded,
-                onTap: _chonQuan,
-              ),
-            ),
-            const SizedBox(width: 8),
-            // Phường / Xã
-            Expanded(
-              child: _buildSelectionBox(
-                label: 'Phường / Xã',
-                value: _giaTri.ward,
-                placeholder: 'Chọn Phường / Xã...',
-                icon: Icons.holiday_village_rounded,
-                onTap: _chonPhuong,
-              ),
-            ),
-          ],
+        // Quan/Huyen va Phuong/Xa moi cai mot hang rieng. De chung mot hang
+        // thi ten hanh chinh tieng Viet bi cat cut thanh "Huyen Bau B..." va
+        // "Phuong Ben ...", nguoi dung khong doc duoc minh dang chon gi.
+        _buildSelectionBox(
+          label: 'Quận / Huyện',
+          value: _giaTri.district,
+          placeholder: 'Chọn Quận / Huyện...',
+          icon: Icons.apartment_rounded,
+          onTap: _chonQuan,
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        _buildSelectionBox(
+          label: 'Phường / Xã',
+          value: _giaTri.ward,
+          placeholder: 'Chọn Phường / Xã...',
+          icon: Icons.holiday_village_rounded,
+          onTap: _chonPhuong,
         ),
       ],
     );

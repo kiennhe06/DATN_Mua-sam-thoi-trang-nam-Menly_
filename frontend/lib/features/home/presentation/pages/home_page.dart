@@ -2,8 +2,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:menly_app/core/navigation/main_navigation_shell.dart';
-import 'package:menly_app/core/theme/app_theme.dart';
+import 'package:menly_app/core/theme/app_colors.dart';
+import 'package:menly_app/core/theme/app_spacing.dart';
 import 'package:menly_app/core/widgets/category_tab.dart';
+import 'package:menly_app/core/widgets/section_header.dart';
+import 'package:menly_app/core/widgets/state_views.dart';
 import 'package:menly_app/core/widgets/product_card.dart';
 import 'package:menly_app/features/product/presentation/pages/search_page.dart';
 import 'package:menly_app/features/product/data/models/product_model.dart';
@@ -117,11 +120,12 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     // Trang chu luon hien thi toan bo san pham theo danh muc, khong bi kẹt boi query tim kiem
     final baseProducts = productProv.getCategoryProducts(currentCategory);
     final displayedProducts = _filterProducts(baseProducts);
+    final c = AppColors.of(context);
 
     return Scaffold(
-      backgroundColor: AppTheme.scaffoldBackground,
+      backgroundColor: c.background,
       appBar: AppBar(
-        backgroundColor: AppTheme.scaffoldBackground,
+        backgroundColor: c.background,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
@@ -132,15 +136,15 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             context,
             MaterialPageRoute(builder: (_) => const SearchPage()),
           ),
-          icon: const Icon(Icons.search, color: AppTheme.textPrimary, size: 22),
+          icon: Icon(Icons.search, color: c.textPrimary, size: 22),
         ),
         // Khoang dem trai bu lai khoang cach chu cuoi, de chu nam dung giua
-        title: const Padding(
-          padding: EdgeInsets.only(left: 5.5),
+        title: Padding(
+          padding: const EdgeInsets.only(left: 5.5),
           child: Text(
             'MENLY',
             style: TextStyle(
-              color: AppTheme.textPrimary,
+              color: c.textPrimary,
               fontSize: 17,
               fontWeight: FontWeight.w600,
               letterSpacing: 5.5,
@@ -156,13 +160,13 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               icon: Badge.count(
                 count: cart.totalItemCount,
                 isLabelVisible: cart.totalItemCount > 0,
-                backgroundColor: AppTheme.accentRed,
-                textColor: Colors.white,
+                backgroundColor: c.danger,
+                textColor: c.onPrimary,
                 textStyle:
                     const TextStyle(fontSize: 9.5, fontWeight: FontWeight.w700),
-                child: const Icon(
+                child: Icon(
                   Icons.shopping_bag_outlined,
-                  color: AppTheme.textPrimary,
+                  color: c.textPrimary,
                   size: 22,
                 ),
               ),
@@ -191,19 +195,19 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     fallbackText: auth.user?.fullName ?? 'M',
                   );
                 }
-                return const Icon(
+                return Icon(
                   Icons.person_outline_rounded,
-                  color: AppTheme.textPrimary,
+                  color: c.textPrimary,
                   size: 23,
                 );
               },
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: AppSpacing.sm),
         ],
-        bottom: const PreferredSize(
-          preferredSize: Size.fromHeight(1),
-          child: Divider(height: 1, thickness: 1, color: AppTheme.border),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Divider(height: 1, thickness: 1, color: c.border),
         ),
       ),
       body: RefreshIndicator(
@@ -226,14 +230,19 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
               // 3. DANH MUC CUON NGANG (Category Pills)
               Padding(
-                padding: const EdgeInsets.only(top: 4, bottom: 8),
+                padding: const EdgeInsets.only(
+                  top: AppSpacing.sm,
+                  bottom: AppSpacing.md,
+                ),
                 child: SizedBox(
-                  height: 38,
+                  height: 40,
                   child: ListView.separated(
                     scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
                     itemCount: productProv.categories.length,
-                    separatorBuilder: (_, __) => const SizedBox(width: 20),
+                    separatorBuilder: (_, __) =>
+                        const SizedBox(width: AppSpacing.sm),
                     itemBuilder: (ctx, i) {
                       final cat = productProv.categories[i];
                       final isSelected = currentCategory == cat;
@@ -249,53 +258,32 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
               // 4. HEADER DIEU HUONG TOAN BO SAN PHAM & BO LOC TAB HANG NGANG O BEN DUOI
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 6),
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.lg,
+                  AppSpacing.sm,
+                  AppSpacing.lg,
+                  AppSpacing.md,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Text(
-                          (currentCategory == 'Tất cả'
-                                  ? 'Tất cả sản phẩm'
-                                  : currentCategory)
-                              .toUpperCase(),
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 10.5,
-                            color: AppTheme.textSecondary,
-                            letterSpacing: 2,
-                          ),
-                        ),
-                        InkWell(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (_) => const ProductListPage()),
-                            );
-                          },
-                          borderRadius: BorderRadius.circular(6),
-                          child: const Padding(
-                            padding: EdgeInsets.symmetric(
-                                horizontal: 4, vertical: 4),
-                            child: Text(
-                              'Xem tất cả',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                                color: AppTheme.textPrimary,
-                                decoration: TextDecoration.underline,
-                                decorationColor: AppTheme.border,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
+                    // Tieu de khoi dung chung: chu dam ben trai, "Xem tat ca"
+                    // nho ben phai.
+                    SectionHeader(
+                      title: (currentCategory == 'Tất cả'
+                              ? 'Tất cả sản phẩm'
+                              : currentCategory)
+                          .toUpperCase(),
+                      actionLabel: 'Xem tất cả',
+                      onAction: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => const ProductListPage()),
+                        );
+                      },
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: AppSpacing.md),
                     // Bo loc tab hang ngang o ben duoi: Chi giu san pham moi va ban chay
                     Row(
                       children: [
@@ -305,7 +293,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                           onTap: () => setState(
                               () => _tabFilter = _HomeTabFilter.newest),
                         ),
-                        const SizedBox(width: 20),
+                        const SizedBox(width: AppSpacing.sm),
                         HomeFilterTab(
                           label: 'Bán chạy',
                           active: _tabFilter == _HomeTabFilter.bestSeller,
@@ -331,7 +319,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               const HomeInfoFooter(),
 
               // Khoang tho cuoi trang
-              const SizedBox(height: 24),
+              const SizedBox(height: AppSpacing.xxl),
             ],
           ),
         ),
@@ -342,40 +330,28 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   Widget _buildProductGrid(
       List<ProductModel> items, WishlistProvider wishlistProv) {
     if (items.isEmpty) {
-      return Container(
-        padding: const EdgeInsets.all(32),
-        alignment: Alignment.center,
-        child: Column(
-          children: [
-            const Text(
-              'Không tìm thấy sản phẩm trong danh mục này',
-              style: TextStyle(
-                  color: AppTheme.textSecondary,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500),
-            ),
-            const SizedBox(height: 8),
-            TextButton(
-              onPressed: () =>
-                  context.read<ProductProvider>().setCategory('Tất cả'),
-              child: const Text('Xem tất cả sản phẩm',
-                  style: TextStyle(fontWeight: FontWeight.bold)),
-            ),
-          ],
-        ),
+      return StatusView(
+        icon: Icons.search_off_rounded,
+        title: 'Không tìm thấy sản phẩm trong danh mục này',
+        actionLabel: 'Xem tất cả sản phẩm',
+        onAction: () => context.read<ProductProvider>().setCategory('Tất cả'),
       );
     }
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.md,
+      ),
       child: GridView.builder(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
+        // Nhieu khoang trang giua cac the de luoi san pham tho hon.
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2,
           childAspectRatio: 0.5,
-          crossAxisSpacing: 12,
-          mainAxisSpacing: 12,
+          crossAxisSpacing: AppSpacing.lg,
+          mainAxisSpacing: AppSpacing.xl,
         ),
         itemCount: items.length,
         itemBuilder: (ctx, i) {

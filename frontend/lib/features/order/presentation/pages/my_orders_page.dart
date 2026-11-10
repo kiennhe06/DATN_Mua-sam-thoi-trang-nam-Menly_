@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/state_views.dart';
 import 'package:menly_app/features/auth/presentation/pages/login_page.dart';
 import '../providers/order_provider.dart';
@@ -44,14 +45,14 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
         onRefresh: () => orderProv.loadOrders(),
         child: Column(
           children: [
-            const SizedBox(height: 10),
-            // Thanh Tab loc trang thai don hang co badge dem
+            const SizedBox(height: AppSpacing.md),
+            // Thanh Tab loc trang thai don hang dang chip vien thuoc, co badge dem
             OrderStatusTabs(
               selectedFilter: orderProv.selectedStatusFilter,
               allOrders: orderProv.allOrders,
               onFilterChanged: (filter) => orderProv.setStatusFilter(filter),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.lg),
 
             // Danh sach don hang
             Expanded(
@@ -95,7 +96,8 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
                           ],
                         )
                       : ListView.builder(
-                          padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+                          padding: const EdgeInsets.fromLTRB(AppSpacing.lg,
+                              AppSpacing.sm, AppSpacing.lg, AppSpacing.xxxl),
                           itemCount: orders.length,
                           itemBuilder: (context, i) {
                             return OrderCard(

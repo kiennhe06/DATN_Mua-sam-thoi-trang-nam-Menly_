@@ -1,6 +1,9 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/state_views.dart';
 import '../../data/support_chat_service.dart';
 import 'support_chat_page.dart';
 
@@ -72,8 +75,9 @@ class _StaffSupportInboxPageState extends State<StaffSupportInboxPage> {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     return Scaffold(
-      backgroundColor: AppTheme.scaffoldBackground,
+      backgroundColor: c.background,
       appBar: AppBar(
         title: const Text('Hội thoại CSKH'),
         centerTitle: true,
@@ -87,26 +91,14 @@ class _StaffSupportInboxPageState extends State<StaffSupportInboxPage> {
         ],
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const LoadingView()
           : _error != null
-              ? Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.error_outline,
-                            color: Colors.red, size: 40),
-                        const SizedBox(height: 12),
-                        Text(_error!, textAlign: TextAlign.center),
-                        const SizedBox(height: 12),
-                        OutlinedButton(
-                          onPressed: _loadConversations,
-                          child: const Text('Thử lại'),
-                        ),
-                      ],
-                    ),
-                  ),
+              ? StatusView(
+                  icon: Icons.error_outline,
+                  title: _error!,
+                  danger: true,
+                  actionLabel: 'Thử lại',
+                  onAction: _loadConversations,
                 )
               : _conversations.isEmpty
                   ? RefreshIndicator(
@@ -114,18 +106,10 @@ class _StaffSupportInboxPageState extends State<StaffSupportInboxPage> {
                       child: ListView(
                         physics: const AlwaysScrollableScrollPhysics(),
                         children: const [
-                          SizedBox(height: 160),
-                          Icon(
-                            Icons.mark_chat_unread_outlined,
-                            size: 52,
-                            color: AppTheme.textMuted,
-                          ),
-                          SizedBox(height: 16),
-                          Center(
-                            child: Text(
-                              'Chưa có hội thoại cần hỗ trợ',
-                              style: TextStyle(color: AppTheme.textSecondary),
-                            ),
+                          SizedBox(height: 120),
+                          StatusView(
+                            icon: Icons.mark_chat_unread_outlined,
+                            title: 'Chưa có hội thoại cần hỗ trợ',
                           ),
                         ],
                       ),
@@ -134,29 +118,31 @@ class _StaffSupportInboxPageState extends State<StaffSupportInboxPage> {
                       onRefresh: _loadConversations,
                       child: ListView.separated(
                         physics: const AlwaysScrollableScrollPhysics(),
-                        padding: const EdgeInsets.all(16),
+                        padding: const EdgeInsets.all(AppSpacing.lg),
                         itemCount: _conversations.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: 10),
+                        separatorBuilder: (_, __) =>
+                            const SizedBox(height: AppSpacing.md),
                         itemBuilder: (context, index) {
                           final conversation = _conversations[index];
-                          return Card(
-                            elevation: 0,
-                            margin: EdgeInsets.zero,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
-                              side: const BorderSide(color: AppTheme.border),
+                          return Container(
+                            clipBehavior: Clip.antiAlias,
+                            decoration: BoxDecoration(
+                              color: c.surface,
+                              borderRadius:
+                                  BorderRadius.circular(AppTheme.radiusCard),
+                              border: Border.all(color: c.border),
                             ),
                             child: ListTile(
                               contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 6,
+                                horizontal: AppSpacing.lg,
+                                vertical: AppSpacing.xs,
                               ),
                               leading: CircleAvatar(
                                 backgroundColor:
-                                    AppTheme.primary.withValues(alpha: 0.08),
-                                child: const Icon(
+                                    c.primary.withValues(alpha: 0.08),
+                                child: Icon(
                                   Icons.person_outline_rounded,
-                                  color: AppTheme.primary,
+                                  color: c.primary,
                                 ),
                               ),
                               title: Text(
@@ -164,8 +150,10 @@ class _StaffSupportInboxPageState extends State<StaffSupportInboxPage> {
                                         true
                                     ? conversation.customerName!
                                     : 'Khách hàng',
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.w700),
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  color: c.textPrimary,
+                                ),
                               ),
                               subtitle: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -176,6 +164,7 @@ class _StaffSupportInboxPageState extends State<StaffSupportInboxPage> {
                                       conversation.customerEmail!,
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(color: c.textSecondary),
                                     ),
                                   Text(
                                     conversation.lastMessage?.isNotEmpty == true
@@ -183,6 +172,7 @@ class _StaffSupportInboxPageState extends State<StaffSupportInboxPage> {
                                         : 'Khách hàng đang cần hỗ trợ',
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(color: c.textSecondary),
                                   ),
                                 ],
                               ),
@@ -194,22 +184,22 @@ class _StaffSupportInboxPageState extends State<StaffSupportInboxPage> {
                                 children: [
                                   Text(
                                     _formatDate(conversation.lastMessageAt),
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 11,
-                                      color: AppTheme.textSecondary,
+                                      color: c.textSecondary,
                                     ),
                                   ),
                                   if (conversation.unreadStaffCount > 0) ...[
-                                    const SizedBox(height: 5),
+                                    const SizedBox(height: AppSpacing.xs),
                                     CircleAvatar(
                                       radius: 10,
-                                      backgroundColor: AppTheme.accentRed,
+                                      backgroundColor: c.danger,
                                       child: Text(
                                         conversation.unreadStaffCount > 9
                                             ? '9+'
                                             : '${conversation.unreadStaffCount}',
-                                        style: const TextStyle(
-                                          color: Colors.white,
+                                        style: TextStyle(
+                                          color: c.onInk,
                                           fontSize: 10,
                                           fontWeight: FontWeight.bold,
                                         ),

@@ -2,6 +2,9 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:menly_app/core/network/api_client.dart';
+import 'package:menly_app/core/theme/app_colors.dart';
+import 'package:menly_app/core/theme/app_spacing.dart';
+import 'package:menly_app/core/widgets/app_buttons.dart';
 import 'package:menly_app/features/auth/presentation/pages/forgot_password_page.dart';
 import 'package:menly_app/features/auth/presentation/pages/register_page.dart';
 import 'package:menly_app/features/auth/presentation/providers/auth_provider.dart';
@@ -84,7 +87,7 @@ class _LoginPageState extends State<LoginPage> {
           content: Text(userRole == 'staff'
               ? 'Đăng nhập Cổng Nhân Viên thành công.'
               : 'Đăng nhập thành công.'),
-          backgroundColor: Colors.green,
+          backgroundColor: AppColors.of(context).success,
         ),
       );
       final Widget destination = userRole == 'staff'
@@ -98,7 +101,10 @@ class _LoginPageState extends State<LoginPage> {
       final message = e.response?.data['error']?.toString() ?? 'Đăng nhập thất bại. Vui lòng thử lại.';
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message), backgroundColor: Colors.red),
+        SnackBar(
+          content: Text(message),
+          backgroundColor: AppColors.of(context).danger,
+        ),
       );
     } finally {
       if (mounted) {
@@ -116,6 +122,7 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     return Scaffold(
       appBar: AppBar(
         title: const Text('Đăng nhập'),
@@ -124,7 +131,7 @@ class _LoginPageState extends State<LoginPage> {
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(AppSpacing.xxl),
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 420),
               child: Form(
@@ -132,27 +139,22 @@ class _LoginPageState extends State<LoginPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-
                     const Text(
                       'Chào mừng bạn quay lại',
                       textAlign: TextAlign.center,
                       style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
                     ),
-                    const SizedBox(height: 8),
-                    const Text(
+                    const SizedBox(height: AppSpacing.sm),
+                    Text(
                       'Đăng nhập để tiếp tục mua sắm tại Menly',
                       textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.grey, fontSize: 15),
+                      style: TextStyle(color: c.textMuted, fontSize: 15),
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: AppSpacing.xxl),
                     TextFormField(
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
-                      decoration: const InputDecoration(
-                        labelText: 'Email',
-                        
-                        border: OutlineInputBorder(),
-                      ),
+                      decoration: const InputDecoration(labelText: 'Email'),
                       validator: (value) {
                         final email = value?.trim() ?? '';
                         if (email.isEmpty) {
@@ -164,16 +166,20 @@ class _LoginPageState extends State<LoginPage> {
                         return null;
                       },
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: AppSpacing.lg),
                     TextFormField(
                       controller: _passwordController,
                       obscureText: _obscurePassword,
                       decoration: InputDecoration(
                         labelText: 'Mật khẩu',
-                        
-                        border: const OutlineInputBorder(),
                         suffixIcon: TextButton(
-                          child: Text(_obscurePassword ? 'Hiện' : 'Ẩn', style: const TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+                          child: Text(
+                            _obscurePassword ? 'Hiện' : 'Ẩn',
+                            style: TextStyle(
+                              color: c.textMuted,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                           onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                         ),
                       ),
@@ -184,7 +190,7 @@ class _LoginPageState extends State<LoginPage> {
                         return null;
                       },
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: AppSpacing.md),
                     Align(
                       alignment: Alignment.centerRight,
                       child: TextButton(
@@ -193,19 +199,15 @@ class _LoginPageState extends State<LoginPage> {
                             MaterialPageRoute(builder: (_) => const ForgotPasswordPage()),
                           );
                         },
-                        child: const Text('Quên mật khẩu?', style: TextStyle(color: Colors.black87)),
+                        child: Text('Quên mật khẩu?', style: TextStyle(color: c.textPrimary)),
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    FilledButton(
+                    const SizedBox(height: AppSpacing.sm),
+                    PrimaryButton(
+                      label: _isSubmitting ? 'Đang đăng nhập...' : 'Đăng nhập',
                       onPressed: _isSubmitting ? null : _submitLogin,
-                      style: FilledButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        backgroundColor: Colors.black87,
-                      ),
-                      child: Text(_isSubmitting ? 'Đang đăng nhập...' : 'Đăng nhập'),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: AppSpacing.lg),
                     Wrap(
                       alignment: WrapAlignment.center,
                       crossAxisAlignment: WrapCrossAlignment.center,

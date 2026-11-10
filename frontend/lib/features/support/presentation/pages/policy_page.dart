@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_spacing.dart';
+import 'about_page.dart';
 
 /// Trang Chinh sach mua hang, van chuyen, doi tra va bao mat
 class PolicyPage extends StatelessWidget {
@@ -6,19 +9,21 @@ class PolicyPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     return Scaffold(
+      backgroundColor: c.background,
       appBar: AppBar(
         title: const Text('Chính sách'),
         centerTitle: true,
       ),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppSpacing.lg),
         children: [
           Text(
             'Các chính sách áp dụng khi mua sắm tại Menly.',
-            style: TextStyle(fontSize: 14, color: Colors.grey.shade700, height: 1.4),
+            style: TextStyle(fontSize: 14, color: c.textSecondary, height: 1.4),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.md),
           _section(
             context,
             title: 'Chính sách mua hàng',
@@ -56,22 +61,36 @@ class PolicyPage extends StatelessWidget {
   }
 
   Widget _section(BuildContext context, {required String title, required String body}) {
-    return Card(
-      elevation: 0,
-      margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Colors.grey.shade200),
-      ),
+    final c = AppColors.of(context);
+    return SupportCard(
       child: Theme(
         data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
         child: ExpansionTile(
           initiallyExpanded: title.contains('mua hàng'),
-          title: Text(title, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+          title: Text(
+            title,
+            style: TextStyle(
+              fontWeight: FontWeight.w700,
+              fontSize: 15,
+              color: c.textPrimary,
+            ),
+          ),
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-              child: Text(body, style: TextStyle(fontSize: 14, color: Colors.grey.shade800, height: 1.5)),
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.lg,
+                0,
+                AppSpacing.lg,
+                AppSpacing.lg,
+              ),
+              child: Text(
+                body,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: c.textSecondary,
+                  height: 1.5,
+                ),
+              ),
             ),
           ],
         ),

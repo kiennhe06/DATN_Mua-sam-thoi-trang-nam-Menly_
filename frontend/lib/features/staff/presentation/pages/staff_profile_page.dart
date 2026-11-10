@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/session/user_session.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/app_buttons.dart';
 import '../../../auth/presentation/pages/change_password_page.dart';
 import '../../../auth/presentation/pages/login_page.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
@@ -26,11 +29,10 @@ class StaffProfilePage extends StatelessWidget {
             onPressed: () => Navigator.pop(ctx),
             child: const Text('Hủy'),
           ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.accentRed,
-              foregroundColor: Colors.white,
-            ),
+          DestructiveButton(
+            label: 'Đăng xuất',
+            expanded: false,
+            height: 40,
             onPressed: () async {
               Navigator.pop(ctx);
               clearUserDataInMemory(context);
@@ -41,7 +43,6 @@ class StaffProfilePage extends StatelessWidget {
                 (route) => false,
               );
             },
-            child: const Text('Đăng xuất'),
           ),
         ],
       ),
@@ -53,6 +54,7 @@ class StaffProfilePage extends StatelessWidget {
     final auth = context.watch<AuthProvider>();
     final orderProv = context.watch<OrderProvider>();
     final user = auth.user;
+    final c = AppColors.of(context);
 
     final allStaffOrders = orderProv.staffOrders;
     final pendingOrdersCount = allStaffOrders.where((o) {
@@ -62,7 +64,7 @@ class StaffProfilePage extends StatelessWidget {
     }).length;
 
     return Scaffold(
-      backgroundColor: AppTheme.scaffoldBackground,
+      backgroundColor: c.background,
       appBar: AppBar(
         title: const Text('Cổng Nhân Viên Menly'),
         centerTitle: true,
@@ -70,25 +72,25 @@ class StaffProfilePage extends StatelessWidget {
         actions: [
           IconButton(
             tooltip: 'Đăng xuất',
-            icon: const Icon(Icons.logout_rounded, color: AppTheme.accentRed),
+            icon: Icon(Icons.logout_rounded, color: c.danger),
             onPressed: () => _showLogoutDialog(context),
           ),
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
           children: [
             // Thẻ hồ sơ nhân viên
             Container(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(AppSpacing.xl),
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.grey.shade200),
+                color: c.surface,
+                borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+                border: Border.all(color: c.border),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.04),
+                    color: c.shadow,
                     blurRadius: 10,
                     offset: const Offset(0, 2),
                   ),
@@ -101,43 +103,46 @@ class StaffProfilePage extends StatelessWidget {
                     radius: 36,
                     fallbackText: user?.fullName ?? 'NV',
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: AppSpacing.md),
                   Text(
                     user?.fullName ?? 'Nhân viên Menly',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: AppTheme.textPrimary,
+                      color: c.textPrimary,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: AppSpacing.xs),
                   Text(
                     user?.email ?? '',
                     style: TextStyle(
                       fontSize: 13,
-                      color: Colors.grey.shade600,
+                      color: c.textSecondary,
                     ),
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: AppSpacing.sm),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFEFF6FF), // Blue 50
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: const Color(0xFFBFDBFE)),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.md,
+                      vertical: 6,
                     ),
-                    child: const Row(
+                    decoration: BoxDecoration(
+                      color: c.primarySoft,
+                      borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+                      border: Border.all(color: c.border),
+                    ),
+                    child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(Icons.verified_user_rounded,
-                            size: 15, color: Color(0xFF1D4ED8)),
-                        SizedBox(width: 6),
+                            size: 15, color: c.primary),
+                        const SizedBox(width: 6),
                         Text(
                           'NHÂN VIÊN CỬA HÀNG (STAFF)',
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.bold,
-                            color: Color(0xFF1D4ED8),
+                            color: c.primary,
                             letterSpacing: 0.5,
                           ),
                         ),
@@ -147,7 +152,7 @@ class StaffProfilePage extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.lg),
 
             // Thống kê nhanh công việc
             Row(
@@ -155,13 +160,13 @@ class StaffProfilePage extends StatelessWidget {
                 Expanded(
                   child: InkWell(
                     onTap: () => onSwitchTab?.call(0),
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(AppTheme.radiusCard),
                     child: Container(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(AppSpacing.lg),
                       decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: Colors.grey.shade200),
+                        color: c.surface,
+                        borderRadius: BorderRadius.circular(AppTheme.radiusCard),
+                        border: Border.all(color: c.border),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -170,13 +175,13 @@ class StaffProfilePage extends StatelessWidget {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Container(
-                                padding: const EdgeInsets.all(8),
+                                padding: const EdgeInsets.all(AppSpacing.sm),
                                 decoration: BoxDecoration(
-                                  color: Colors.amber.shade50,
-                                  borderRadius: BorderRadius.circular(8),
+                                  color: c.surfaceVariant,
+                                  borderRadius: BorderRadius.circular(AppTheme.radiusSm),
                                 ),
                                 child: Icon(Icons.receipt_long_rounded,
-                                    size: 20, color: Colors.amber.shade800),
+                                    size: 20, color: c.primary),
                               ),
                               Text(
                                 '$pendingOrdersCount',
@@ -184,33 +189,33 @@ class StaffProfilePage extends StatelessWidget {
                                   fontSize: 20,
                                   fontWeight: FontWeight.bold,
                                   color: pendingOrdersCount > 0
-                                      ? AppTheme.accentRed
-                                      : AppTheme.textPrimary,
+                                      ? c.danger
+                                      : c.textPrimary,
                                 ),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 10),
-                          const Text(
+                          const SizedBox(height: AppSpacing.sm),
+                          Text(
                             'Đơn cần xử lý',
-                            style: TextStyle(fontSize: 12, color: Colors.grey),
+                            style: TextStyle(fontSize: 12, color: c.textMuted),
                           ),
                         ],
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: AppSpacing.md),
                 Expanded(
                   child: InkWell(
                     onTap: () => onSwitchTab?.call(1),
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(AppTheme.radiusCard),
                     child: Container(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(AppSpacing.lg),
                       decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: Colors.grey.shade200),
+                        color: c.surface,
+                        borderRadius: BorderRadius.circular(AppTheme.radiusCard),
+                        border: Border.all(color: c.border),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -219,24 +224,24 @@ class StaffProfilePage extends StatelessWidget {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Container(
-                                padding: const EdgeInsets.all(8),
+                                padding: const EdgeInsets.all(AppSpacing.sm),
                                 decoration: BoxDecoration(
-                                  color: Colors.blue.shade50,
-                                  borderRadius: BorderRadius.circular(8),
+                                  color: c.surfaceVariant,
+                                  borderRadius: BorderRadius.circular(AppTheme.radiusSm),
                                 ),
-                                child: const Icon(
+                                child: Icon(
                                     Icons.chat_bubble_outline_rounded,
                                     size: 20,
-                                    color: Color(0xFF2563EB)),
+                                    color: c.primary),
                               ),
-                              const Icon(Icons.arrow_forward_ios_rounded,
-                                  size: 14, color: Colors.grey),
+                              Icon(Icons.arrow_forward_ios_rounded,
+                                  size: 14, color: c.textMuted),
                             ],
                           ),
-                          const SizedBox(height: 10),
-                          const Text(
+                          const SizedBox(height: AppSpacing.sm),
+                          Text(
                             'Hội thoại CSKH',
-                            style: TextStyle(fontSize: 12, color: Colors.grey),
+                            style: TextStyle(fontSize: 12, color: c.textMuted),
                           ),
                         ],
                       ),
@@ -245,38 +250,45 @@ class StaffProfilePage extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.lg),
 
             // Thông tin phân quyền & ca trực
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(AppSpacing.lg),
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: Colors.grey.shade200),
+                color: c.surface,
+                borderRadius: BorderRadius.circular(AppTheme.radiusCard),
+                border: Border.all(color: c.border),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Thông tin phiên làm việc',
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: c.textPrimary,
+                    ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: AppSpacing.md),
                   _buildInfoRow(
+                    context: context,
                     icon: Icons.circle,
-                    iconColor: Colors.green,
+                    iconColor: c.success,
                     title: 'Trạng thái ca trực',
                     value: 'Đang trực tuyến',
                   ),
-                  const Divider(height: 20),
+                  const Divider(height: AppSpacing.xl),
                   _buildInfoRow(
+                    context: context,
                     icon: Icons.store_rounded,
                     title: 'Khu vực quản lý',
                     value: 'Menly Store - Toàn hệ thống',
                   ),
-                  const Divider(height: 20),
+                  const Divider(height: AppSpacing.xl),
                   _buildInfoRow(
+                    context: context,
                     icon: Icons.shield_outlined,
                     title: 'Quyền hạn tài khoản',
                     value: 'Quản lý đơn hàng & CSKH',
@@ -284,27 +296,27 @@ class StaffProfilePage extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.lg),
 
             // Thẻ bảo mật & phân tách
             Container(
-              padding: const EdgeInsets.all(14),
+              padding: const EdgeInsets.all(AppSpacing.lg),
               decoration: BoxDecoration(
-                color: const Color(0xFFF8FAFC),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: const Color(0xFFE2E8F0)),
+                color: c.surfaceVariant,
+                borderRadius: BorderRadius.circular(AppTheme.radiusCard),
+                border: Border.all(color: c.border),
               ),
-              child: const Row(
+              child: Row(
                 children: [
                   Icon(Icons.info_outline_rounded,
-                      color: Color(0xFF64748B), size: 20),
-                  SizedBox(width: 10),
+                      color: c.textSecondary, size: 20),
+                  const SizedBox(width: AppSpacing.sm),
                   Expanded(
                     child: Text(
                       'Tài khoản nhân viên được bảo mật và phân quyền riêng biệt, tách biệt hoàn toàn với giỏ hàng và danh mục mua sắm của khách.',
                       style: TextStyle(
                         fontSize: 12,
-                        color: Color(0xFF475569),
+                        color: c.textSecondary,
                         height: 1.35,
                       ),
                     ),
@@ -312,22 +324,25 @@ class StaffProfilePage extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.lg),
 
             // Các hành động
             Material(
-              color: Colors.white,
+              color: c.surface,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
-                side: BorderSide(color: Colors.grey.shade200),
+                borderRadius: BorderRadius.circular(AppTheme.radiusCard),
+                side: BorderSide(color: c.border),
               ),
               child: Column(
                 children: [
                   ListTile(
-                    leading: const Icon(Icons.lock_outline_rounded,
-                        color: AppTheme.textPrimary),
-                    title: const Text('Đổi mật khẩu',
-                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+                    leading: Icon(Icons.lock_outline_rounded,
+                        color: c.textPrimary),
+                    title: Text('Đổi mật khẩu',
+                        style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: c.textPrimary)),
                     trailing: const Icon(Icons.chevron_right_rounded),
                     onTap: () {
                       Navigator.push(
@@ -339,19 +354,18 @@ class StaffProfilePage extends StatelessWidget {
                   ),
                   const Divider(height: 1),
                   ListTile(
-                    leading: const Icon(Icons.logout_rounded,
-                        color: AppTheme.accentRed),
-                    title: const Text('Đăng xuất tài khoản',
+                    leading: Icon(Icons.logout_rounded, color: c.danger),
+                    title: Text('Đăng xuất tài khoản',
                         style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
-                            color: AppTheme.accentRed)),
+                            color: c.danger)),
                     onTap: () => _showLogoutDialog(context),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: AppSpacing.xxl),
           ],
         ),
       ),
@@ -359,27 +373,29 @@ class StaffProfilePage extends StatelessWidget {
   }
 
   Widget _buildInfoRow({
+    required BuildContext context,
     required IconData icon,
     Color? iconColor,
     required String title,
     required String value,
   }) {
+    final c = AppColors.of(context);
     return Row(
       children: [
-        Icon(icon, size: 16, color: iconColor ?? Colors.grey.shade700),
-        const SizedBox(width: 10),
+        Icon(icon, size: 16, color: iconColor ?? c.textSecondary),
+        const SizedBox(width: AppSpacing.sm),
         Expanded(
           child: Text(
             title,
-            style: const TextStyle(fontSize: 13, color: Colors.grey),
+            style: TextStyle(fontSize: 13, color: c.textMuted),
           ),
         ),
         Text(
           value,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w600,
-            color: AppTheme.textPrimary,
+            color: c.textPrimary,
           ),
         ),
       ],

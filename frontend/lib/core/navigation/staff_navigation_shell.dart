@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../core/theme/app_theme.dart';
+import '../../core/theme/app_colors.dart';
 import '../../features/auth/presentation/providers/auth_provider.dart';
 import '../../features/order/presentation/pages/staff_order_management_page.dart';
 import '../../features/staff/presentation/pages/staff_profile_page.dart';
@@ -22,6 +22,7 @@ class _StaffNavigationShellState extends State<StaffNavigationShell> {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     final auth = context.watch<AuthProvider>();
 
     // Bảo vệ nghiêm ngặt: nếu không phải staff/admin thì chuyển về MainNavigationShell
@@ -46,24 +47,23 @@ class _StaffNavigationShellState extends State<StaffNavigationShell> {
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
         onDestinationSelected: (idx) => setState(() => _currentIndex = idx),
-        indicatorColor: AppTheme.primary.withValues(alpha: 0.12),
-        backgroundColor: Colors.white,
+        indicatorColor: c.primarySoft,
+        backgroundColor: c.surface,
         elevation: 3,
-        destinations: const [
+        destinations: [
           NavigationDestination(
-            icon: Icon(Icons.receipt_long_outlined),
-            selectedIcon: Icon(Icons.receipt_long, color: AppTheme.primary),
+            icon: const Icon(Icons.receipt_long_outlined),
+            selectedIcon: Icon(Icons.receipt_long, color: c.primary),
             label: 'Đơn hàng',
           ),
           NavigationDestination(
-            icon: Icon(Icons.chat_bubble_outline_rounded),
-            selectedIcon:
-                Icon(Icons.chat_bubble_rounded, color: AppTheme.primary),
+            icon: const Icon(Icons.chat_bubble_outline_rounded),
+            selectedIcon: Icon(Icons.chat_bubble_rounded, color: c.primary),
             label: 'CSKH',
           ),
           NavigationDestination(
-            icon: Icon(Icons.badge_outlined),
-            selectedIcon: Icon(Icons.badge, color: AppTheme.primary),
+            icon: const Icon(Icons.badge_outlined),
+            selectedIcon: Icon(Icons.badge, color: c.primary),
             label: 'Nhân viên',
           ),
         ],

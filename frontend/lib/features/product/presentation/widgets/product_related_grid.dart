@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../../../core/utils/format.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/product_rating_row.dart';
+import '../../../../core/widgets/section_header.dart';
 import '../../../wishlist/presentation/providers/wishlist_provider.dart';
 import '../../data/models/product_model.dart';
 import '../pages/product_detail_page.dart';
@@ -23,19 +26,18 @@ class ProductRelatedGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     if (relatedProducts.isEmpty) return const SizedBox.shrink();
 
+    final c = AppColors.of(context);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Sản phẩm liên quan',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17),
-        ),
-        const SizedBox(height: 4),
+        const SectionHeader(title: 'Sản phẩm liên quan'),
+        const SizedBox(height: AppSpacing.xs),
         Text(
           'Gợi ý cùng danh mục với ${product.categoryName.isNotEmpty ? product.categoryName : 'sản phẩm này'}',
-          style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+          style: TextStyle(fontSize: 12, color: c.textSecondary),
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: AppSpacing.lg),
         GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
@@ -43,8 +45,8 @@ class ProductRelatedGrid extends StatelessWidget {
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 2,
             childAspectRatio: 0.5,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
+            crossAxisSpacing: AppSpacing.md,
+            mainAxisSpacing: AppSpacing.md,
           ),
           itemBuilder: (ctx, i) {
             final related = relatedProducts[i];
@@ -59,15 +61,16 @@ class ProductRelatedGrid extends StatelessWidget {
                   ),
                 );
               },
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppTheme.radiusXl),
               child: Container(
                 decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.grey.shade200),
+                  color: c.surface,
+                  // Bo goc manh cho khop voi anh trong ProductCard
+                  borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+                  border: Border.all(color: c.border),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.03),
+                      color: c.shadow,
                       blurRadius: 6,
                       offset: const Offset(0, 2),
                     ),
@@ -76,31 +79,33 @@ class ProductRelatedGrid extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Stack(
-                      children: [
+                    // Anh nhan phan chieu cao con lai cua o luoi thay vi cao
+                    // co dinh 180: o luoi cao gap doi be rong (ty le 0.5) nen
+                    // anh co dinh de lai mot mang trang lon duoi gia.
+                    Expanded(
+                      child: Stack(
+                        children: [
                         ClipRRect(
                           borderRadius: const BorderRadius.vertical(
-                            top: Radius.circular(12),
+                            top: Radius.circular(AppTheme.radiusXl),
                           ),
                           child: AppImage(
                             url: related.thumbnailUrl,
                             width: double.infinity,
-                            height: 180,
+                            height: double.infinity,
                             fit: BoxFit.cover,
                             placeholder: (_) => Container(
                               width: double.infinity,
-                              height: 180,
-                              color: Colors.grey.shade200,
+                              color: c.surfaceVariant,
                             ),
                             errorWidget: (_) => Container(
                               width: double.infinity,
-                              height: 180,
-                              color: Colors.grey.shade200,
-                              child: const Center(
+                              color: c.surfaceVariant,
+                              child: Center(
                                 child: Text(
                                   'Menly',
                                   style: TextStyle(
-                                    color: Colors.grey,
+                                    color: c.textMuted,
                                     fontWeight: FontWeight.bold,
                                     fontSize: 13,
                                   ),
@@ -110,51 +115,50 @@ class ProductRelatedGrid extends StatelessWidget {
                           ),
                         ),
                         Positioned(
-                          top: 8,
-                          right: 8,
+                          top: AppSpacing.sm,
+                          right: AppSpacing.sm,
                           child: CircleAvatar(
                             radius: 14,
-                            backgroundColor:
-                                Colors.white.withValues(alpha: 0.9),
+                            backgroundColor: c.surface.withValues(alpha: 0.9),
                             child: IconButton(
                               padding: EdgeInsets.zero,
                               icon: Icon(
                                 isFav ? Icons.favorite : Icons.favorite_border,
-                                color: isFav
-                                    ? AppTheme.accentRed
-                                    : AppTheme.textPrimary,
+                                color: isFav ? c.danger : c.textPrimary,
                                 size: 16,
                               ),
                               onPressed: () => wishlist.toggleFavorite(related),
                             ),
                           ),
                         ),
-                      ],
+                        ],
+                      ),
                     ),
                     Padding(
-                      padding: const EdgeInsets.all(10),
+                      padding: const EdgeInsets.all(AppSpacing.md),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
                             related.name,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 13,
+                              color: c.textPrimary,
                             ),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                           ),
-                          const SizedBox(height: 4),
+                          const SizedBox(height: AppSpacing.xs),
                           ProductRatingRow(
                             ratingAvg: related.ratingAvg,
                             ratingCount: related.ratingCount,
                           ),
-                          const SizedBox(height: 6),
+                          const SizedBox(height: AppSpacing.sm),
                           Text(
                             formatPrice(related.price),
-                            style: const TextStyle(
-                              color: AppTheme.accentRed,
+                            style: TextStyle(
+                              color: c.danger,
                               fontWeight: FontWeight.w900,
                               fontSize: 14,
                             ),

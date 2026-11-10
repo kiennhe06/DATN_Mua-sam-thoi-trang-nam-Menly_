@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/format.dart';
 import 'package:menly_app/features/cart/data/models/cart_item_model.dart';
 import 'package:menly_app/core/widgets/app_image.dart';
@@ -27,34 +29,37 @@ class CartItemCard extends StatelessWidget {
     final thumb = item.product.thumbnailUrl;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(12),
+      margin: const EdgeInsets.only(bottom: AppSpacing.md),
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      // Moi dong gio hang la mot the trang bo tron manh, bong do rat nhe de
+      // the noi nhe tren nen be ma van giu ve phang cua he thiet ke.
       decoration: BoxDecoration(
         color: c.surface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
         border: Border.all(color: c.border),
         boxShadow: [
           BoxShadow(
             color: c.shadow,
-            blurRadius: 10,
+            blurRadius: 14,
             offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Checkbox chon san pham de thanh toan
           GestureDetector(
             onTap: onToggleSelected,
             behavior: HitTestBehavior.opaque,
             child: Padding(
-              padding: const EdgeInsets.only(right: 10),
+              padding: const EdgeInsets.only(right: AppSpacing.md),
               child: Container(
                 width: 24,
                 height: 24,
                 decoration: BoxDecoration(
                   color: selected ? c.primary : Colors.transparent,
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: BorderRadius.circular(AppTheme.radiusSm),
                   border: Border.all(
                     color: selected ? c.primary : c.border,
                     width: 1.6,
@@ -78,7 +83,7 @@ class CartItemCard extends StatelessWidget {
 
           // Anh san pham
           ClipRRect(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppTheme.radiusMd),
             child: SizedBox(
               width: 72,
               height: 72,
@@ -89,7 +94,7 @@ class CartItemCard extends StatelessWidget {
                   color: c.surfaceVariant,
                   child: Center(
                     child: CircularProgressIndicator(
-                      color: c.secondary,
+                      color: c.primary,
                       strokeWidth: 2,
                     ),
                   ),
@@ -98,13 +103,14 @@ class CartItemCard extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: AppSpacing.lg),
 
           // Thong tin san pham & So luong
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Tang 1: ten san pham
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -115,18 +121,21 @@ class CartItemCard extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           color: c.textPrimary,
-                          fontSize: 13,
+                          fontSize: 13.5,
                           fontWeight: FontWeight.w700,
-                          height: 1.3,
+                          height: 1.35,
                         ),
                       ),
                     ),
-                    const SizedBox(width: 6),
+                    const SizedBox(width: AppSpacing.sm),
                     GestureDetector(
                       onTap: onRemove,
                       behavior: HitTestBehavior.opaque,
                       child: Padding(
-                        padding: const EdgeInsets.only(left: 4, bottom: 4),
+                        padding: const EdgeInsets.only(
+                          left: AppSpacing.xs,
+                          bottom: AppSpacing.xs,
+                        ),
                         child: Text(
                           'Xóa',
                           style: TextStyle(
@@ -139,58 +148,33 @@ class CartItemCard extends StatelessWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: AppSpacing.xs),
+                // Tang 2: phan loai
                 Text(
                   '${item.size} · ${item.color}',
                   style: TextStyle(color: c.textMuted, fontSize: 12),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: AppSpacing.md),
+                // Tang 3: gia va nut tang giam so luong
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Text(
-                      formatVnd(item.subtotal),
-                      style: TextStyle(
-                        color: c.secondary,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w800,
+                    Flexible(
+                      child: Text(
+                        formatVnd(item.subtotal),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          // Gia to mau ink giong ProductCard
+                          color: c.textPrimary,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                        ),
                       ),
                     ),
-                    Row(
-                      children: [
-                        _stepButton(context, '-', () {
-                          if (item.quantity > 1) {
-                            onQtyChange(item.quantity - 1);
-                          } else {
-                            onRemove();
-                          }
-                        }),
-                        Container(
-                          width: 32,
-                          height: 28,
-                          margin: const EdgeInsets.symmetric(horizontal: 6),
-                          decoration: BoxDecoration(
-                            color: c.surfaceVariant,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Center(
-                            child: Text(
-                              '${item.quantity}',
-                              style: TextStyle(
-                                color: c.textPrimary,
-                                fontWeight: FontWeight.w800,
-                                fontSize: 13,
-                              ),
-                            ),
-                          ),
-                        ),
-                        _stepButton(
-                          context,
-                          '+',
-                          () => onQtyChange(item.quantity + 1),
-                        ),
-                      ],
-                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    _quantityStepper(context, c),
                   ],
                 ),
               ],
@@ -209,7 +193,7 @@ class CartItemCard extends StatelessWidget {
         child: Text(
           item.product.name.isNotEmpty ? item.product.name[0].toUpperCase() : 'M',
           style: TextStyle(
-            color: c.secondary,
+            color: c.textMuted,
             fontSize: 26,
             fontWeight: FontWeight.w900,
           ),
@@ -218,25 +202,73 @@ class CartItemCard extends StatelessWidget {
     );
   }
 
-  Widget _stepButton(BuildContext context, String symbol, VoidCallback onTap) {
-    final c = AppColors.of(context);
+  /// Ba phan lien nhau `- [so luong] +`: nut `+` nen dac ink, nut `-` nen nhat
+  /// vien mong, so o giua khong vien.
+  Widget _quantityStepper(BuildContext context, AppColors c) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _stepButton(
+          c,
+          '-',
+          filled: false,
+          onTap: () {
+            if (item.quantity > 1) {
+              onQtyChange(item.quantity - 1);
+            } else {
+              onRemove();
+            }
+          },
+        ),
+        SizedBox(
+          width: 36,
+          height: 32,
+          child: Center(
+            child: Text(
+              '${item.quantity}',
+              style: TextStyle(
+                color: c.textPrimary,
+                fontWeight: FontWeight.w700,
+                fontSize: 14,
+              ),
+            ),
+          ),
+        ),
+        _stepButton(
+          c,
+          '+',
+          filled: true,
+          onTap: () => onQtyChange(item.quantity + 1),
+        ),
+      ],
+    );
+  }
+
+  Widget _stepButton(
+    AppColors c,
+    String symbol, {
+    required bool filled,
+    required VoidCallback onTap,
+  }) {
     return GestureDetector(
       onTap: onTap,
+      behavior: HitTestBehavior.opaque,
       child: Container(
-        width: 28,
-        height: 28,
+        width: 32,
+        height: 32,
         decoration: BoxDecoration(
-          color: c.surfaceVariant,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: c.border),
+          color: filled ? c.primary : c.surfaceVariant,
+          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+          border: filled ? null : Border.all(color: c.border),
         ),
         child: Center(
           child: Text(
             symbol,
             style: TextStyle(
-              color: c.secondary,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
+              color: filled ? c.onPrimary : c.textPrimary,
+              fontSize: 17,
+              fontWeight: FontWeight.w800,
+              height: 1,
             ),
           ),
         ),

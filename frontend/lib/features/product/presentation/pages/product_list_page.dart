@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:menly_app/core/utils/format.dart';
+import 'package:menly_app/core/theme/app_colors.dart';
+import 'package:menly_app/core/theme/app_spacing.dart';
 import 'package:menly_app/core/theme/app_theme.dart';
+import 'package:menly_app/core/widgets/app_buttons.dart';
 import 'package:menly_app/core/widgets/category_tab.dart';
 import 'package:menly_app/core/widgets/product_card.dart';
+import 'package:menly_app/core/widgets/state_views.dart';
 import 'package:menly_app/features/cart/presentation/providers/cart_provider.dart';
 import 'package:menly_app/features/wishlist/presentation/providers/wishlist_provider.dart';
 import 'package:menly_app/features/product/presentation/providers/product_provider.dart';
@@ -15,17 +19,18 @@ class ProductListPage extends StatelessWidget {
   const ProductListPage({super.key});
 
   Widget _buildFilterContainer({
+    required AppColors c,
     required String title,
     Widget? trailing,
     required Widget child,
   }) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 14),
-      padding: const EdgeInsets.all(14),
+      margin: const EdgeInsets.only(bottom: AppSpacing.lg),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        color: const Color(0xFFF9FAFB),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
+        color: c.surfaceVariant,
+        borderRadius: BorderRadius.circular(AppTheme.radiusCard),
+        border: Border.all(color: c.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -35,16 +40,16 @@ class ProductListPage extends StatelessWidget {
             children: [
               Text(
                 title,
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 14,
-                  color: AppTheme.textPrimary,
+                  color: c.textPrimary,
                 ),
               ),
               if (trailing != null) trailing,
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: AppSpacing.md),
           child,
         ],
       ),
@@ -52,11 +57,12 @@ class ProductListPage extends StatelessWidget {
   }
 
   Widget _buildFilterBadgeChip({
+    required AppColors c,
     required String label,
     required VoidCallback onDeleted,
   }) {
     return Padding(
-      padding: const EdgeInsets.only(right: 6),
+      padding: const EdgeInsets.only(right: AppSpacing.sm),
       child: Chip(
         label: Text(label,
             style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500)),
@@ -64,15 +70,17 @@ class ProductListPage extends StatelessWidget {
         onDeleted: onDeleted,
         visualDensity: VisualDensity.compact,
         materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-        backgroundColor: Colors.white,
-        side: BorderSide(color: Colors.amber.shade300),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        padding: const EdgeInsets.symmetric(horizontal: 4),
+        backgroundColor: c.surface,
+        side: BorderSide(color: c.secondary),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppTheme.radiusLg)),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
       ),
     );
   }
 
   void _showFilterModal(BuildContext context, ProductProvider prov) {
+    final c = AppColors.of(context);
     String currentSort = prov.sortBy;
     RangeValues currentRange = RangeValues(prov.minPrice, prov.maxPrice);
     String currentClassification = prov.classification;
@@ -81,6 +89,8 @@ class ProductListPage extends StatelessWidget {
     double currentMinRating = prov.minRating;
     bool currentOnlyInStock = prov.onlyInStock;
 
+    // Mau san pham that (den, trang, navy...), khong phai mau giao dien nen
+    // giu nguyen ma mau thay vi doi sang token.
     final colorOptions = [
       {'label': 'Tất cả', 'color': null},
       {'label': 'Đen', 'color': const Color(0xFF1E293B)},
@@ -125,9 +135,10 @@ class ProductListPage extends StatelessWidget {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: c.surface,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius:
+            BorderRadius.vertical(top: Radius.circular(AppTheme.radiusXl)),
       ),
       builder: (ctx) {
         return StatefulBuilder(
@@ -149,16 +160,21 @@ class ProductListPage extends StatelessWidget {
                 children: [
                   // Header
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 16, 12, 12),
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.xl,
+                      AppSpacing.lg,
+                      AppSpacing.md,
+                      AppSpacing.md,
+                    ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text(
+                        Text(
                           'Bộ lọc sản phẩm',
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
-                            color: AppTheme.textPrimary,
+                            color: c.textPrimary,
                           ),
                         ),
                         Row(
@@ -175,9 +191,9 @@ class ProductListPage extends StatelessWidget {
                                   currentOnlyInStock = false;
                                 });
                               },
-                              child: const Text('Thiết lập lại',
+                              child: Text('Thiết lập lại',
                                   style: TextStyle(
-                                      color: AppTheme.accentRed,
+                                      color: c.danger,
                                       fontWeight: FontWeight.w600)),
                             ),
                             IconButton(
@@ -195,39 +211,40 @@ class ProductListPage extends StatelessWidget {
                   Expanded(
                     child: ListView(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 12),
+                        horizontal: AppSpacing.lg,
+                        vertical: AppSpacing.md,
+                      ),
                       children: [
                         // 1. Phan loai san pham
                         _buildFilterContainer(
+                          c: c,
                           title: 'Phân loại sản phẩm',
                           child: Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
+                            spacing: AppSpacing.sm,
+                            runSpacing: AppSpacing.sm,
                             children: classificationOptions.map((item) {
                               final isSelected =
                                   currentClassification == item['key'];
                               return ChoiceChip(
                                 label: Text(item['label']!),
                                 selected: isSelected,
-                                selectedColor: AppTheme.primary,
-                                checkmarkColor: Colors.white,
+                                selectedColor: c.primary,
+                                checkmarkColor: c.onPrimary,
                                 labelStyle: TextStyle(
-                                  color: isSelected
-                                      ? Colors.white
-                                      : AppTheme.textPrimary,
+                                  color:
+                                      isSelected ? c.onPrimary : c.textPrimary,
                                   fontWeight: isSelected
                                       ? FontWeight.w600
                                       : FontWeight.w500,
                                   fontSize: 13,
                                 ),
-                                backgroundColor: Colors.white,
+                                backgroundColor: c.surface,
                                 side: BorderSide(
-                                  color: isSelected
-                                      ? AppTheme.primary
-                                      : const Color(0xFFE5E7EB),
+                                  color: isSelected ? c.primary : c.border,
                                 ),
                                 shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(10)),
+                                    borderRadius: BorderRadius.circular(
+                                        AppTheme.radiusSm)),
                                 onSelected: (_) => setState(() =>
                                     currentClassification = item['key']!),
                               );
@@ -237,10 +254,11 @@ class ProductListPage extends StatelessWidget {
 
                         // 2. Kich co (Size)
                         _buildFilterContainer(
+                          c: c,
                           title: 'Kích cỡ (Size)',
                           child: Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
+                            spacing: AppSpacing.sm,
+                            runSpacing: AppSpacing.sm,
                             children: sizeOptions.map((sz) {
                               final isSelected =
                                   (currentSize == null && sz == 'Tất cả') ||
@@ -248,25 +266,23 @@ class ProductListPage extends StatelessWidget {
                               return ChoiceChip(
                                 label: Text(sz),
                                 selected: isSelected,
-                                selectedColor: AppTheme.primary,
-                                checkmarkColor: Colors.white,
+                                selectedColor: c.primary,
+                                checkmarkColor: c.onPrimary,
                                 labelStyle: TextStyle(
-                                  color: isSelected
-                                      ? Colors.white
-                                      : AppTheme.textPrimary,
+                                  color:
+                                      isSelected ? c.onPrimary : c.textPrimary,
                                   fontWeight: isSelected
                                       ? FontWeight.w600
                                       : FontWeight.w500,
                                   fontSize: 13,
                                 ),
-                                backgroundColor: Colors.white,
+                                backgroundColor: c.surface,
                                 side: BorderSide(
-                                  color: isSelected
-                                      ? AppTheme.primary
-                                      : const Color(0xFFE5E7EB),
+                                  color: isSelected ? c.primary : c.border,
                                 ),
                                 shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(10)),
+                                    borderRadius: BorderRadius.circular(
+                                        AppTheme.radiusSm)),
                                 onSelected: (_) => setState(() {
                                   currentSize = (sz == 'Tất cả') ? null : sz;
                                 }),
@@ -277,14 +293,15 @@ class ProductListPage extends StatelessWidget {
 
                         // 3. Mau sac
                         _buildFilterContainer(
+                          c: c,
                           title: 'Màu sắc',
                           child: Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            children: colorOptions.map((c) {
-                              final label = c['label'] as String;
-                              final col = c['color'] as Color?;
-                              final hasBorder = c['border'] == true;
+                            spacing: AppSpacing.sm,
+                            runSpacing: AppSpacing.sm,
+                            children: colorOptions.map((option) {
+                              final label = option['label'] as String;
+                              final col = option['color'] as Color?;
+                              final hasBorder = option['border'] == true;
                               final isSelected =
                                   (currentColor == null && label == 'Tất cả') ||
                                       (currentColor != null &&
@@ -300,33 +317,30 @@ class ProductListPage extends StatelessWidget {
                                           shape: BoxShape.circle,
                                           border: hasBorder
                                               ? Border.all(
-                                                  color: Colors.grey.shade400,
-                                                  width: 1)
+                                                  color: c.border, width: 1)
                                               : null,
                                         ),
                                       )
                                     : null,
                                 label: Text(label),
                                 selected: isSelected,
-                                selectedColor: AppTheme.primary,
-                                checkmarkColor: Colors.white,
+                                selectedColor: c.primary,
+                                checkmarkColor: c.onPrimary,
                                 labelStyle: TextStyle(
-                                  color: isSelected
-                                      ? Colors.white
-                                      : AppTheme.textPrimary,
+                                  color:
+                                      isSelected ? c.onPrimary : c.textPrimary,
                                   fontWeight: isSelected
                                       ? FontWeight.w600
                                       : FontWeight.w500,
                                   fontSize: 13,
                                 ),
-                                backgroundColor: Colors.white,
+                                backgroundColor: c.surface,
                                 side: BorderSide(
-                                  color: isSelected
-                                      ? AppTheme.primary
-                                      : const Color(0xFFE5E7EB),
+                                  color: isSelected ? c.primary : c.border,
                                 ),
                                 shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(10)),
+                                    borderRadius: BorderRadius.circular(
+                                        AppTheme.radiusSm)),
                                 onSelected: (_) => setState(() {
                                   currentColor =
                                       (label == 'Tất cả') ? null : label;
@@ -338,40 +352,39 @@ class ProductListPage extends StatelessWidget {
 
                         // 4. Danh gia sao
                         _buildFilterContainer(
+                          c: c,
                           title: 'Đánh giá sao',
                           child: Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
+                            spacing: AppSpacing.sm,
+                            runSpacing: AppSpacing.sm,
                             children: ratingOptions.map((r) {
                               final val = r['value'] as double;
                               final label = r['label'] as String;
                               final isSelected = currentMinRating == val;
                               return ChoiceChip(
                                 avatar: val > 0
-                                    ? const Icon(Icons.star_rounded,
-                                        size: 16, color: Colors.amber)
+                                    ? Icon(Icons.star_rounded,
+                                        size: 16, color: c.secondary)
                                     : null,
                                 label: Text(label),
                                 selected: isSelected,
-                                selectedColor: AppTheme.primary,
-                                checkmarkColor: Colors.white,
+                                selectedColor: c.primary,
+                                checkmarkColor: c.onPrimary,
                                 labelStyle: TextStyle(
-                                  color: isSelected
-                                      ? Colors.white
-                                      : AppTheme.textPrimary,
+                                  color:
+                                      isSelected ? c.onPrimary : c.textPrimary,
                                   fontWeight: isSelected
                                       ? FontWeight.w600
                                       : FontWeight.w500,
                                   fontSize: 13,
                                 ),
-                                backgroundColor: Colors.white,
+                                backgroundColor: c.surface,
                                 side: BorderSide(
-                                  color: isSelected
-                                      ? AppTheme.primary
-                                      : const Color(0xFFE5E7EB),
+                                  color: isSelected ? c.primary : c.border,
                                 ),
                                 shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(10)),
+                                    borderRadius: BorderRadius.circular(
+                                        AppTheme.radiusSm)),
                                 onSelected: (_) =>
                                     setState(() => currentMinRating = val),
                               );
@@ -381,18 +394,21 @@ class ProductListPage extends StatelessWidget {
 
                         // 5. Tinh trang hang
                         _buildFilterContainer(
+                          c: c,
                           title: 'Tình trạng hàng',
                           child: SwitchListTile(
                             contentPadding: EdgeInsets.zero,
-                            title: const Text('Chỉ hiện sản phẩm còn hàng',
+                            title: Text('Chỉ hiện sản phẩm còn hàng',
                                 style: TextStyle(
-                                    fontWeight: FontWeight.w600, fontSize: 14)),
-                            subtitle: const Text(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 14,
+                                    color: c.textPrimary)),
+                            subtitle: Text(
                                 'Ẩn các sản phẩm và biến thể đã hết hàng',
                                 style: TextStyle(
-                                    fontSize: 12, color: Colors.grey)),
+                                    fontSize: 12, color: c.textMuted)),
                             value: currentOnlyInStock,
-                            activeThumbColor: AppTheme.primary,
+                            activeThumbColor: c.primary,
                             onChanged: (val) =>
                                 setState(() => currentOnlyInStock = val),
                           ),
@@ -400,11 +416,12 @@ class ProductListPage extends StatelessWidget {
 
                         // 6. Khoang gia
                         _buildFilterContainer(
+                          c: c,
                           title: 'Khoảng giá',
                           trailing: Text(
                             '${formatPrice(currentRange.start)} - ${formatPrice(currentRange.end)}',
-                            style: const TextStyle(
-                                color: AppTheme.accentRed,
+                            style: TextStyle(
+                                color: c.danger,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 13),
                           ),
@@ -412,8 +429,8 @@ class ProductListPage extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Wrap(
-                                spacing: 8,
-                                runSpacing: 8,
+                                spacing: AppSpacing.sm,
+                                runSpacing: AppSpacing.sm,
                                 children: quickPrices.map((qp) {
                                   final qpMin = qp['min'] as double;
                                   final qpMax = qp['max'] as double;
@@ -421,24 +438,23 @@ class ProductListPage extends StatelessWidget {
                                       currentRange.end == qpMax;
                                   return ActionChip(
                                     label: Text(qp['label'] as String),
-                                    backgroundColor: isSelected
-                                        ? AppTheme.primary.withValues(alpha: 0.12)
-                                        : Colors.white,
+                                    backgroundColor:
+                                        isSelected ? c.primarySoft : c.surface,
                                     labelStyle: TextStyle(
                                       color: isSelected
-                                          ? AppTheme.primary
-                                          : AppTheme.textPrimary,
+                                          ? c.primary
+                                          : c.textPrimary,
                                       fontWeight: isSelected
                                           ? FontWeight.w600
                                           : FontWeight.normal,
                                       fontSize: 12,
                                     ),
                                     shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8),
+                                      borderRadius: BorderRadius.circular(
+                                          AppTheme.radiusSm),
                                       side: BorderSide(
-                                        color: isSelected
-                                            ? AppTheme.primary
-                                            : const Color(0xFFE5E7EB),
+                                        color:
+                                            isSelected ? c.primary : c.border,
                                       ),
                                     ),
                                     onPressed: () => setState(() {
@@ -447,14 +463,14 @@ class ProductListPage extends StatelessWidget {
                                   );
                                 }).toList(),
                               ),
-                              const SizedBox(height: 8),
+                              const SizedBox(height: AppSpacing.sm),
                               RangeSlider(
                                 values: currentRange,
                                 min: 0,
                                 max: 1000000,
                                 divisions: 20,
-                                activeColor: AppTheme.primary,
-                                inactiveColor: Colors.grey.shade300,
+                                activeColor: c.primary,
+                                inactiveColor: c.border,
                                 labels: RangeLabels(
                                   formatPrice(currentRange.start),
                                   formatPrice(currentRange.end),
@@ -468,34 +484,33 @@ class ProductListPage extends StatelessWidget {
 
                         // 7. Sap xep theo
                         _buildFilterContainer(
+                          c: c,
                           title: 'Sắp xếp theo',
                           child: Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
+                            spacing: AppSpacing.sm,
+                            runSpacing: AppSpacing.sm,
                             children: sortOptions.map((item) {
                               final isSelected = currentSort == item['key'];
                               return ChoiceChip(
                                 label: Text(item['label']!),
                                 selected: isSelected,
-                                selectedColor: AppTheme.primary,
-                                checkmarkColor: Colors.white,
+                                selectedColor: c.primary,
+                                checkmarkColor: c.onPrimary,
                                 labelStyle: TextStyle(
-                                  color: isSelected
-                                      ? Colors.white
-                                      : AppTheme.textPrimary,
+                                  color:
+                                      isSelected ? c.onPrimary : c.textPrimary,
                                   fontWeight: isSelected
                                       ? FontWeight.w600
                                       : FontWeight.w500,
                                   fontSize: 13,
                                 ),
-                                backgroundColor: Colors.white,
+                                backgroundColor: c.surface,
                                 side: BorderSide(
-                                  color: isSelected
-                                      ? AppTheme.primary
-                                      : const Color(0xFFE5E7EB),
+                                  color: isSelected ? c.primary : c.border,
                                 ),
                                 shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(10)),
+                                    borderRadius: BorderRadius.circular(
+                                        AppTheme.radiusSm)),
                                 onSelected: (_) =>
                                     setState(() => currentSort = item['key']!),
                               );
@@ -508,12 +523,12 @@ class ProductListPage extends StatelessWidget {
 
                   // Bottom action bar
                   Container(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(AppSpacing.lg),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: c.surface,
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.06),
+                          color: c.shadow,
                           blurRadius: 10,
                           offset: const Offset(0, -3),
                         ),
@@ -521,35 +536,21 @@ class ProductListPage extends StatelessWidget {
                     ),
                     child: SafeArea(
                       top: false,
-                      child: SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppTheme.primary,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12)),
-                          ),
-                          onPressed: () {
-                            prov.applyAdvancedFilters(
-                              sort: currentSort,
-                              minPrice: currentRange.start,
-                              maxPrice: currentRange.end,
-                              classification: currentClassification,
-                              size: currentSize,
-                              color: currentColor,
-                              minRating: currentMinRating,
-                              onlyInStock: currentOnlyInStock,
-                            );
-                            Navigator.pop(ctx);
-                          },
-                          child: Text(
-                            'Xem $matchCount sản phẩm phù hợp',
-                            style: const TextStyle(
-                                fontWeight: FontWeight.bold, fontSize: 15),
-                          ),
-                        ),
+                      child: PrimaryButton(
+                        label: 'Xem $matchCount sản phẩm phù hợp',
+                        onPressed: () {
+                          prov.applyAdvancedFilters(
+                            sort: currentSort,
+                            minPrice: currentRange.start,
+                            maxPrice: currentRange.end,
+                            classification: currentClassification,
+                            size: currentSize,
+                            color: currentColor,
+                            minRating: currentMinRating,
+                            onlyInStock: currentOnlyInStock,
+                          );
+                          Navigator.pop(ctx);
+                        },
                       ),
                     ),
                   ),
@@ -564,11 +565,12 @@ class ProductListPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     final productProv = context.watch<ProductProvider>();
     final wishlistProv = context.watch<WishlistProvider>();
 
     return Scaffold(
-      backgroundColor: AppTheme.scaffoldBackground,
+      backgroundColor: c.background,
       appBar: AppBar(
         title: const Text('Sản phẩm Menly'),
         centerTitle: true,
@@ -580,20 +582,19 @@ class ProductListPage extends StatelessWidget {
                 context, MaterialPageRoute(builder: (_) => const SearchPage())),
           ),
           Padding(
-            padding: const EdgeInsets.only(right: 8),
+            padding: const EdgeInsets.only(right: AppSpacing.sm),
             child: TextButton.icon(
               icon: Badge(
                 isLabelVisible: productProv.activeFilterCount > 0,
                 label: Text('${productProv.activeFilterCount}',
                     style: const TextStyle(
                         fontSize: 10, fontWeight: FontWeight.bold)),
-                backgroundColor: AppTheme.accentRed,
+                backgroundColor: c.danger,
                 child: const Icon(Icons.tune_rounded, size: 18),
               ),
-              label: const Text('Lọc',
+              label: Text('Lọc',
                   style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      color: AppTheme.textPrimary)),
+                      fontWeight: FontWeight.w600, color: c.textPrimary)),
               onPressed: () => _showFilterModal(context, productProv),
             ),
           ),
@@ -604,12 +605,17 @@ class ProductListPage extends StatelessWidget {
           // Thanh danh muc chips cuon ngang (AP-SP1)
           Container(
             height: 48,
-            color: Colors.white,
+            // Cung nen voi AppBar de khong co dai trang cat ngang dau trang.
+            color: c.background,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.lg,
+                vertical: AppSpacing.sm,
+              ),
               itemCount: productProv.categories.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 20),
+              separatorBuilder: (_, __) =>
+                  const SizedBox(width: AppSpacing.xl),
               itemBuilder: (ctx, i) {
                 final cat = productProv.categories[i];
                 final isSelected = productProv.selectedCategory == cat;
@@ -625,8 +631,13 @@ class ProductListPage extends StatelessWidget {
           if (productProv.activeFilterCount > 0 ||
               productProv.searchQuery.isNotEmpty)
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-              color: Colors.amber.shade50,
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.lg,
+                vertical: AppSpacing.sm,
+              ),
+              // Dai bao loc chay het chieu ngang nen dung mau be dam hon thay
+              // vi to accent, cho dong tong voi phan con lai.
+              color: c.surfaceVariant,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -635,72 +646,81 @@ class ProductListPage extends StatelessWidget {
                     children: [
                       Text(
                         'Bộ lọc đang dùng (${productProv.products.length} sản phẩm):',
-                        style: const TextStyle(
+                        style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
-                            color: AppTheme.textPrimary),
+                            color: c.textPrimary),
                       ),
                       GestureDetector(
                         onTap: () => productProv.resetFilters(),
-                        child: const Text('Xóa tất cả',
+                        child: Text('Xóa tất cả',
                             style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.bold,
-                                color: AppTheme.accentRed)),
+                                color: c.danger)),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: AppSpacing.sm),
                   SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
                     child: Row(
                       children: [
                         if (productProv.searchQuery.isNotEmpty)
                           _buildFilterBadgeChip(
+                            c: c,
                             label: '"${productProv.searchQuery}"',
                             onDeleted: () => productProv.clearSearchQuery(),
                           ),
                         if (productProv.selectedCategory != 'Tất cả')
                           _buildFilterBadgeChip(
+                            c: c,
                             label: 'DM: ${productProv.selectedCategory}',
                             onDeleted: () => productProv.clearCategory(),
                           ),
                         if (productProv.classification == 'new')
                           _buildFilterBadgeChip(
+                            c: c,
                             label: 'Hàng mới',
                             onDeleted: () =>
                                 productProv.clearClassificationFilter(),
                           ),
                         if (productProv.classification == 'best_seller')
                           _buildFilterBadgeChip(
+                            c: c,
                             label: 'Bán chạy',
                             onDeleted: () =>
                                 productProv.clearClassificationFilter(),
                           ),
                         if (productProv.selectedSize != null)
                           _buildFilterBadgeChip(
+                            c: c,
                             label: 'Size: ${productProv.selectedSize}',
                             onDeleted: () => productProv.clearSizeFilter(),
                           ),
                         if (productProv.selectedColor != null)
                           _buildFilterBadgeChip(
+                            c: c,
                             label: 'Màu: ${productProv.selectedColor}',
                             onDeleted: () => productProv.clearColorFilter(),
                           ),
                         if (productProv.minRating > 0)
                           _buildFilterBadgeChip(
+                            c: c,
                             label:
                                 '⭐ ${productProv.minRating.toStringAsFixed(1)}+',
                             onDeleted: () => productProv.clearRatingFilter(),
                           ),
                         if (productProv.onlyInStock)
                           _buildFilterBadgeChip(
+                            c: c,
                             label: 'Còn hàng',
                             onDeleted: () => productProv.clearStockFilter(),
                           ),
                         if (productProv.minPrice > 0 ||
                             productProv.maxPrice < 1000000)
                           _buildFilterBadgeChip(
+                            c: c,
                             label:
                                 '${formatPrice(productProv.minPrice)} - ${formatPrice(productProv.maxPrice)}',
                             onDeleted: () => productProv.clearPriceFilter(),
@@ -716,37 +736,24 @@ class ProductListPage extends StatelessWidget {
           // Luoi 2 cot san pham chuan UI/UX
           Expanded(
             child: productProv.isLoading
-                ? const Center(child: CircularProgressIndicator())
+                ? const LoadingView()
                 : productProv.products.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Text('Không tìm thấy sản phẩm phù hợp',
-                                style: TextStyle(
-                                    fontSize: 16, fontWeight: FontWeight.bold)),
-                            const SizedBox(height: 8),
-                            ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppTheme.primary,
-                                foregroundColor: Colors.white,
-                              ),
-                              onPressed: () => productProv.resetFilters(),
-                              child: const Text('Xem tất cả sản phẩm'),
-                            ),
-                          ],
-                        ),
+                    ? StatusView(
+                        icon: Icons.search_off_rounded,
+                        title: 'Không tìm thấy sản phẩm phù hợp',
+                        actionLabel: 'Xem tất cả sản phẩm',
+                        onAction: () => productProv.resetFilters(),
                       )
                     : RefreshIndicator(
                         onRefresh: () => productProv.loadProducts(),
                         child: GridView.builder(
-                          padding: const EdgeInsets.all(14),
+                          padding: const EdgeInsets.all(AppSpacing.lg),
                           gridDelegate:
                               const SliverGridDelegateWithFixedCrossAxisCount(
                             crossAxisCount: 2,
                             childAspectRatio: 0.5,
-                            crossAxisSpacing: 12,
-                            mainAxisSpacing: 12,
+                            crossAxisSpacing: AppSpacing.md,
+                            mainAxisSpacing: AppSpacing.md,
                           ),
                           itemCount: productProv.products.length,
                           itemBuilder: (ctx, i) {

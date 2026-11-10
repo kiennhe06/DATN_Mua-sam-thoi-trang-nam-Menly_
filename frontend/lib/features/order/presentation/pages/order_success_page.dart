@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/format.dart';
 import '../../../../core/widgets/app_buttons.dart';
@@ -60,7 +61,8 @@ class _OrderSuccessPageState extends State<OrderSuccessPage> with SingleTickerPr
         backgroundColor: c.background,
         body: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+            padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.xxl, vertical: AppSpacing.xl),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -85,11 +87,11 @@ class _OrderSuccessPageState extends State<OrderSuccessPage> with SingleTickerPr
                             ),
                           ],
                         ),
-                        child: const Center(
+                        child: Center(
                           child: Text(
                             '✓',
                             style: TextStyle(
-                              color: Colors.white,
+                              color: c.onInk,
                               fontSize: 48,
                               fontWeight: FontWeight.bold,
                             ),
@@ -99,7 +101,7 @@ class _OrderSuccessPageState extends State<OrderSuccessPage> with SingleTickerPr
                     ),
                   ),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: AppSpacing.xxl),
 
                 FadeTransition(
                   opacity: _fadeAnim,
@@ -114,7 +116,7 @@ class _OrderSuccessPageState extends State<OrderSuccessPage> with SingleTickerPr
                           fontWeight: FontWeight.w900,
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: AppSpacing.sm),
                       Text(
                         (widget.order?.splitOrderCodes.length ?? 0) > 1
                             ? 'Cảm ơn bạn đã mua sắm tại Menly.\nMỗi sản phẩm được tách thành một đơn riêng để theo dõi giao hàng, lần này có ${widget.order?.splitOrderCodes.length ?? 0} đơn.'
@@ -126,11 +128,12 @@ class _OrderSuccessPageState extends State<OrderSuccessPage> with SingleTickerPr
                           height: 1.5,
                         ),
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: AppSpacing.xl),
 
                       // Khung thong tin ma don hang
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.lg, vertical: AppSpacing.md),
                         decoration: BoxDecoration(
                           color: c.surface,
                           borderRadius: BorderRadius.circular(AppTheme.radiusMd),
@@ -151,7 +154,7 @@ class _OrderSuccessPageState extends State<OrderSuccessPage> with SingleTickerPr
                                       letterSpacing: 0.5,
                                     ),
                                   ),
-                                  const SizedBox(height: 2),
+                                  const SizedBox(height: AppSpacing.xs),
                                   Text(
                                     code,
                                     style: TextStyle(
@@ -178,7 +181,7 @@ class _OrderSuccessPageState extends State<OrderSuccessPage> with SingleTickerPr
                       ),
 
                       if (totalAmount > 0) ...[
-                        const SizedBox(height: 10),
+                        const SizedBox(height: AppSpacing.md),
                         Text(
                           'Tổng thanh toán: ${formatVnd(totalAmount)}',
                           style: TextStyle(
@@ -191,26 +194,26 @@ class _OrderSuccessPageState extends State<OrderSuccessPage> with SingleTickerPr
                     ],
                   ),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: AppSpacing.xxl),
 
                 // 3 the cam ket thoi trang Menly
                 Row(
                   children: [
                     _infoCard(c, 'Giao hàng', '2–3 ngày'),
-                    const SizedBox(width: 10),
+                    const SizedBox(width: AppSpacing.md),
                     _infoCard(c, 'Hỗ trợ', '1900 6868'),
-                    const SizedBox(width: 10),
+                    const SizedBox(width: AppSpacing.md),
                     _infoCard(c, 'Chính hãng', '100% Menly'),
                   ],
                 ),
-                const SizedBox(height: 32),
+                const SizedBox(height: AppSpacing.xxxl),
 
                 // Nut hanh dong
                 PrimaryButton(
                   label: 'Tiếp tục mua sắm',
                   onPressed: () => Navigator.of(context).popUntil((route) => route.isFirst),
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: AppSpacing.md),
                 if (widget.order != null)
                   SecondaryButton(
                     label: 'Xem chi tiết đơn hàng này',
@@ -246,7 +249,7 @@ class _OrderSuccessPageState extends State<OrderSuccessPage> with SingleTickerPr
   Widget _infoCard(AppColors c, String title, String subtitle) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12),
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
         decoration: BoxDecoration(
           color: c.surface,
           borderRadius: BorderRadius.circular(AppTheme.radiusMd),
@@ -262,7 +265,7 @@ class _OrderSuccessPageState extends State<OrderSuccessPage> with SingleTickerPr
                 fontWeight: FontWeight.w700,
               ),
             ),
-            const SizedBox(height: 2),
+            const SizedBox(height: AppSpacing.xs),
             Text(
               subtitle,
               style: TextStyle(color: c.textSecondary, fontSize: 11),

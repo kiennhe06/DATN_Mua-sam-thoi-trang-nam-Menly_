@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/format.dart';
 import 'package:menly_app/features/order/data/models/order_model.dart';
@@ -16,10 +17,11 @@ class OrderItemsCard extends StatelessWidget {
     final c = AppColors.of(context);
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSpacing.xl),
+      // Cung kieu the voi cac khoi khac: bo goc manh, vien mong
       decoration: BoxDecoration(
         color: c.surface,
-        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
         border: Border.all(color: c.border.withValues(alpha: 0.6)),
       ),
       child: Column(
@@ -46,9 +48,9 @@ class OrderItemsCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.lg),
           for (int i = 0; i < order.items.length; i++) ...[
-            if (i > 0) Divider(color: c.border.withValues(alpha: 0.5), height: 20),
+            if (i > 0) Divider(color: c.border.withValues(alpha: 0.5), height: AppSpacing.xxl),
             _buildItemRow(order.items[i], c),
           ],
         ],
@@ -61,10 +63,10 @@ class OrderItemsCard extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         ClipRRect(
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
           child: SizedBox(
-            width: 56,
-            height: 56,
+            width: 64,
+            height: 64,
             child: AppImage(
               url: item.thumbnailUrl,
               fit: BoxFit.cover,
@@ -77,7 +79,7 @@ class OrderItemsCard extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: AppSpacing.lg),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -92,7 +94,7 @@ class OrderItemsCard extends StatelessWidget {
                   fontWeight: FontWeight.w700,
                 ),
               ),
-              const SizedBox(height: 3),
+              const SizedBox(height: AppSpacing.xs),
               if (item.size.trim().isNotEmpty || item.color.trim().isNotEmpty)
                 Text(
                   [
@@ -101,7 +103,7 @@ class OrderItemsCard extends StatelessWidget {
                   ].join(' · '),
                   style: TextStyle(color: c.textMuted, fontSize: 12),
                 ),
-              const SizedBox(height: 4),
+              const SizedBox(height: AppSpacing.xs),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [

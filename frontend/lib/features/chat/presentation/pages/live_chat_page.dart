@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/format.dart';
 import '../../../../core/widgets/pressable.dart';
@@ -319,7 +320,7 @@ class _LiveChatPageState extends State<LiveChatPage> {
                 ),
               ],
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: AppSpacing.md),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -334,7 +335,7 @@ class _LiveChatPageState extends State<LiveChatPage> {
                           fontWeight: FontWeight.w800,
                         ),
                       ),
-                      const SizedBox(width: 6),
+                      const SizedBox(width: AppSpacing.sm),
                       Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 5,
@@ -342,7 +343,8 @@ class _LiveChatPageState extends State<LiveChatPage> {
                         ),
                         decoration: BoxDecoration(
                           color: c.secondary.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(4),
+                          borderRadius:
+                              BorderRadius.circular(AppTheme.radiusXs),
                         ),
                         child: Text(
                           'Staff',
@@ -374,7 +376,10 @@ class _LiveChatPageState extends State<LiveChatPage> {
           // Notice banner explaining Staff role (Not Admin)
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.lg,
+              vertical: AppSpacing.sm,
+            ),
             decoration: BoxDecoration(
               color: c.surfaceVariant.withValues(alpha: 0.6),
               border: Border(
@@ -384,7 +389,7 @@ class _LiveChatPageState extends State<LiveChatPage> {
             child: Row(
               children: [
                 Icon(Icons.shield_outlined, size: 14, color: c.textMuted),
-                const SizedBox(width: 6),
+                const SizedBox(width: AppSpacing.sm),
                 Expanded(
                   child: Text(
                     'Kênh kết nối trực tiếp với Nhân viên hỗ trợ Menly. Bảo mật & Hỗ trợ 24/7.',
@@ -399,7 +404,10 @@ class _LiveChatPageState extends State<LiveChatPage> {
           Expanded(
             child: ListView.builder(
               controller: _scrollCtrl,
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.lg,
+                vertical: AppSpacing.md,
+              ),
               itemCount: _messages.length,
               itemBuilder: (context, index) {
                 final msg = _messages[index];
@@ -411,13 +419,16 @@ class _LiveChatPageState extends State<LiveChatPage> {
           // Typing indicator
           if (_isStaffTyping) ...[
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.lg,
+                vertical: AppSpacing.sm,
+              ),
               child: Row(
                 children: [
                   Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 6,
+                      horizontal: AppSpacing.md,
+                      vertical: AppSpacing.sm,
                     ),
                     decoration: BoxDecoration(
                       color: c.surfaceVariant,
@@ -434,7 +445,7 @@ class _LiveChatPageState extends State<LiveChatPage> {
                             color: c.secondary,
                           ),
                         ),
-                        const SizedBox(width: 6),
+                        const SizedBox(width: AppSpacing.sm),
                         Text(
                           'Nhân viên đang soạn phản hồi...',
                           style: TextStyle(color: c.textMuted, fontSize: 11),
@@ -450,12 +461,13 @@ class _LiveChatPageState extends State<LiveChatPage> {
           // Quick Topics suggestion chips
           Container(
             height: 40,
-            margin: const EdgeInsets.only(bottom: 6),
+            margin: const EdgeInsets.only(bottom: AppSpacing.sm),
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 14),
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
               itemCount: _quickTopics.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 8),
+              separatorBuilder: (_, __) =>
+                  const SizedBox(width: AppSpacing.sm),
               itemBuilder: (ctx, i) {
                 final topic = _quickTopics[i];
                 return Pressable(
@@ -463,8 +475,8 @@ class _LiveChatPageState extends State<LiveChatPage> {
                   borderRadius: BorderRadius.circular(AppTheme.radiusPill),
                   child: Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
+                      horizontal: AppSpacing.md,
+                      vertical: AppSpacing.sm,
                     ),
                     decoration: BoxDecoration(
                       color: c.surface,
@@ -489,10 +501,10 @@ class _LiveChatPageState extends State<LiveChatPage> {
           // Message input bar
           Container(
             padding: EdgeInsets.fromLTRB(
-              12,
-              8,
-              12,
-              MediaQuery.of(context).padding.bottom + 8,
+              AppSpacing.md,
+              AppSpacing.sm,
+              AppSpacing.md,
+              MediaQuery.of(context).padding.bottom + AppSpacing.sm,
             ),
             decoration: BoxDecoration(
               color: c.surface,
@@ -504,7 +516,9 @@ class _LiveChatPageState extends State<LiveChatPage> {
               children: [
                 Expanded(
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.lg,
+                    ),
                     decoration: BoxDecoration(
                       color: c.surfaceVariant,
                       borderRadius: BorderRadius.circular(AppTheme.radiusPill),
@@ -522,19 +536,19 @@ class _LiveChatPageState extends State<LiveChatPage> {
                     ),
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: AppSpacing.sm),
                 GestureDetector(
                   onTap: () => _handleSend(),
                   child: Container(
                     width: 42,
                     height: 42,
                     decoration: BoxDecoration(
-                      color: c.secondary,
+                      color: c.primary,
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.send_rounded,
-                      color: Colors.white,
+                      color: c.onPrimary,
                       size: 20,
                     ),
                   ),
@@ -551,7 +565,7 @@ class _LiveChatPageState extends State<LiveChatPage> {
     final isStaff = msg.isStaff;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
       child: Row(
         mainAxisAlignment:
             isStaff ? MainAxisAlignment.start : MainAxisAlignment.end,
@@ -567,7 +581,7 @@ class _LiveChatPageState extends State<LiveChatPage> {
                 size: 18,
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: AppSpacing.sm),
           ],
           Flexible(
             child: Column(
@@ -576,7 +590,7 @@ class _LiveChatPageState extends State<LiveChatPage> {
               children: [
                 Padding(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 4,
+                    horizontal: AppSpacing.xs,
                     vertical: 2,
                   ),
                   child: Text(
@@ -590,16 +604,20 @@ class _LiveChatPageState extends State<LiveChatPage> {
                 ),
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 10,
+                    horizontal: AppSpacing.lg,
+                    vertical: AppSpacing.md,
                   ),
                   decoration: BoxDecoration(
                     color: isStaff ? c.surface : c.inkCard,
                     borderRadius: BorderRadius.only(
-                      topLeft: const Radius.circular(16),
-                      topRight: const Radius.circular(16),
-                      bottomLeft: Radius.circular(isStaff ? 4 : 16),
-                      bottomRight: Radius.circular(isStaff ? 16 : 4),
+                      topLeft: const Radius.circular(AppTheme.radiusLg),
+                      topRight: const Radius.circular(AppTheme.radiusLg),
+                      bottomLeft: Radius.circular(
+                        isStaff ? AppTheme.radiusXs : AppTheme.radiusLg,
+                      ),
+                      bottomRight: Radius.circular(
+                        isStaff ? AppTheme.radiusLg : AppTheme.radiusXs,
+                      ),
                     ),
                     border: Border.all(
                       color: isStaff
@@ -608,7 +626,7 @@ class _LiveChatPageState extends State<LiveChatPage> {
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: c.shadow.withValues(alpha: 0.05),
+                        color: c.shadow,
                         blurRadius: 8,
                         offset: const Offset(0, 2),
                       ),
@@ -632,7 +650,7 @@ class _LiveChatPageState extends State<LiveChatPage> {
             ),
           ),
           if (!isStaff) ...[
-            const SizedBox(width: 8),
+            const SizedBox(width: AppSpacing.sm),
             CircleAvatar(
               radius: 16,
               backgroundColor: c.primarySoft,
@@ -649,11 +667,11 @@ class _LiveChatPageState extends State<LiveChatPage> {
     AppColors c,
   ) {
     return Container(
-      margin: const EdgeInsets.only(top: 8),
-      padding: const EdgeInsets.all(10),
+      margin: const EdgeInsets.only(top: AppSpacing.sm),
+      padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
         color: c.surface,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(AppTheme.radiusCard),
         border: Border.all(color: c.border.withValues(alpha: 0.6)),
       ),
       child: Column(
@@ -661,12 +679,12 @@ class _LiveChatPageState extends State<LiveChatPage> {
         children: [
           Row(
             children: [
-              const Icon(
+              Icon(
                 Icons.auto_awesome_rounded,
                 size: 15,
-                color: Color(0xFFD4AF37),
+                color: c.secondary,
               ),
-              const SizedBox(width: 6),
+              const SizedBox(width: AppSpacing.sm),
               Text(
                 'Sản phẩm Menly gợi ý theo set:',
                 style: TextStyle(
@@ -677,14 +695,15 @@ class _LiveChatPageState extends State<LiveChatPage> {
               ),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: AppSpacing.md),
           SizedBox(
             height: 195,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               shrinkWrap: true,
               itemCount: products.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 10),
+              separatorBuilder: (_, __) =>
+                  const SizedBox(width: AppSpacing.md),
               itemBuilder: (context, index) {
                 final p = products[index];
                 return Pressable(
@@ -701,7 +720,7 @@ class _LiveChatPageState extends State<LiveChatPage> {
                     width: 130,
                     decoration: BoxDecoration(
                       color: c.background,
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(AppTheme.radiusSm),
                       border: Border.all(
                         color: c.border.withValues(alpha: 0.4),
                       ),
@@ -711,7 +730,7 @@ class _LiveChatPageState extends State<LiveChatPage> {
                       children: [
                         ClipRRect(
                           borderRadius: const BorderRadius.vertical(
-                            top: Radius.circular(9),
+                            top: Radius.circular(AppTheme.radiusSm),
                           ),
                           child: p.thumbnailUrl != null &&
                                   p.thumbnailUrl!.isNotEmpty
@@ -748,7 +767,7 @@ class _LiveChatPageState extends State<LiveChatPage> {
                                 ),
                         ),
                         Padding(
-                          padding: const EdgeInsets.all(7),
+                          padding: const EdgeInsets.all(AppSpacing.sm),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -763,16 +782,16 @@ class _LiveChatPageState extends State<LiveChatPage> {
                                   height: 1.25,
                                 ),
                               ),
-                              const SizedBox(height: 4),
+                              const SizedBox(height: AppSpacing.xs),
                               Text(
                                 formatPrice(p.price),
-                                style: const TextStyle(
-                                  color: Color(0xFFD4AF37),
+                                style: TextStyle(
+                                  color: c.secondary,
                                   fontSize: 12,
                                   fontWeight: FontWeight.w700,
                                 ),
                               ),
-                              const SizedBox(height: 4),
+                              const SizedBox(height: AppSpacing.xs),
                               Row(
                                 children: [
                                   Text(

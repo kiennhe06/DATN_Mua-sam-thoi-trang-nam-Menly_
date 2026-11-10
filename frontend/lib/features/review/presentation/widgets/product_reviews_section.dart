@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/app_snackbar.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
@@ -11,6 +12,7 @@ import '../pages/review_form_page.dart';
 import '../providers/review_provider.dart';
 import 'review_image_gallery.dart';
 import 'package:menly_app/core/widgets/app_image.dart';
+import 'package:menly_app/core/widgets/state_views.dart';
 
 class ProductReviewsSection extends StatefulWidget {
   final String productId;
@@ -138,7 +140,7 @@ class _ProductReviewsSectionState extends State<ProductReviewsSection>
         Row(
           children: [
             Icon(Icons.rate_review_outlined, size: 19, color: c.secondary),
-            const SizedBox(width: 6),
+            const SizedBox(width: AppSpacing.sm),
             Expanded(
               child: Text(
                 'Đánh giá từ khách hàng',
@@ -152,12 +154,14 @@ class _ProductReviewsSectionState extends State<ProductReviewsSection>
             if (_canReview)
               OutlinedButton.icon(
                 style: OutlinedButton.styleFrom(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.md,
+                    vertical: AppSpacing.sm,
+                  ),
                   visualDensity: VisualDensity.compact,
                   side: BorderSide(color: c.secondary),
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8)),
+                      borderRadius: BorderRadius.circular(AppTheme.radiusSm)),
                 ),
                 icon:
                     Icon(Icons.rate_review_rounded, size: 15, color: c.secondary),
@@ -173,32 +177,26 @@ class _ProductReviewsSectionState extends State<ProductReviewsSection>
           ],
         ),
         if (reviews.isNotEmpty) ...[
-          const SizedBox(height: 4),
+          const SizedBox(height: AppSpacing.xs),
           Text(
             '${reviews.length} đánh giá đã xác thực',
             style: TextStyle(color: c.textMuted, fontSize: 12.5),
           ),
         ],
-        const SizedBox(height: 10),
+        const SizedBox(height: AppSpacing.md),
         if (provider.isLoadingProductFor(widget.productId) && reviews.isEmpty)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 20),
-            child: Center(
-              child: SizedBox(
-                width: 22,
-                height: 22,
-                child: CircularProgressIndicator(strokeWidth: 2.2),
-              ),
-            ),
-          )
+          const LoadingView()
         else if (reviews.isEmpty)
           _buildEmpty(c)
         else ...[
           _buildSummary(c, reviews),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.md),
           for (int i = 0; i < visibleReviews.length; i++) ...[
             if (i > 0)
-              Divider(color: c.border.withValues(alpha: 0.6), height: 24),
+              Divider(
+                color: c.border.withValues(alpha: 0.6),
+                height: AppSpacing.xxl,
+              ),
             _buildReview(visibleReviews[i], c),
           ],
           if (reviews.length > _collapsedCount)
@@ -219,30 +217,10 @@ class _ProductReviewsSectionState extends State<ProductReviewsSection>
   }
 
   Widget _buildEmpty(AppColors c) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 22),
-      decoration: BoxDecoration(
-        color: c.surface,
-        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-        border: Border.all(color: c.border),
-      ),
-      child: Column(
-        children: [
-          Icon(Icons.rate_review_outlined, color: c.textMuted, size: 30),
-          const SizedBox(height: 8),
-          Text(
-            'Chưa có đánh giá nào',
-            style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'Hãy mua sản phẩm và chia sẻ cảm nhận kèm ảnh thực tế của bạn.',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: c.textMuted, fontSize: 12.5, height: 1.4),
-          ),
-        ],
-      ),
+    return const StatusView(
+      icon: Icons.rate_review_outlined,
+      title: 'Chưa có đánh giá nào',
+      message: 'Hãy mua sản phẩm và chia sẻ cảm nhận kèm ảnh thực tế của bạn.',
     );
   }
 
@@ -251,7 +229,10 @@ class _ProductReviewsSectionState extends State<ProductReviewsSection>
         reviews.length;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.md,
+      ),
       decoration: BoxDecoration(
         color: c.primarySoft,
         borderRadius: BorderRadius.circular(AppTheme.radiusMd),
@@ -267,13 +248,13 @@ class _ProductReviewsSectionState extends State<ProductReviewsSection>
               height: 1,
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildStars(average.round(), 16),
-                const SizedBox(height: 3),
+                const SizedBox(height: AppSpacing.xs),
                 Text(
                   'Dựa trên ${reviews.length} đánh giá đã xác thực',
                   style: TextStyle(color: c.textSecondary, fontSize: 12),
@@ -288,7 +269,7 @@ class _ProductReviewsSectionState extends State<ProductReviewsSection>
 
   Widget _buildReview(ReviewModel review, AppColors c) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -296,7 +277,7 @@ class _ProductReviewsSectionState extends State<ProductReviewsSection>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildAvatar(review, c),
-              const SizedBox(width: 10),
+              const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -311,11 +292,11 @@ class _ProductReviewsSectionState extends State<ProductReviewsSection>
                         fontWeight: FontWeight.w700,
                       ),
                     ),
-                    const SizedBox(height: 3),
+                    const SizedBox(height: AppSpacing.xs),
                     Row(
                       children: [
                         _buildStars(review.rating, 14),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: AppSpacing.sm),
                         Text(
                           _formatDate(review.createdAt),
                           style: TextStyle(color: c.textMuted, fontSize: 11.5),
@@ -328,7 +309,7 @@ class _ProductReviewsSectionState extends State<ProductReviewsSection>
             ],
           ),
           if (review.comment.trim().isNotEmpty) ...[
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.sm),
             Text(
               review.comment,
               style: TextStyle(
@@ -336,15 +317,15 @@ class _ProductReviewsSectionState extends State<ProductReviewsSection>
             ),
           ],
           if (review.images.isNotEmpty) ...[
-            const SizedBox(height: 10),
+            const SizedBox(height: AppSpacing.md),
             ReviewImageGallery(images: review.images),
           ],
           if (review.replyComment != null &&
               review.replyComment!.trim().isNotEmpty) ...[
-            const SizedBox(height: 10),
+            const SizedBox(height: AppSpacing.md),
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(10),
+              padding: const EdgeInsets.all(AppSpacing.md),
               decoration: BoxDecoration(
                 color: c.surfaceVariant,
                 borderRadius: BorderRadius.circular(AppTheme.radiusSm),
@@ -394,6 +375,7 @@ class _ProductReviewsSectionState extends State<ProductReviewsSection>
   }
 
   Widget _buildStars(int rating, double size) {
+    final c = AppColors.of(context);
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -401,7 +383,7 @@ class _ProductReviewsSectionState extends State<ProductReviewsSection>
           Icon(
             i < rating ? Icons.star_rounded : Icons.star_border_rounded,
             size: size,
-            color: Colors.amber,
+            color: c.secondary,
           ),
       ],
     );

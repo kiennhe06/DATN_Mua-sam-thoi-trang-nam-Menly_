@@ -4,6 +4,10 @@ import 'package:flutter/material.dart';
 /// button. These are the highlight tone (prices, active states, filter button);
 /// the primary CTA / nav color stays an ink neutral per [AppColors].
 enum AppAccent {
+  /// Tong mac dinh: muc den. Giao dien chi gom nen trang, the trang va chu
+  /// den, khong co mau nhan nao. Cac tong mau ben duoi van chon duoc trong
+  /// phan Giao dien & Hien thi neu sau nay muon them mau.
+  mucDen('Mực đen', Color(0xFF1C1B17)),
   camel('Camel', Color(0xFFB8824A)),
   gold('Vàng đồng', Color(0xFFC8A560)),
   olive('Xanh rêu', Color(0xFF6B7A4F)),
