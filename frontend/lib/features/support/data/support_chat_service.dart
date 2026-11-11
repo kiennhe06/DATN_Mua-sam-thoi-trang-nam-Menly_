@@ -49,6 +49,9 @@ class SupportChatMessage {
   final String content;
   final DateTime createdAt;
 
+  /// Doi phuong da doc tin nay chua. Chi co y nghia voi tin do minh gui.
+  final bool isRead;
+
   const SupportChatMessage({
     required this.id,
     required this.conversationId,
@@ -56,6 +59,7 @@ class SupportChatMessage {
     required this.senderRole,
     required this.content,
     required this.createdAt,
+    this.isRead = false,
   });
 
   factory SupportChatMessage.fromJson(Map<String, dynamic> json) {
@@ -67,9 +71,30 @@ class SupportChatMessage {
       content: json['content']?.toString() ?? '',
       createdAt: DateTime.tryParse(json['created_at']?.toString() ?? '') ??
           DateTime.now(),
+      isRead: json['is_read'] == true,
     );
   }
 }
+
+/// Mot lan tai tin nhan: danh sach tin va ben kia co dang go phim khong.
+class KetQuaTaiTinNhan {
+  final List<SupportChatMessage> messages;
+  final bool khachDangSoan;
+  final bool nhanVienDangSoan;
+
+  /// Con tin cu hon chua tai ve hay khong.
+  final bool conTinCu;
+
+  const KetQuaTaiTinNhan({
+    required this.messages,
+    this.khachDangSoan = false,
+    this.nhanVienDangSoan = false,
+    this.conTinCu = false,
+  });
+}
+
+/// So tin tai moi lan, ca lan mo man lan khi bam xem tin cu hon.
+const int soTinMoiLan = 50;
 
 class SupportChatService {
   final Dio _dio = ApiClient().dio;
@@ -82,6 +107,14 @@ class SupportChatService {
   // Dio tra ve doi tuong Response, phan than nam trong response.data.
   // Truyen thang ca Response vao _map se luon nem FormatException.
   dynamic _data(Response<dynamic> response) => _map(response.data)['data'];
+
+  /// Doc khoi 'typing' nam canh 'data'. Thieu khoi nay thi coi nhu khong ai go.
+  ({bool khach, bool nhanVien}) _dangSoan(Response<dynamic> response) {
+    final than = response.data;
+    final typing = than is Map ? than['typing'] : null;
+    if (typing is! Map) return (khach: false, nhanVien: false);
+    return (khach: typing['customer'] == true, nhanVien: typing['staff'] == true);
+  }
 
   String _message(Object error) {
     if (error is DioException) {
@@ -108,6 +141,34 @@ class SupportChatService {
     }
   }
 
+  /// Lay hoi thoai cua minh kem tin nhan trong dung mot lan goi mang.
+  ///
+  /// Truoc day man chat goi /mine xong moi goi tiep /:id/messages, hai request
+  /// phai cho nhau nen lan dau mo man lau gap doi can thiet.
+  Future<SupportChatSnapshot> getMyChat() async {
+    try {
+      final res = await _dio.get('/support-chat/mine');
+      final data = _map(_data(res));
+      final rawMessages = data['messages'];
+      final messages = rawMessages is List
+          ? rawMessages
+              .map((item) => SupportChatMessage.fromJson(_map(item)))
+              .toList()
+          : <SupportChatMessage>[];
+      final dangSoan = _dangSoan(res);
+      final than = res.data;
+      return SupportChatSnapshot(
+        conversation: SupportConversation.fromJson(data),
+        messages: messages,
+        khachDangSoan: dangSoan.khach,
+        nhanVienDangSoan: dangSoan.nhanVien,
+        conTinCu: than is Map && than['conTinCu'] == true,
+      );
+    } catch (error) {
+      throw Exception(_message(error));
+    }
+  }
+
   Future<List<SupportConversation>> getStaffConversations() async {
     try {
       final data = _data(await _dio.get('/support-chat/staff/conversations'));
@@ -122,30 +183,89 @@ class SupportChatService {
     }
   }
 
-  Future<List<SupportChatMessage>> getMessages(String conversationId) async {
+  /// Lay tin nhan theo tung doan.
+  ///
+  /// [tuMoc] de vong tu lam moi chi xin nhung tin moi, [truocMoc] de bam xem
+  /// tin cu hon. Khong truyen gi thi lay [limit] tin moi nhat.
+  Future<KetQuaTaiTinNhan> getMessages(
+    String conversationId, {
+    String? tuMoc,
+    String? truocMoc,
+    int limit = soTinMoiLan,
+  }) async {
     try {
-      final data = _data(
-        await _dio.get('/support-chat/$conversationId/messages'),
+      final res = await _dio.get(
+        '/support-chat/$conversationId/messages',
+        queryParameters: {
+          if (tuMoc != null) 'tuMoc': tuMoc,
+          if (truocMoc != null) 'truocMoc': truocMoc,
+          'limit': limit,
+        },
       );
+      final data = _data(res);
       if (data is! List) {
         throw const FormatException('Danh sách tin nhắn không hợp lệ');
       }
-      return data
-          .map((item) => SupportChatMessage.fromJson(_map(item)))
-          .toList();
+      final dangSoan = _dangSoan(res);
+      final than = res.data;
+      return KetQuaTaiTinNhan(
+        messages: data
+            .map((item) => SupportChatMessage.fromJson(_map(item)))
+            .toList(),
+        khachDangSoan: dangSoan.khach,
+        nhanVienDangSoan: dangSoan.nhanVien,
+        conTinCu: than is Map && than['conTinCu'] == true,
+      );
     } catch (error) {
       throw Exception(_message(error));
     }
   }
 
-  Future<void> sendMessage(String conversationId, String content) async {
+  /// Bao cho may chu biet minh dang go phim.
+  ///
+  /// Goi roi quen luon: tin hieu nay chi song vai giay, hong mot lan cung khong
+  /// anh huong gi den viec nhan tin.
+  Future<void> baoDangSoan(String conversationId) async {
     try {
-      await _dio.post(
+      await _dio.post('/support-chat/$conversationId/typing');
+    } catch (_) {
+      // Bo qua co y: bao dang soan that bai khong duoc lam phien nguoi dung.
+    }
+  }
+
+  /// Gui tin va tra ve chinh tin vua duoc tao.
+  ///
+  /// Can ban ghi that de man chat thay the tin tam dang hien; neu khong tin
+  /// tam se nam lai mai va moi tin gui di hien thanh hai bong chat.
+  Future<SupportChatMessage> sendMessage(
+    String conversationId,
+    String content,
+  ) async {
+    try {
+      final res = await _dio.post(
         '/support-chat/$conversationId/messages',
         data: {'content': content},
       );
+      return SupportChatMessage.fromJson(_map(_data(res)));
     } catch (error) {
       throw Exception(_message(error));
     }
   }
+}
+
+/// Ket qua mot lan mo man chat: hoi thoai va tin nhan di kem.
+class SupportChatSnapshot {
+  final SupportConversation conversation;
+  final List<SupportChatMessage> messages;
+  final bool khachDangSoan;
+  final bool nhanVienDangSoan;
+  final bool conTinCu;
+
+  const SupportChatSnapshot({
+    required this.conversation,
+    required this.messages,
+    this.khachDangSoan = false,
+    this.nhanVienDangSoan = false,
+    this.conTinCu = false,
+  });
 }

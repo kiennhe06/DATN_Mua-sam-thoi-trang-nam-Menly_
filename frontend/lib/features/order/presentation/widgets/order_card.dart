@@ -60,7 +60,10 @@ class OrderCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
-    final statusColor = _statusColor(order.status, c);
+    // Don da hoan tien khong con la don giao thanh cong nua, nen lay mau
+    // canh bao giong don da tra hang thay vi mau xanh cua "Da giao hang".
+    final statusColor =
+        order.daHoanTien ? c.danger : _statusColor(order.status, c);
 
     return InkWell(
       borderRadius: BorderRadius.circular(AppTheme.radiusXl),
@@ -117,7 +120,7 @@ class OrderCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(AppTheme.radiusPill),
                   ),
                   child: Text(
-                    order.status.label,
+                    order.nhanTrangThai,
                     style: TextStyle(
                       color: statusColor,
                       fontWeight: FontWeight.w800,

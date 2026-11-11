@@ -46,6 +46,13 @@ export interface Order {
   shippingAddress: ShippingAddress;
   createdAt: string;
   items: OrderItem[];
+  /**
+   * Don da duoc hoan tien qua yeu cau tra hang chua.
+   *
+   * Bang orders khong co trang thai "da hoan tien" nen phai mang rieng co nay,
+   * khong thi don da hoan tien van hien la "Da giao hang".
+   */
+  refunded?: boolean;
 }
 
 // ========== PRODUCT TYPES ==========

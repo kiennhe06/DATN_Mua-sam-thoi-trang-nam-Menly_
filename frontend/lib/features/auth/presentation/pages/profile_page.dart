@@ -22,6 +22,7 @@ import 'package:menly_app/features/order/presentation/pages/staff_order_manageme
 import 'package:menly_app/features/order/presentation/providers/order_provider.dart';
 import 'package:menly_app/features/support/presentation/pages/faq_page.dart';
 import 'package:menly_app/features/support/presentation/pages/staff_support_inbox_page.dart';
+import 'package:menly_app/features/support/presentation/pages/support_chat_page.dart';
 import 'package:menly_app/features/chat/presentation/pages/live_chat_page.dart';
 import 'package:menly_app/features/voucher/presentation/pages/voucher_list_page.dart';
 import 'package:menly_app/features/voucher/presentation/providers/voucher_provider.dart';
@@ -891,13 +892,26 @@ class ProfilePage extends StatelessWidget {
                     ),
                   ],
                   const Divider(height: 1),
+                  // Hai loi vao tach bach: tro ly ao tra loi tu dong, con
+                  // nhan vien that o man CSKH. Truoc day chi co mot dong ten la
+                  // "Chat voi nhan vien" nhung lai mo tro ly ao.
                   ProfileMenuItem(
-                    icon: Icons.support_agent_rounded,
-                    title: 'Chat với nhân viên',
-                    subtitle: 'Tư vấn chọn size & phối đồ tức thì 24/7',
+                    icon: Icons.smart_toy_outlined,
+                    title: 'Tư vấn tự động (AI)',
+                    subtitle: 'Trợ lý ảo gợi ý size & phối đồ, trả lời ngay 24/7',
                     onTap: () => Navigator.push(
                       context,
                       MaterialPageRoute(builder: (_) => const LiveChatPage()),
+                    ),
+                  ),
+                  const Divider(height: 1),
+                  ProfileMenuItem(
+                    icon: Icons.support_agent_rounded,
+                    title: 'Chat với nhân viên CSKH',
+                    subtitle: 'Nhắn trực tiếp cho nhân viên Menly',
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const SupportChatPage()),
                     ),
                   ),
                   const Divider(height: 1),

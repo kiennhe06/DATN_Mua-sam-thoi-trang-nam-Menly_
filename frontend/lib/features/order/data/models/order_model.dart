@@ -194,6 +194,16 @@ class OrderModel {
   final List<String> splitOrderCodes;
   String? cancelReason;
 
+  /// Don da duoc hoan tien qua yeu cau tra hang chua.
+  ///
+  /// Bang orders khong co trang thai "da hoan tien", nen phai mang rieng co
+  /// nay tu may chu. Khong co no thi don da hoan tien van hien "Da giao hang"
+  /// voi khach - nhin nhu shop chua tra lai tien.
+  final bool daHoanTien;
+
+  /// Thoi diem hoan tien, de ve dung moc tren hanh trinh don hang.
+  final DateTime? hoanTienLuc;
+
   OrderModel({
     required this.id,
     required this.code,
@@ -212,7 +222,16 @@ class OrderModel {
     this.statusHistory = const [],
     this.splitOrderCodes = const [],
     this.cancelReason,
+    this.daHoanTien = false,
+    this.hoanTienLuc,
   });
+
+  /// Nhan trang thai de hien cho nguoi dung.
+  ///
+  /// Dung cai nay o moi cho ve chip trang thai, dung dung status.label: don da
+  /// hoan tien phai noi la da hoan tien chu khong phai trang thai giao hang cu.
+  String get nhanTrangThai =>
+      daHoanTien ? 'Đã hoàn tiền' : status.label;
 
   OrderModel copyWith({
     String? id,
@@ -230,6 +249,8 @@ class OrderModel {
     DateTime? createdAt,
     List<OrderItemModel>? items,
     String? cancelReason,
+    bool? daHoanTien,
+    DateTime? hoanTienLuc,
   }) {
     return OrderModel(
       id: id ?? this.id,
@@ -247,6 +268,8 @@ class OrderModel {
       createdAt: createdAt ?? this.createdAt,
       items: items ?? this.items,
       cancelReason: cancelReason ?? this.cancelReason,
+      daHoanTien: daHoanTien ?? this.daHoanTien,
+      hoanTienLuc: hoanTienLuc ?? this.hoanTienLuc,
     );
   }
 
@@ -254,9 +277,13 @@ class OrderModel {
   bool get canCancel =>
       status == OrderStatus.pendingPayment || status == OrderStatus.processing;
 
-  /// Co the gui yeu cau tra hang khi don da giao / hoan tat
+  /// Co the gui yeu cau tra hang khi don da giao / hoan tat.
+  ///
+  /// Don da hoan tien thi thoi: may chu cung chan lan tra hang thu hai, de nut
+  /// hien ra chi khien nguoi dung bam vao roi an loi.
   bool get canReturn =>
-      status == OrderStatus.delivered || status == OrderStatus.completed;
+      !daHoanTien &&
+      (status == OrderStatus.delivered || status == OrderStatus.completed);
 
   /// Chi danh gia duoc khi da nhan hang, giong quy tac o may chu.
   bool get canReview =>
@@ -303,6 +330,10 @@ class OrderModel {
           ? (json['split_order_codes'] as List).map((e) => e.toString()).toList()
           : const [],
       cancelReason: json['cancel_reason']?.toString(),
+      daHoanTien: json['refunded'] == true,
+      hoanTienLuc: json['refunded_at'] != null
+          ? DateTime.tryParse(json['refunded_at'].toString())
+          : null,
     );
   }
 

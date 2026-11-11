@@ -1,6 +1,6 @@
 import { Router, type Response } from 'express';
 import { supabase } from '../../config/supabase.js';
-import { requireAdmin, forgetAuthUser } from '../../middlewares/auth.js';
+import { requireStaffOrAdmin, forgetAuthUser } from '../../middlewares/auth.js';
 import { uploadAvatarMiddleware } from '../../middlewares/upload.js';
 import { ProductModel } from '../../models/product.model.js';
 import { OrderModel } from '../../models/order.model.js';
@@ -33,7 +33,24 @@ import {
 
 // Quan tri routes
 const router = Router();
-router.use(requireAdmin);
+
+/**
+ * Duong dan ma tai khoan nhan vien (role staff) duoc dung.
+ *
+ * Nhan vien chi lam viec voi don hang. Chan tap trung o day thay vi gan quyen
+ * vao tung route: duong dan them sau nay mac dinh van chi admin vao duoc, khong
+ * ai phai nho sua them.
+ */
+const DUONG_DAN_CHO_NHAN_VIEN = [/^\/orders$/, /^\/orders\/[^/]+\/status$/];
+
+router.use(requireStaffOrAdmin);
+router.use((req, res, next) => {
+  if (req.user?.role === 'admin') return next();
+  if (DUONG_DAN_CHO_NHAN_VIEN.some((mau) => mau.test(req.path))) return next();
+  return res
+    .status(403)
+    .json({ error: 'Tài khoản nhân viên không có quyền dùng chức năng này' });
+});
 const productModel = new ProductModel();
 const orderModel = new OrderModel();
 const voucherModel = new VoucherModel();

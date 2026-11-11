@@ -227,6 +227,7 @@ export async function fetchAdminOrders(
       code: o.code || 'MS000',
       userId: o.userId || o.user_id || '',
       status: (o.status || 'pending_payment') as OrderStatus,
+      refunded: o.refunded === true,
       paymentMethod: o.paymentMethod || o.payment_method || 'cod',
       subtotal: Number(o.subtotal || 0),
       shippingFee: Number(o.shippingFee || o.shipping_fee || 0),
@@ -558,4 +559,156 @@ export async function updateOrderReturn(
     body: JSON.stringify(payload),
   });
   return normalizeReturn(res?.data ?? res);
+}
+
+// ---------------------------------------------------------------------------
+// Chat CSKH: nhan vien va quan tri tra loi tin nhan cua khach ngay trong admin
+//
+// Cac ham normalize* duoi day nhan 'any' vi do la JSON tho backend tra ve, dat
+// ten theo snake_case va co the thieu truong. Giong het cach cac normalize*
+// khac trong file nay lam, de ca file mot kieu.
+// ---------------------------------------------------------------------------
+
+export interface SupportConversation {
+  id: string;
+  userId: string;
+  customerName: string | null;
+  customerEmail: string | null;
+  lastMessage: string | null;
+  lastMessageAt: string;
+  unreadStaffCount: number;
+  status: string;
+  typing: SupportTyping;
+}
+
+export interface SupportMessage {
+  id: string;
+  conversationId: string;
+  senderId: string;
+  senderRole: string;
+  content: string;
+  createdAt: string;
+  /** Doi phuong da doc chua. Chi co y nghia voi tin do minh gui. */
+  isRead: boolean;
+}
+
+/** Ai dang go phim trong mot hoi thoai. */
+export interface SupportTyping {
+  customer: boolean;
+  staff: boolean;
+}
+
+/** Mot lan tai tin nhan: danh sach tin kem trang thai go phim. */
+export interface SupportChatLoad {
+  messages: SupportMessage[];
+  typing: SupportTyping;
+  /** Con tin cu hon chua tai ve hay khong. */
+  conTinCu: boolean;
+}
+
+/** Tham so phan doan khi lay tin nhan. */
+export interface ThamSoTaiTin {
+  /** Chi lay tin tu moc nay tro di - dung cho vong tu lam moi. */
+  tuMoc?: string;
+  /** Lay tin cu hon moc nay - dung cho nut xem tin cu. */
+  truocMoc?: string;
+  limit?: number;
+}
+
+function normalizeTyping(raw: any): SupportTyping {
+  return {
+    customer: raw?.customer === true,
+    staff: raw?.staff === true,
+  };
+}
+
+function normalizeConversation(row: any): SupportConversation {
+  const customer = row?.customer ?? {};
+  return {
+    id: String(row?.id ?? ''),
+    userId: String(row?.user_id ?? ''),
+    customerName: customer?.full_name ?? null,
+    customerEmail: customer?.email ?? null,
+    lastMessage: row?.last_message ?? null,
+    lastMessageAt: String(row?.last_message_at ?? ''),
+    unreadStaffCount: Number(row?.unread_staff_count ?? 0),
+    status: String(row?.status ?? 'open'),
+    typing: normalizeTyping(row?.typing),
+  };
+}
+
+function normalizeSupportMessage(row: any): SupportMessage {
+  return {
+    id: String(row?.id ?? ''),
+    conversationId: String(row?.conversation_id ?? ''),
+    senderId: String(row?.sender_id ?? ''),
+    senderRole: String(row?.sender_role ?? ''),
+    content: String(row?.content ?? ''),
+    createdAt: String(row?.created_at ?? ''),
+    isRead: row?.is_read === true,
+  };
+}
+
+/** Danh sach hoi thoai dang mo, moi nhat len dau. */
+export async function fetchSupportConversations(): Promise<SupportConversation[]> {
+  const res = await apiFetch<any>('/api/v1/support-chat/staff/conversations');
+  const rows = Array.isArray(res?.data) ? res.data : [];
+  return rows.map(normalizeConversation);
+}
+
+export async function fetchSupportMessages(
+  conversationId: string,
+  thamSo: ThamSoTaiTin = {},
+): Promise<SupportChatLoad> {
+  const query = new URLSearchParams();
+  if (thamSo.tuMoc) query.set('tuMoc', thamSo.tuMoc);
+  if (thamSo.truocMoc) query.set('truocMoc', thamSo.truocMoc);
+  if (thamSo.limit) query.set('limit', String(thamSo.limit));
+  const duoi = query.toString() ? `?${query}` : '';
+
+  const res = await apiFetch<any>(`/api/v1/support-chat/${conversationId}/messages${duoi}`);
+  const rows = Array.isArray(res?.data) ? res.data : [];
+  return {
+    messages: rows.map(normalizeSupportMessage),
+    typing: normalizeTyping(res?.typing),
+    conTinCu: res?.conTinCu === true,
+  };
+}
+
+/**
+ * Ket thuc mot hoi thoai.
+ *
+ * Tin nhan khong bi xoa, hoi thoai chi roi khoi danh sach dang mo. Khach nhan
+ * tiep thi he thong tu mo mot hoi thoai moi.
+ */
+export async function closeSupportConversation(conversationId: string): Promise<void> {
+  await apiFetch<unknown>(`/api/v1/support-chat/${conversationId}/close`, {
+    method: 'PATCH',
+  });
+}
+
+/**
+ * Bao len may chu rang minh dang go phim.
+ *
+ * Goi roi quen: tin hieu chi song vai giay, hong mot lan khong anh huong gi.
+ */
+export async function pingSupportTyping(conversationId: string): Promise<void> {
+  try {
+    await apiFetch<unknown>(`/api/v1/support-chat/${conversationId}/typing`, {
+      method: 'POST',
+    });
+  } catch {
+    // Bo qua co y: bao dang soan that bai khong duoc lam phien nguoi dung.
+  }
+}
+
+export async function sendSupportMessage(
+  conversationId: string,
+  content: string,
+): Promise<SupportMessage> {
+  const res = await apiFetch<any>(`/api/v1/support-chat/${conversationId}/messages`, {
+    method: 'POST',
+    body: JSON.stringify({ content }),
+  });
+  return normalizeSupportMessage(res?.data ?? res);
 }

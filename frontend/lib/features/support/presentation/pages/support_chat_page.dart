@@ -33,23 +33,133 @@ class _SupportChatPageState extends State<SupportChatPage> {
   bool _isRefreshing = false;
   String? _error;
 
+  /// Ben kia co dang go phim khong (lay tu phan hoi cua may chu).
+  bool _doiPhuongDangSoan = false;
+
+  /// Lan cuoi bao len may chu rang minh dang go, de khong bao lien tuc.
+  DateTime? _lanBaoDangSoan;
+
+  /// Con tin cu hon chua tai ve khong, va dang tai do khong.
+  bool _conTinCu = false;
+  bool _dangTaiTinCu = false;
+
   @override
   void initState() {
     super.initState();
     _conversation = widget.conversation;
     _loadChat();
+    _messageController.addListener(_khiGoPhim);
+    // 2 giay thay vi 5: tin nhan va dong "dang soan" phai den gan nhu tuc thi
+    // thi cuoc tro chuyen moi tu nhien. Mot vong lam moi gio chi ton mot cau
+    // truy van nen tang nhip van nhe.
     _refreshTimer = Timer.periodic(
-      const Duration(seconds: 5),
+      const Duration(seconds: 2),
       (_) => _loadChat(silent: true),
     );
+  }
+
+  /// Go phim thi bao len may chu, nhung nhieu nhat 3 giay mot lan.
+  void _khiGoPhim() {
+    final conversation = _conversation;
+    if (conversation == null) return;
+    if (_messageController.text.trim().isEmpty) return;
+
+    final bayGio = DateTime.now();
+    final lanTruoc = _lanBaoDangSoan;
+    if (lanTruoc != null && bayGio.difference(lanTruoc).inSeconds < 3) return;
+
+    _lanBaoDangSoan = bayGio;
+    unawaited(_service.baoDangSoan(conversation.id));
   }
 
   @override
   void dispose() {
     _refreshTimer?.cancel();
+    _messageController.removeListener(_khiGoPhim);
     _messageController.dispose();
     _scrollController.dispose();
     super.dispose();
+  }
+
+  /// Gop tin moi vao danh sach dang co, loai trung theo ma tin.
+  ///
+  /// May chu lay tin bang >= moc nen tin o ranh gioi ve hai lan; gop theo ma
+  /// vua loai trung vua cap nhat duoc trang thai da doc cua tin cu.
+  void _gopTin(List<SupportChatMessage> veThem) {
+    if (veThem.isEmpty) return;
+    final theoMa = <String, SupportChatMessage>{
+      for (final tin in _messages) tin.id: tin,
+    };
+    for (final tin in veThem) {
+      theoMa[tin.id] = tin;
+    }
+    final gop = theoMa.values.toList()
+      ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
+    _messages
+      ..clear()
+      ..addAll(gop);
+  }
+
+  /// Moc thoi gian de xin tin moi o vong tu lam moi.
+  ///
+  /// Thuong la tin cuoi cung. Nhung neu minh con tin chua duoc doc thi phai
+  /// lui moc ve tin do, khong thi nhan "Da xem" se khong bao gio sang.
+  String? get _mocXinTinMoi {
+    if (_messages.isEmpty) return null;
+    var moc = _messages.last.createdAt;
+    for (final tin in _messages) {
+      final cuaToi = widget.isStaffConversation
+          ? tin.senderRole == 'staff' || tin.senderRole == 'admin'
+          : tin.senderRole == 'customer';
+      if (cuaToi && !tin.isRead && tin.createdAt.isBefore(moc)) {
+        moc = tin.createdAt;
+      }
+    }
+    return moc.toUtc().toIso8601String();
+  }
+
+  /// Bam "xem tin cu hon": lay them mot doan phia truoc tin dau tien dang co.
+  Future<void> _taiTinCu() async {
+    final conversation = _conversation;
+    if (conversation == null || _messages.isEmpty || _dangTaiTinCu) return;
+
+    setState(() => _dangTaiTinCu = true);
+    try {
+      final ketQua = await _service.getMessages(
+        conversation.id,
+        truocMoc: _messages.first.createdAt.toUtc().toIso8601String(),
+      );
+      if (!mounted) return;
+      setState(() {
+        _gopTin(ketQua.messages);
+        _conTinCu = ketQua.conTinCu;
+      });
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(error.toString().replaceFirst('Exception: ', '')),
+          backgroundColor: AppColors.of(context).danger,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _dangTaiTinCu = false);
+    }
+  }
+
+  /// Ma cua tin cuoi cung do chinh minh gui, de chi gan "Da xem" o do.
+  ///
+  /// Gan o moi tin da doc se roi rac va kho nhin; cac ung dung nhan tin deu chi
+  /// hien o tin duoi cung.
+  String? get _idTinCuoiCuaToi {
+    for (var i = _messages.length - 1; i >= 0; i -= 1) {
+      final tin = _messages[i];
+      final cuaToi = widget.isStaffConversation
+          ? tin.senderRole == 'staff' || tin.senderRole == 'admin'
+          : tin.senderRole == 'customer';
+      if (cuaToi) return tin.id;
+    }
+    return null;
   }
 
   Future<void> _loadChat({bool silent = false}) async {
@@ -58,14 +168,50 @@ class _SupportChatPageState extends State<SupportChatPage> {
     if (!silent && mounted) setState(() => _isLoading = true);
 
     try {
-      final conversation = _conversation ?? await _service.getMyConversation();
-      final messages = await _service.getMessages(conversation.id);
+      // Lan dau chua co hoi thoai thi lay ca hoi thoai lan tin nhan trong mot
+      // request. Nhung lan tu lam moi sau do chi can lay tin nhan.
+      final SupportConversation conversation;
+      final List<SupportChatMessage> messages;
+      final bool khachDangSoan;
+      final bool nhanVienDangSoan;
+      final bool conTinCu;
+      // Lan dau thay sach danh sach, nhung lan sau chi gop them tin moi.
+      final bool thayToanBo;
+      final daCo = _conversation;
+      if (daCo == null) {
+        final snapshot = await _service.getMyChat();
+        conversation = snapshot.conversation;
+        messages = snapshot.messages;
+        khachDangSoan = snapshot.khachDangSoan;
+        nhanVienDangSoan = snapshot.nhanVienDangSoan;
+        conTinCu = snapshot.conTinCu;
+        thayToanBo = true;
+      } else {
+        conversation = daCo;
+        // Vong lam moi chi xin tin tu moc cuoi tro di, khong keo ca doan chat
+        // ve moi 2 giay.
+        final moc = _mocXinTinMoi;
+        final ketQua = await _service.getMessages(daCo.id, tuMoc: moc);
+        messages = ketQua.messages;
+        khachDangSoan = ketQua.khachDangSoan;
+        nhanVienDangSoan = ketQua.nhanVienDangSoan;
+        conTinCu = moc == null ? ketQua.conTinCu : _conTinCu;
+        thayToanBo = moc == null;
+      }
       if (!mounted) return;
       setState(() {
         _conversation = conversation;
-        _messages
-          ..clear()
-          ..addAll(messages);
+        if (thayToanBo) {
+          _messages
+            ..clear()
+            ..addAll(messages);
+        } else {
+          _gopTin(messages);
+        }
+        _conTinCu = conTinCu;
+        // Man nhan vien quan tam khach co go khong, man khach thi nguoc lai.
+        _doiPhuongDangSoan =
+            widget.isStaffConversation ? khachDangSoan : nhanVienDangSoan;
         _error = null;
         _isLoading = false;
       });
@@ -106,8 +252,21 @@ class _SupportChatPageState extends State<SupportChatPage> {
     _messageController.clear();
 
     try {
-      await _service.sendMessage(conversation.id, content);
-      await _loadChat(silent: true);
+      final daGui = await _service.sendMessage(conversation.id, content);
+      // Gui xong coi nhu bat dau mot luot go moi: go tiep la bao ngay, khong
+      // phai cho het 3 giay gian cach cua luot truoc.
+      _lanBaoDangSoan = null;
+      if (mounted) {
+        setState(() {
+          // Bo tin tam roi gop tin that vao. Tin tam mang ma rieng nen neu
+          // khong bo tay thi _gopTin se giu lai ca hai.
+          _messages.remove(tempMessage);
+          _gopTin([daGui]);
+        });
+      }
+      // Khong cho vong tai lai: tin da hien roi, bat nguoi dung doi them mot
+      // vong di ve mang nua chi lam nut gui treo lau hon.
+      unawaited(_loadChat(silent: true));
     } catch (error) {
       if (mounted) {
         setState(() {
@@ -207,7 +366,7 @@ class _SupportChatPageState extends State<SupportChatPage> {
         children: [
           Expanded(
             child: _isLoading
-                ? const LoadingView()
+                ? const LoadingView(message: 'Đang tải đoạn chat...')
                 : _error != null && conversation == null
                     ? StatusView(
                         icon: Icons.error_outline,
@@ -227,10 +386,34 @@ class _SupportChatPageState extends State<SupportChatPage> {
                             controller: _scrollController,
                             reverse: true,
                             padding: const EdgeInsets.all(AppSpacing.lg),
-                            itemCount: _messages.length,
+                            // Danh sach ve nguoc, nen o dang soan nam o index 0
+                            // moi hien ra duoi cung.
+                            // Them mot o cuoi danh sach (tuc tren cung tren
+                            // man hinh) cho nut xem tin cu hon.
+                            itemCount: _messages.length +
+                                (_doiPhuongDangSoan ? 1 : 0) +
+                                (_conTinCu ? 1 : 0),
                             itemBuilder: (context, index) {
+                              if (_conTinCu &&
+                                  index ==
+                                      _messages.length +
+                                          (_doiPhuongDangSoan ? 1 : 0)) {
+                                return _NutTinCu(
+                                  dangTai: _dangTaiTinCu,
+                                  onTap: _taiTinCu,
+                                );
+                              }
+                              if (_doiPhuongDangSoan && index == 0) {
+                                return _DongDangSoan(
+                                  nhan: widget.isStaffConversation
+                                      ? 'Khách đang soạn tin...'
+                                      : 'Nhân viên đang soạn tin...',
+                                );
+                              }
+                              final viTri =
+                                  _doiPhuongDangSoan ? index - 1 : index;
                               final message =
-                                  _messages[_messages.length - 1 - index];
+                                  _messages[_messages.length - 1 - viTri];
                               final isMine = widget.isStaffConversation
                                   ? message.senderRole == 'staff' ||
                                       message.senderRole == 'admin'
@@ -239,6 +422,9 @@ class _SupportChatPageState extends State<SupportChatPage> {
                                 message: message,
                                 isMine: isMine,
                                 time: _formatTime(message.createdAt),
+                                daXem: isMine &&
+                                    message.isRead &&
+                                    message.id == _idTinCuoiCuaToi,
                               );
                             },
                           ),
@@ -325,10 +511,14 @@ class _ChatBubble extends StatelessWidget {
   final bool isMine;
   final String time;
 
+  /// Hien them chu "Da xem" duoi gio. Chi dat true o tin cuoi cung cua minh.
+  final bool daXem;
+
   const _ChatBubble({
     required this.message,
     required this.isMine,
     required this.time,
+    this.daXem = false,
   });
 
   @override
@@ -377,16 +567,124 @@ class _ChatBubble extends StatelessWidget {
               ),
             ),
             const SizedBox(height: AppSpacing.xs),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  time,
+                  style: TextStyle(
+                    color: isMine
+                        ? c.onPrimary.withValues(alpha: 0.7)
+                        : c.textMuted,
+                    fontSize: 10,
+                  ),
+                ),
+                if (daXem) ...[
+                  const SizedBox(width: AppSpacing.xs),
+                  Icon(
+                    Icons.done_all_rounded,
+                    size: 12,
+                    color: c.onPrimary.withValues(alpha: 0.85),
+                  ),
+                  const SizedBox(width: 2),
+                  Text(
+                    'Đã xem',
+                    style: TextStyle(
+                      color: c.onPrimary.withValues(alpha: 0.85),
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+
+/// Dong nho bao doi phuong dang go phim, ve nhu mot bong chat nhat mau.
+class _DongDangSoan extends StatelessWidget {
+  final String nhan;
+
+  const _DongDangSoan({required this.nhan});
+
+  @override
+  Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: AppSpacing.md),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.md,
+        ),
+        decoration: BoxDecoration(
+          color: c.surface,
+          borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+          border: Border.all(color: c.border),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              width: 12,
+              height: 12,
+              child: CircularProgressIndicator(
+                strokeWidth: 1.8,
+                color: c.textMuted,
+              ),
+            ),
+            const SizedBox(width: AppSpacing.md),
             Text(
-              time,
+              nhan,
               style: TextStyle(
-                color: isMine
-                    ? c.onPrimary.withValues(alpha: 0.7)
-                    : c.textMuted,
-                fontSize: 10,
+                color: c.textSecondary,
+                fontSize: 12,
+                fontStyle: FontStyle.italic,
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+
+/// Nut nam tren cung doan chat de keo ve them mot doan tin cu hon.
+class _NutTinCu extends StatelessWidget {
+  final bool dangTai;
+  final VoidCallback onTap;
+
+  const _NutTinCu({required this.dangTai, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.md),
+      child: Center(
+        child: TextButton.icon(
+          onPressed: dangTai ? null : onTap,
+          icon: dangTai
+              ? SizedBox(
+                  width: 12,
+                  height: 12,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 1.8,
+                    color: c.textMuted,
+                  ),
+                )
+              : Icon(Icons.keyboard_arrow_up_rounded, size: 18, color: c.textSecondary),
+          label: Text(
+            dangTai ? 'Đang tải...' : 'Xem tin cũ hơn',
+            style: TextStyle(color: c.textSecondary, fontSize: 12),
+          ),
         ),
       ),
     );

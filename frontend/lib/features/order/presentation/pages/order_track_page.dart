@@ -186,7 +186,7 @@ class _OrderTrackPageState extends State<OrderTrackPage> {
                                       BorderRadius.circular(AppTheme.radiusPill),
                                 ),
                                 child: Text(
-                                  _order!.status.label,
+                                  _order!.nhanTrangThai,
                                   style: TextStyle(
                                     color: statusColor,
                                     fontWeight: FontWeight.bold,

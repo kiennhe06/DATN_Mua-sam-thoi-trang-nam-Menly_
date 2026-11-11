@@ -6,7 +6,7 @@ import 'package:menly_app/core/widgets/app_buttons.dart';
 import 'package:menly_app/features/support/presentation/pages/about_page.dart';
 import 'package:menly_app/features/support/presentation/pages/contact_page.dart';
 import 'package:menly_app/features/support/presentation/pages/policy_page.dart';
-import 'package:menly_app/features/chat/presentation/pages/live_chat_page.dart';
+import 'package:menly_app/features/support/presentation/pages/support_chat_page.dart';
 import 'package:menly_app/features/order/data/models/shipping_policy_model.dart';
 import 'package:menly_app/features/order/data/services/shipping_policy_service.dart';
 
@@ -223,13 +223,15 @@ class _FAQPageState extends State<FAQPage> {
                     style: TextStyle(color: c.textSecondary, fontSize: 12),
                   ),
                   const SizedBox(height: AppSpacing.md),
+                  // Nut nay nam duoi dong "Doi ngu cham soc khach hang",
+                  // nen phai mo chat voi nhan vien that chu khong phai tro ly ao.
                   PrimaryButton(
                     label: 'Chat với nhân viên',
                     height: 48,
                     onPressed: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (_) => const LiveChatPage()),
+                        MaterialPageRoute(builder: (_) => const SupportChatPage()),
                       );
                     },
                   ),

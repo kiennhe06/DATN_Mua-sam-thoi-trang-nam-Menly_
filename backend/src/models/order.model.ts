@@ -46,6 +46,16 @@ export interface OrderRow {
   order_items?: OrderItemRow[];
   /** Ban sao cua order_items, ten ma ung dung doc. Do enrichOrders gan vao. */
   items?: OrderItemRow[];
+  /**
+   * Don nay da duoc hoan tien qua yeu cau tra hang chua.
+   *
+   * Bang orders khong co trang thai 'refunded', nen khong co co nay thi don da
+   * hoan tien van hien la "Da giao hang" voi khach - nhin nhu shop chua tra
+   * tien. Do enrichOrders tinh tu order_returns.
+   */
+  refunded?: boolean;
+  /** Thoi diem hoan tien, lay tu lan tra hang duoc duyet. */
+  refunded_at?: string | null;
 }
 
 export interface OrderItemRow {
@@ -221,12 +231,12 @@ export class OrderModel {
   }
 
   private static readonly ORDER_WITH_ITEMS_SELECT =
-    '*, order_items(*, product_variants(size, color, products(name, thumbnail_url)))';
+    '*, order_items(*, product_variants(size, color, products(name, thumbnail_url))), order_returns(status, resolved_at)';
 
   // Man chi tiet don can them lich su doi trang thai de ve hanh trinh giao hang
   // theo moc thoi gian that, thay vi suy ra tu mot trang thai hien tai.
   private static readonly ORDER_DETAIL_SELECT =
-    '*, order_items(*, product_variants(size, color, products(name, thumbnail_url))), order_status_history(from_status, to_status, created_at)';
+    '*, order_items(*, product_variants(size, color, products(name, thumbnail_url))), order_status_history(from_status, to_status, created_at), order_returns(status, resolved_at)';
 
   /**
    * Bo cac dia chi sinh anh ngau nhien (picsum, placeholder) vi moi lan goi tra
@@ -269,11 +279,19 @@ export class OrderModel {
         Number(order.subtotal ?? 0) + Number(order.shipping_fee ?? 0) - Number(order.total ?? 0),
       );
 
+      // Mot don co the co nhieu lan yeu cau tra hang; chi can mot lan da hoan
+      // tien la don coi nhu da hoan tien.
+      const lanHoanTien = (order.order_returns ?? []).find(
+        (yeuCau: any) => yeuCau?.status === 'refunded',
+      );
+
       return {
         ...order,
         discount_amount: giamGia,
         order_items: items,
         items,
+        refunded: Boolean(lanHoanTien),
+        refunded_at: lanHoanTien?.resolved_at ?? null,
       };
     });
   }
@@ -621,7 +639,9 @@ export class OrderModel {
   }): Promise<OrderRow[]> {
     let query = this.db
       .from('orders')
-      .select('*, order_items(*)')
+      // Kem trang thai tra hang de man quan tri cung phan biet duoc don da
+      // hoan tien voi don giao thanh cong.
+      .select('*, order_items(*), order_returns(status, resolved_at)')
       .order('created_at', { ascending: false });
 
     if (params.status) query = query.eq('status', params.status);

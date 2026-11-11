@@ -248,7 +248,7 @@ class _OrderReturnRequestPageState extends State<OrderReturnRequestPage> {
           ),
           const SizedBox(height: AppSpacing.xs),
           Text(
-            'Hoàn tối đa ${formatVnd(order.total)} • ${order.status.label}',
+            'Hoàn tối đa ${formatVnd(order.total)} • ${order.nhanTrangThai}',
             style: TextStyle(color: c.textSecondary, fontSize: 12.5, fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: AppSpacing.md),

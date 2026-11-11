@@ -273,7 +273,7 @@ class _StaffOrderManagementPageState extends State<StaffOrderManagementPage> {
                                         AppTheme.radiusXs),
                                   ),
                                   child: Text(
-                                    order.status.label,
+                                    order.nhanTrangThai,
                                     style: TextStyle(
                                       color: statusColor,
                                       fontWeight: FontWeight.bold,

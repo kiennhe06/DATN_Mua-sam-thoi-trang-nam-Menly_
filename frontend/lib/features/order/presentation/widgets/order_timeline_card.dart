@@ -59,21 +59,45 @@ class OrderTimelineCard extends StatelessWidget {
         ? _hanhTrinh.sublist(viTriBatDau + 1)
         : <OrderStatus>[];
 
-    return [
+    final cacBuoc = <_BuocHanhTrinh>[
       _BuocHanhTrinh(
         tieuDe: 'Đã đặt hàng',
         moTa: _moTa[trangThaiBanDau] ?? 'Hệ thống đã ghi nhận đơn',
         luc: order.createdAt,
-        laHienTai: order.status == trangThaiBanDau,
+        laHienTai: order.status == trangThaiBanDau && !order.daHoanTien,
       ),
       for (final trangThai in conLai)
         _BuocHanhTrinh(
           tieuDe: _tieuDe[trangThai] ?? trangThai.label,
           moTa: _moTa[trangThai] ?? '',
           luc: daDatToi[trangThai],
-          laHienTai: order.status == trangThai,
+          laHienTai: order.status == trangThai && !order.daHoanTien,
+        ),
+      // Hoan tien la cai ket cua don, phai nam cuoi hanh trinh. Khong co buoc
+      // nay thi man chi tiet van ke chuyen "Hoan tat" trong khi the don o danh
+      // sach da ghi la da hoan tien.
+      if (order.daHoanTien)
+        _BuocHanhTrinh(
+          tieuDe: 'Đã hoàn tiền',
+          moTa: 'Cửa hàng đã hoàn tiền cho khách',
+          luc: order.hoanTienLuc,
+          laHienTai: true,
+          luonCoi: true,
         ),
     ];
+
+    // Quan tri co the nhay thang tu "Dang van chuyen" sang "Hoan tat", bo lai
+    // buoc "Da giao" khong co moc. Ghi "chua dien ra" trong khi don da hoan tat
+    // la noi sai; buoc do co xay ra, chi la khong ai ghi lai gio.
+    var daThayMocSau = false;
+    for (var i = cacBuoc.length - 1; i >= 0; i -= 1) {
+      if (cacBuoc[i].daXayRa) {
+        daThayMocSau = true;
+      } else if (daThayMocSau) {
+        cacBuoc[i] = cacBuoc[i].danhDauBoQua();
+      }
+    }
+    return cacBuoc;
   }
 
   @override
@@ -81,6 +105,7 @@ class OrderTimelineCard extends StatelessWidget {
     final c = AppColors.of(context);
     final cacBuoc = _dungCacBuoc();
     final isCancelled = order.status == OrderStatus.canceled;
+    final daHoanTien = order.daHoanTien;
 
     return Container(
       padding: const EdgeInsets.all(AppSpacing.xl),
@@ -88,7 +113,7 @@ class OrderTimelineCard extends StatelessWidget {
         color: c.surface,
         borderRadius: BorderRadius.circular(AppTheme.radiusXl),
         border: Border.all(
-          color: isCancelled
+          color: (isCancelled || daHoanTien)
               ? c.danger.withValues(alpha: 0.3)
               : c.border.withValues(alpha: 0.6),
         ),
@@ -109,14 +134,18 @@ class OrderTimelineCard extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(
                     horizontal: AppSpacing.md, vertical: AppSpacing.xs),
                 decoration: BoxDecoration(
-                  color: (isCancelled ? c.danger : c.secondary)
+                  color: ((isCancelled || daHoanTien) ? c.danger : c.secondary)
                       .withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(AppTheme.radiusPill),
                 ),
                 child: Text(
-                  isCancelled ? 'ĐÃ HỦY' : 'TIẾN TRÌNH',
+                  isCancelled
+                      ? 'ĐÃ HỦY'
+                      : daHoanTien
+                          ? 'ĐÃ HOÀN TIỀN'
+                          : 'TIẾN TRÌNH',
                   style: TextStyle(
-                    color: isCancelled ? c.danger : c.secondary,
+                    color: (isCancelled || daHoanTien) ? c.danger : c.secondary,
                     fontWeight: FontWeight.bold,
                     fontSize: 11,
                   ),
@@ -322,22 +351,47 @@ class _BuocHanhTrinh {
   final String tieuDe;
   final String moTa;
 
-  /// Null nghia la buoc nay chua xay ra.
+  /// Null nghia la khong co moc thoi gian cho buoc nay.
   final DateTime? luc;
   final bool laHienTai;
+
+  /// Buoc da xay ra nhung khong ai ghi lai moc thoi gian.
+  final bool boQuaMoc;
+
+  /// Buoc luon tinh la da xay ra du khong co moc, vi du buoc hoan tien.
+  final bool luonCoi;
 
   const _BuocHanhTrinh({
     required this.tieuDe,
     required this.moTa,
     required this.luc,
     required this.laHienTai,
+    this.boQuaMoc = false,
+    this.luonCoi = false,
   });
 
-  bool get daXayRa => luc != null;
+  /// Ban sao duoc danh dau la da xay ra nhung thieu moc thoi gian.
+  _BuocHanhTrinh danhDauBoQua() => _BuocHanhTrinh(
+        tieuDe: tieuDe,
+        moTa: moTa,
+        luc: luc,
+        laHienTai: laHienTai,
+        boQuaMoc: true,
+        luonCoi: luonCoi,
+      );
+
+  bool get daXayRa => luc != null || boQuaMoc || luonCoi;
 
   String get moTaKemGio {
     final moc = luc;
-    if (moc == null) return moTa.isEmpty ? 'Chưa diễn ra' : '$moTa · chưa diễn ra';
+    if (moc == null) {
+      if (boQuaMoc || luonCoi) {
+        return moTa.isEmpty
+            ? 'Không ghi nhận mốc thời gian'
+            : '$moTa · không ghi nhận mốc thời gian';
+      }
+      return moTa.isEmpty ? 'Chưa diễn ra' : '$moTa · chưa diễn ra';
+    }
     // May chu tra ve gio quoc te; phai doi sang gio may moi khop voi hoa don
     // va cac man khac trong ung dung.
     final theoGioMay = moc.toLocal();

@@ -19,6 +19,11 @@ import 'package:menly_app/features/order/data/models/shipping_policy_model.dart'
 import 'package:menly_app/features/order/data/services/shipping_policy_service.dart';
 import 'package:menly_app/features/support/presentation/pages/support_chat_page.dart';
 
+/// Ten hien thi cua man nay. Day la tro ly Gemini chu khong phai nhan vien
+/// that, nen moi noi deu phai goi dung la tro ly ao. Nhan vien that nam o
+/// SupportChatPage.
+const String kTenTroLyAo = 'Trợ lý ảo Menly';
+
 class LiveChatPage extends StatefulWidget {
   const LiveChatPage({super.key});
 
@@ -62,18 +67,18 @@ class _LiveChatPageState extends State<LiveChatPage> {
       ChatMessageModel(
         id: 'm1',
         senderType: 'staff',
-        senderName: 'Nhân viên tư vấn Menly',
+        senderName: kTenTroLyAo,
         content:
-            'Xin chào bạn! Em là nhân viên tư vấn của Menly. Rất hân hạnh được đồng hành và hỗ trợ bạn chọn size chuẩn, giải đáp đơn hàng hoặc tư vấn phối đồ.',
+            'Xin chào bạn! Em là trợ lý ảo của Menly, trả lời tự động 24/7. Em hỗ trợ bạn chọn size chuẩn, giải đáp đơn hàng hoặc tư vấn phối đồ.',
         createdAt: DateTime.now().subtract(const Duration(minutes: 5)),
         isStaff: true,
       ),
       ChatMessageModel(
         id: 'm2',
         senderType: 'staff',
-        senderName: 'Nhân viên tư vấn Menly',
+        senderName: kTenTroLyAo,
         content:
-            'Bạn có thể gõ câu hỏi hoặc chọn nhanh một trong các chủ đề gợi ý phía dưới để được em hỗ trợ ngay nhé!',
+            'Bạn có thể gõ câu hỏi hoặc chọn nhanh một chủ đề gợi ý phía dưới. Cần gặp nhân viên thật, bạn mở menu ở góc trên bên phải và chọn Gặp nhân viên CSKH trực tiếp nhé!',
         createdAt: DateTime.now().subtract(const Duration(minutes: 4)),
         isStaff: true,
       ),
@@ -132,7 +137,7 @@ class _LiveChatPageState extends State<LiveChatPage> {
       builder: (ctx) => AlertDialog(
         title: const Text('Làm mới đoạn chat?'),
         content: const Text(
-          'Đoạn chat hiện tại sẽ được xoá và đưa về lời chào ban đầu từ nhân viên tư vấn.',
+          'Đoạn chat hiện tại sẽ được xoá và đưa về lời chào ban đầu của trợ lý ảo.',
         ),
         actions: [
           TextButton(
@@ -248,7 +253,7 @@ class _LiveChatPageState extends State<LiveChatPage> {
         ChatMessageModel(
           id: 'staff_${DateTime.now().millisecondsSinceEpoch}',
           senderType: 'staff',
-          senderName: 'Nhân viên tư vấn Menly',
+          senderName: kTenTroLyAo,
           content: staffReply,
           createdAt: DateTime.now(),
           isStaff: true,
@@ -384,7 +389,7 @@ class _LiveChatPageState extends State<LiveChatPage> {
           : bangGia.moTaPhiGiaoHang;
       return 'Dạ $phi Đơn nội thành HCM/Hà Nội nhận hàng trong 1-2 ngày, các tỉnh thành khác từ 2-4 ngày anh/chị nhé!';
     }
-    return 'Dạ em đã ghi nhận thông tin từ bạn: "$text". Nhân viên tư vấn Menly đang sẵn sàng hỗ trợ, bạn cần em giải đáp thêm chi tiết nào nữa không ạ?';
+    return 'Dạ em đã ghi nhận thông tin từ bạn: "$text". Nếu cần nhân viên CSKH hỗ trợ trực tiếp, bạn mở menu ở góc trên bên phải giúp em. Bạn cần em giải đáp thêm gì nữa không ạ?';
   }
 
   @override
@@ -407,7 +412,7 @@ class _LiveChatPageState extends State<LiveChatPage> {
         titleSpacing: 0,
         title: Row(
           children: [
-            // Staff Avatar with online green indicator
+            // Avatar tro ly ao, cham xanh bao dich vu dang hoat dong
             Stack(
               clipBehavior: Clip.none,
               children: [
@@ -415,7 +420,7 @@ class _LiveChatPageState extends State<LiveChatPage> {
                   radius: 20,
                   backgroundColor: c.secondary.withValues(alpha: 0.15),
                   child: Icon(
-                    Icons.support_agent_rounded,
+                    Icons.smart_toy_rounded,
                     color: c.secondary,
                     size: 24,
                   ),
@@ -443,7 +448,7 @@ class _LiveChatPageState extends State<LiveChatPage> {
                   Row(
                     children: [
                       Text(
-                        'Nhân viên tư vấn Menly',
+                        kTenTroLyAo,
                         style: TextStyle(
                           color: c.textPrimary,
                           fontSize: 15,
@@ -462,7 +467,7 @@ class _LiveChatPageState extends State<LiveChatPage> {
                               BorderRadius.circular(AppTheme.radiusXs),
                         ),
                         child: Text(
-                          'Staff',
+                          'AI',
                           style: TextStyle(
                             color: c.secondary,
                             fontSize: 10,
@@ -473,7 +478,7 @@ class _LiveChatPageState extends State<LiveChatPage> {
                     ],
                   ),
                   Text(
-                    'Đang trực tuyến • Phản hồi ngay',
+                    'Trả lời tự động 24/7',
                     style: TextStyle(
                       color: c.success,
                       fontSize: 11,
@@ -546,7 +551,7 @@ class _LiveChatPageState extends State<LiveChatPage> {
                 const SizedBox(width: AppSpacing.sm),
                 Expanded(
                   child: Text(
-                    'Kênh kết nối trực tiếp với Nhân viên hỗ trợ Menly. Bảo mật & Hỗ trợ 24/7.',
+                    'Kênh tư vấn tự động của Menly, trả lời ngay 24/7. Bảo mật thông tin khách hàng.',
                     style: TextStyle(color: c.textMuted, fontSize: 11),
                   ),
                 ),
@@ -603,7 +608,7 @@ class _LiveChatPageState extends State<LiveChatPage> {
                         ),
                         const SizedBox(width: AppSpacing.sm),
                         Text(
-                          'Nhân viên đang soạn phản hồi...',
+                          'Trợ lý ảo đang soạn phản hồi...',
                           style: TextStyle(color: c.textMuted, fontSize: 11),
                         ),
                       ],
@@ -685,7 +690,7 @@ class _LiveChatPageState extends State<LiveChatPage> {
                       onSubmitted: (_) => _handleSend(),
                       style: TextStyle(color: c.textPrimary, fontSize: 14),
                       decoration: InputDecoration(
-                        hintText: 'Nhắn cho nhân viên Menly...',
+                        hintText: 'Nhắn cho trợ lý ảo Menly...',
                         hintStyle: TextStyle(color: c.textMuted, fontSize: 13),
                         border: InputBorder.none,
                       ),
@@ -732,7 +737,7 @@ class _LiveChatPageState extends State<LiveChatPage> {
               radius: 16,
               backgroundColor: c.secondary.withValues(alpha: 0.15),
               child: Icon(
-                Icons.support_agent_rounded,
+                Icons.smart_toy_rounded,
                 color: c.secondary,
                 size: 18,
               ),

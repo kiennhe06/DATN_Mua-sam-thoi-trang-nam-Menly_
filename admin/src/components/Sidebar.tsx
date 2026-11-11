@@ -9,6 +9,7 @@ import {
   Undo2,
   LayoutDashboard,
   Menu,
+  MessagesSquare,
   Shirt,
   ShoppingBag,
   Star,
@@ -16,11 +17,18 @@ import {
   Users,
   X,
 } from 'lucide-react';
+import {
+  docNguoiDangNhap,
+  duocVaoTrang,
+  tenVaiTro,
+  type NguoiDangNhap,
+} from '../lib/admin-session';
 
 const NAV_ITEMS = [
   { href: '/', label: 'Tổng quan', icon: LayoutDashboard },
   { href: '/products', label: 'Sản phẩm', icon: Shirt },
   { href: '/orders', label: 'Đơn hàng', icon: ShoppingBag },
+  { href: '/chat', label: 'Chat CSKH', icon: MessagesSquare },
   { href: '/inventory', label: 'Kho hàng & tồn kho', icon: Boxes },
   { href: '/vouchers', label: 'Mã giảm giá', icon: Ticket },
   { href: '/banners', label: 'Banner quảng cáo', icon: Images },
@@ -32,10 +40,23 @@ const NAV_ITEMS = [
 export function Sidebar() {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
+  const [nguoiDung, setNguoiDung] = useState<NguoiDangNhap | null>(null);
 
   useEffect(() => {
     setIsOpen(false);
   }, [pathname]);
+
+  // Doc o useEffect chu khong doc thang khi dung: localStorage khong ton tai
+  // luc Next render san o may chu, doc thang se lech giua may chu va trinh duyet.
+  useEffect(() => {
+    setNguoiDung(docNguoiDangNhap());
+  }, [pathname]);
+
+  // Chua biet vai tro thi chua ve menu, tranh canh nhan vien thoang thay cac
+  // muc cua admin roi chung bien mat.
+  const mucHienThi = nguoiDung
+    ? NAV_ITEMS.filter((item) => duocVaoTrang(nguoiDung.role, item.href))
+    : [];
 
   return (
     <>
@@ -93,7 +114,7 @@ export function Sidebar() {
           </p>
         </div>
         <nav aria-label="Điều hướng quản trị" className="flex-1 space-y-1 overflow-y-auto px-3 pb-5">
-          {NAV_ITEMS.map((item) => {
+          {mucHienThi.map((item) => {
             const Icon = item.icon;
             const isActive =
               pathname === item.href ||
@@ -128,9 +149,13 @@ export function Sidebar() {
               <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/15 text-emerald-300">
                 <span className="h-2 w-2 rounded-full bg-emerald-400" />
               </span>
-              <div>
-                <p className="text-xs font-semibold text-canvas">Hệ thống quản trị</p>
-                <p className="mt-0.5 text-[10px] text-sidebar-muted/70">Không gian làm việc Menly</p>
+              <div className="min-w-0">
+                <p className="truncate text-xs font-semibold text-canvas">
+                  {nguoiDung ? tenVaiTro(nguoiDung.role) : 'Hệ thống quản trị'}
+                </p>
+                <p className="mt-0.5 truncate text-[10px] text-sidebar-muted/70">
+                  {nguoiDung?.email ?? 'Không gian làm việc Menly'}
+                </p>
               </div>
             </div>
           </div>

@@ -1,5 +1,11 @@
+import 'package:dio/dio.dart';
 import 'package:menly_app/core/network/api_client.dart';
 import '../models/chat_message_model.dart';
+
+/// Gemini thuong tra loi lau hon cac API thuong, nhat la o lan goi dau. Dio dung
+/// chung receiveTimeout 8 giay nen cau tra loi that hay bi huy giua chung va man
+/// chat roi ve cau tra loi du phong. Rieng duong nay cho doi lau hon.
+const Duration _hanChoTraLoi = Duration(seconds: 30);
 
 class AiChatService {
   final ApiClient _api = ApiClient();
@@ -16,6 +22,7 @@ class AiChatService {
           'message': message,
           'history': history,
         },
+        options: Options(receiveTimeout: _hanChoTraLoi),
       );
 
       if (res.statusCode == 200 && res.data != null) {

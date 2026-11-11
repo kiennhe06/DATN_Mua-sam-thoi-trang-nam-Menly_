@@ -118,7 +118,7 @@ class OrderInvoicePage extends StatelessWidget {
                                 BorderRadius.circular(AppTheme.radiusXl),
                           ),
                           child: Text(
-                            order.status.label,
+                            order.nhanTrangThai,
                             style: TextStyle(
                               color: c.textPrimary,
                               fontSize: 11,
