@@ -7,6 +7,8 @@ import 'package:menly_app/features/support/presentation/pages/about_page.dart';
 import 'package:menly_app/features/support/presentation/pages/contact_page.dart';
 import 'package:menly_app/features/support/presentation/pages/policy_page.dart';
 import 'package:menly_app/features/chat/presentation/pages/live_chat_page.dart';
+import 'package:menly_app/features/order/data/models/shipping_policy_model.dart';
+import 'package:menly_app/features/order/data/services/shipping_policy_service.dart';
 
 /// Trang Cau hoi thuong gap (FAQ) (TM05)
 class FAQPage extends StatefulWidget {
@@ -19,7 +21,30 @@ class FAQPage extends StatefulWidget {
 class _FAQPageState extends State<FAQPage> {
   String _searchQuery = '';
 
-  final List<Map<String, dynamic>> _faqs = [
+  /// Bang gia giao hang lay tu API de cau tra loi ve phi ship luon dung voi
+  /// gia may chu dang tinh, khong phai mot con so go cung trong app.
+  ShippingPolicyModel? _bangGiaGiaoHang;
+
+  @override
+  void initState() {
+    super.initState();
+    ShippingPolicyService.instance.tai().then((bangGia) {
+      if (!mounted) return;
+      setState(() => _bangGiaGiaoHang = bangGia);
+    });
+  }
+
+  /// Cau mo ta phi giao hang. Chua tai duoc bang gia thi noi that la dang
+  /// cap nhat, khong bia mot con so.
+  String _moTaPhiShip() {
+    final bangGia = _bangGiaGiaoHang;
+    if (bangGia == null) {
+      return 'Biểu phí giao hàng đang được cập nhật, bạn xem phí chính xác ở bước thanh toán.';
+    }
+    return bangGia.moTaPhiGiaoHang;
+  }
+
+  List<Map<String, dynamic>> get _faqs => [
     {
       'category': 'Đặt hàng & Mua sắm',
       'items': [
@@ -46,7 +71,7 @@ class _FAQPageState extends State<FAQPage> {
         },
         {
           'q': 'Phí vận chuyển được tính như thế nào?',
-          'a': 'Phí vận chuyển mặc định là 25.000 đ cho toàn quốc. Đặc biệt, Menly miễn phí vận chuyển cho các đơn hàng từ 300.000 đ khi áp dụng mã FREESHIP.',
+          'a': '${_moTaPhiShip()} Ngoài ra bạn vẫn được miễn phí vận chuyển khi áp dụng mã FREESHIP.',
         },
         {
           'q': 'Tôi có được kiểm tra hàng trước khi thanh toán không?',

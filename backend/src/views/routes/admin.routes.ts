@@ -1,6 +1,7 @@
 import { Router, type Response } from 'express';
 import { supabase } from '../../config/supabase.js';
 import { requireAdmin, forgetAuthUser } from '../../middlewares/auth.js';
+import { uploadAvatarMiddleware } from '../../middlewares/upload.js';
 import { ProductModel } from '../../models/product.model.js';
 import { OrderModel } from '../../models/order.model.js';
 import { VoucherModel } from '../../models/voucher.model.js';
@@ -19,6 +20,7 @@ import {
 } from '../../validators/admin-voucher.validator.js';
 import {
   adminBannerSchema,
+  adminBannerUpdateSchema,
   adminNotificationSchema,
   inventoryAdjustmentSchema,
 } from '../../validators/admin.validator.js';
@@ -176,7 +178,7 @@ router.put('/products/:id', async (req, res, next) => {
   }
 
   try {
-    const data = await productModel.updateAdminProduct(id, parsed.data);
+    const data = await productModel.updateAdminProduct(id, parsed.data, req.user?.id);
     if (!data) return res.status(404).json({ error: 'Không tìm thấy sản phẩm' });
     return res.json({ data });
   } catch (error) {
@@ -466,12 +468,84 @@ router.get('/banners', async (_req, res, next) => {
   }
 });
 
+// POST /api/v1/admin/banners/upload - tai anh banner tu may len kho luu tru
+//
+// Phai dat truoc POST /banners/:id khong co, nhung van dat truoc cac route
+// banner khac cho de doc. Tra ve dia chi anh de form dien thang vao o "Ảnh".
+router.post('/banners/upload', uploadAvatarMiddleware('image'), async (req, res, next) => {
+  if (!req.file) {
+    return res.status(400).json({ error: 'Vui lòng chọn một file ảnh để tải lên' });
+  }
+
+  try {
+    const imageUrl = await adminModel.uploadBannerImage(req.file);
+    return res.status(201).json({ data: { imageUrl } });
+  } catch (error) {
+    return next(error);
+  }
+});
+
 // POST /api/v1/admin/banners - tạo banner
 router.post('/banners', async (req, res, next) => {
   const parsed = adminBannerSchema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: 'Thông tin banner không hợp lệ', details: parsed.error.flatten().fieldErrors });
   try {
     return res.status(201).json({ data: await adminModel.createBanner(parsed.data) });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+// PUT /api/v1/admin/banners/:id - sua banner
+router.put('/banners/:id', async (req, res, next) => {
+  const id = productIdSchema.safeParse(req.params.id);
+  if (!id.success) return res.status(400).json({ error: 'Mã banner không hợp lệ' });
+
+  const parsed = adminBannerUpdateSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({
+      error: 'Thông tin banner không hợp lệ',
+      details: parsed.error.flatten().fieldErrors,
+    });
+  }
+
+  try {
+    const data = await adminModel.updateBanner(id.data, parsed.data);
+    if (!data) return res.status(404).json({ error: 'Không tìm thấy banner' });
+    return res.json({ data });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+// PATCH /api/v1/admin/banners/:id/active - bat tat hien thi banner
+router.patch('/banners/:id/active', async (req, res, next) => {
+  const id = productIdSchema.safeParse(req.params.id);
+  if (!id.success) return res.status(400).json({ error: 'Mã banner không hợp lệ' });
+
+  const isActive = req.body?.isActive;
+  if (typeof isActive !== 'boolean') {
+    return res.status(400).json({ error: 'Trạng thái hiển thị phải là true hoặc false' });
+  }
+
+  try {
+    const data = await adminModel.setBannerActive(id.data, isActive);
+    if (!data) return res.status(404).json({ error: 'Không tìm thấy banner' });
+    return res.json({ data });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+// DELETE /api/v1/admin/banners/:id - xoa banner
+router.delete('/banners/:id', async (req, res, next) => {
+  const id = productIdSchema.safeParse(req.params.id);
+  if (!id.success) return res.status(400).json({ error: 'Mã banner không hợp lệ' });
+
+  try {
+    const data = await adminModel.deleteBanner(id.data);
+    if (!data) return res.status(404).json({ error: 'Không tìm thấy banner' });
+    return res.json({ data: { id: id.data } });
   } catch (error) {
     return next(error);
   }

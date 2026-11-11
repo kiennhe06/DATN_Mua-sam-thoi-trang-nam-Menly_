@@ -2,10 +2,29 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import 'about_page.dart';
+import 'package:menly_app/features/order/data/models/shipping_policy_model.dart';
+import 'package:menly_app/features/order/data/services/shipping_policy_service.dart';
 
 /// Trang Chinh sach mua hang, van chuyen, doi tra va bao mat
-class PolicyPage extends StatelessWidget {
+class PolicyPage extends StatefulWidget {
   const PolicyPage({super.key});
+
+  @override
+  State<PolicyPage> createState() => _PolicyPageState();
+}
+
+class _PolicyPageState extends State<PolicyPage> {
+  /// Bang gia giao hang lay tu API, khong go cung trong trang chinh sach.
+  ShippingPolicyModel? _bangGiaGiaoHang;
+
+  @override
+  void initState() {
+    super.initState();
+    ShippingPolicyService.instance.tai().then((bangGia) {
+      if (!mounted) return;
+      setState(() => _bangGiaGiaoHang = bangGia);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -35,10 +54,13 @@ class PolicyPage extends StatelessWidget {
           _section(
             context,
             title: 'Chính sách vận chuyển',
-            body:
-                'Phí giao tiêu chuẩn 25.000 đ toàn quốc, hỏa tốc 45.000 đ. '
-                'Nội thành Hà Nội / TP.HCM / Đà Nẵng khoảng 1–2 ngày; tỉnh khác 3–4 ngày. '
-                'Đơn từ 499.000 đ được miễn phí vận chuyển. Menly hỗ trợ đồng kiểm khi nhận hàng.',
+            body: _bangGiaGiaoHang == null
+                ? 'Biểu phí giao hàng đang được cập nhật, bạn xem phí chính xác ở bước thanh toán. '
+                    'Nội thành Hà Nội / TP.HCM / Đà Nẵng khoảng 1–2 ngày; tỉnh khác 3–4 ngày. '
+                    'Menly hỗ trợ đồng kiểm khi nhận hàng.'
+                : '${_bangGiaGiaoHang!.moTaPhiGiaoHang} '
+                    'Nội thành Hà Nội / TP.HCM / Đà Nẵng khoảng 1–2 ngày; tỉnh khác 3–4 ngày. '
+                    'Menly hỗ trợ đồng kiểm khi nhận hàng.',
           ),
           _section(
             context,

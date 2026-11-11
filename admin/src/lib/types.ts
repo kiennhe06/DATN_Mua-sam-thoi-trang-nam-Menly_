@@ -4,8 +4,12 @@ export type OrderStatus =
   | 'paid'
   | 'processing'
   | 'shipping'
+  // Database co 8 trang thai; thieu 'delivered' va 'expired' o day thi moi
+  // don giao xong deu roi xuong nhanh du phong va hien nham "Cho thanh toan".
+  | 'delivered'
   | 'completed'
-  | 'cancelled';
+  | 'cancelled'
+  | 'expired';
 
 export interface OrderItem {
   id: string;

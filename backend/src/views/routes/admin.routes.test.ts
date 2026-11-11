@@ -29,3 +29,11 @@ test('đăng nhập từ chối payload sai trước khi gọi Supabase', async 
   });
   assert.equal(response.status, 400);
 });
+
+test('tải ảnh banner cũng phải đăng nhập quản trị', async () => {
+  const response = await fetch(`${baseUrl}/api/v1/admin/banners/upload`, {
+    method: 'POST',
+    body: new FormData(),
+  });
+  assert.equal(response.status, 401);
+});

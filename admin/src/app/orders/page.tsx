@@ -35,8 +35,10 @@ const STATUS_TABS: { label: string; value: OrderStatus | 'all' }[] = [
   { label: 'Đã thanh toán', value: 'paid' },
   { label: 'Đang xử lý', value: 'processing' },
   { label: 'Đang giao hàng', value: 'shipping' },
+  { label: 'Đã giao hàng', value: 'delivered' },
   { label: 'Đã hoàn tất', value: 'completed' },
   { label: 'Đã hủy', value: 'cancelled' },
+  { label: 'Hết hạn thanh toán', value: 'expired' },
 ];
 
 export default function OrdersPage() {

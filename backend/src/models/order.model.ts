@@ -1,4 +1,5 @@
 import { supabase } from '../config/supabase.js';
+import { env } from '../config/env.js';
 import type { CalculateShippingFeeInput } from '../validators/shipping.validator.js';
 import { VoucherModel } from './voucher.model.js';
 
@@ -68,6 +69,8 @@ export interface ShippingPolicy {
     name: string;
     description: string;
     baseFee: number;
+    /** Nhan thoi gian giao du kien de app hien ngay duoi ten phuong thuc. */
+    estimatedDays: string;
   }>;
   provincesFastDelivery: string[];
 }
@@ -84,22 +87,29 @@ export interface ShippingFeeCalculationResult {
   note: string;
 }
 
+/**
+ * Bang gia giao hang cua shop. Ba con so (phi chuan, phi hoa toc, nguong
+ * freeship) lay tu bien moi truong nen doi gia khong phai sua code; day cung
+ * la nguon duy nhat cho ca app lan web admin qua API /orders/shipping-policy.
+ */
 export const DEFAULT_SHIPPING_POLICY: ShippingPolicy = {
-  standardBaseFee: 25000,
-  expressBaseFee: 45000,
-  freeShippingThreshold: 499000,
+  standardBaseFee: env.shipping.standardBaseFee,
+  expressBaseFee: env.shipping.expressBaseFee,
+  freeShippingThreshold: env.shipping.freeShippingThreshold,
   supportedMethods: [
     {
       id: 'standard',
       name: 'Giao hàng tiêu chuẩn',
       description: 'Giao hàng tận nơi toàn quốc qua các đơn vị vận chuyển uy tín (GHN, GHTK, Viettel Post)',
-      baseFee: 25000,
+      baseFee: env.shipping.standardBaseFee,
+      estimatedDays: '2–4 ngày làm việc',
     },
     {
       id: 'express',
       name: 'Giao hàng hỏa tốc',
       description: 'Nhận hàng nhanh trong ngày hoặc tối đa 24h đối với khu vực nội thành',
-      baseFee: 45000,
+      baseFee: env.shipping.expressBaseFee,
+      estimatedDays: 'Trong ngày hoặc 24h',
     },
   ],
   provincesFastDelivery: [
@@ -147,7 +157,7 @@ export class OrderModel {
     const originalFee = shippingMethod === 'express' ? policy.expressBaseFee : policy.standardBaseFee;
 
     // Kiểm tra điều kiện Freeship:
-    // 1. Đơn hàng đạt giá trị tối thiểu (>= 499.000 VNĐ)
+    // 1. Đơn hàng đạt ngưỡng freeship trong bảng giá (freeShippingThreshold)
     // 2. Hoặc người dùng áp dụng mã Freeship hợp lệ (chứa 'FREESHIP' hoặc bắt đầu bằng 'FS')
     const isEligibleBySubtotal = subtotal >= policy.freeShippingThreshold;
     const normalizedVoucher = voucherCode.trim().toUpperCase();

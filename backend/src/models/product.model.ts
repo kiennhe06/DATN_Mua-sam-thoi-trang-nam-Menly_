@@ -226,7 +226,100 @@ export class ProductModel {
     if (insertError) throw new Error(insertError.message);
   }
 
-  async updateAdminProduct(id: string, input: AdminProductUpdate) {
+  /**
+   * Dong bo danh sach bien the cua mot san pham theo danh sach moi gui len.
+   *
+   * Ghep bien the cu va moi theo cap size + mau:
+   * - Cap moi xuat hien  -> them bien the kem ton kho ban dau, ghi nhat ky kho.
+   * - Cap da co          -> chi cap nhat SKU. Ton kho KHONG sua o day.
+   * - Cap bi bo di       -> xoa, tru khi bien the do da tung nam trong mot don
+   *                         hang; luc do tu choi de khong lam dut lien ket
+   *                         don hang cu.
+   *
+   * Vi sao khong sua ton kho cua bien the cu: form gui len mot con so tuyet
+   * doi doc tu luc mo form. Khach dat hang trong luc admin dang go thi con so
+   * do da cu, luu xuong se ghi de mat cac don vua ban. Moi thay doi ton kho
+   * di qua man Kho, noi cong tru theo chenh lech va co khoa lac quan.
+   */
+  async dongBoBienThe(
+    productId: string,
+    variants: Array<{ size: string; color: string; sku: string; stock: number }>,
+    actorId?: string,
+  ) {
+    const { data: hienCo, error: loiDoc } = await this.db
+      .from('product_variants')
+      .select('id, size, color, sku, stock')
+      .eq('product_id', productId);
+    if (loiDoc) throw new Error(loiDoc.message);
+
+    const khoaCua = (size: string, color: string) =>
+      `${size.trim().toLowerCase()}|${color.trim().toLowerCase()}`;
+    const banDoCu = new Map((hienCo ?? []).map((item) => [khoaCua(item.size, item.color), item]));
+    const khoaMoi = new Set(variants.map((item) => khoaCua(item.size, item.color)));
+
+    const canXoa = (hienCo ?? []).filter((item) => !khoaMoi.has(khoaCua(item.size, item.color)));
+    if (canXoa.length > 0) {
+      const idCanXoa = canXoa.map((item) => item.id);
+      const { data: daBan, error: loiKiemTra } = await this.db
+        .from('order_items')
+        .select('variant_id')
+        .in('variant_id', idCanXoa);
+      if (loiKiemTra) throw new Error(loiKiemTra.message);
+
+      const idDaBan = new Set((daBan ?? []).map((row) => row.variant_id));
+      const biChan = canXoa.filter((item) => idDaBan.has(item.id));
+      if (biChan.length > 0) {
+        const ten = biChan.map((item) => `${item.size} / ${item.color}`).join(', ');
+        throw new Error(
+          `Không xóa được biến thể đã từng có đơn hàng: ${ten}. Hãy đặt tồn kho về 0 để ngừng bán thay vì xóa.`,
+        );
+      }
+
+      const { error: loiXoa } = await this.db.from('product_variants').delete().in('id', idCanXoa);
+      if (loiXoa) throw new Error(loiXoa.message);
+    }
+
+    for (const bienThe of variants) {
+      const cu = banDoCu.get(khoaCua(bienThe.size, bienThe.color));
+
+      if (!cu) {
+        const { data: vuaThem, error: loiThem } = await this.db
+          .from('product_variants')
+          .insert({
+            product_id: productId,
+            size: bienThe.size,
+            color: bienThe.color,
+            sku: bienThe.sku,
+            stock: bienThe.stock,
+          })
+          .select('id')
+          .single();
+        if (loiThem) throw new Error(loiThem.message);
+
+        if (bienThe.stock > 0) {
+          const { error: loiNhatKy } = await this.db.from('inventory_movements').insert({
+            variant_id: vuaThem.id,
+            change: bienThe.stock,
+            reason: 'restock' as const,
+            created_by: actorId || null,
+            note: 'Tồn kho ban đầu khi thêm biến thể',
+          });
+          if (loiNhatKy) throw new Error(loiNhatKy.message);
+        }
+        continue;
+      }
+
+      if (cu.sku === bienThe.sku) continue;
+
+      const { error: loiSua } = await this.db
+        .from('product_variants')
+        .update({ sku: bienThe.sku })
+        .eq('id', cu.id);
+      if (loiSua) throw new Error(loiSua.message);
+    }
+  }
+
+  async updateAdminProduct(id: string, input: AdminProductUpdate, actorId?: string) {
     const updates: Record<string, string | number | boolean | null> = {};
     if (input.categoryId !== undefined) updates.category_id = input.categoryId;
     if (input.name !== undefined) updates.name = input.name;
@@ -264,6 +357,10 @@ export class ProductModel {
     // ma chi doi moi anh dai dien thi gallery van giu nguyen.
     if (input.images !== undefined) {
       await this.ghiDeGallery(id, [data.thumbnail_url, ...input.images]);
+    }
+
+    if (input.variants !== undefined) {
+      await this.dongBoBienThe(id, input.variants, actorId);
     }
 
     return data;

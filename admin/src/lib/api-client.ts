@@ -33,7 +33,11 @@ export async function adminFetch<T>(
   headers.set('Accept', 'application/json');
   headers.set('Authorization', `Bearer ${getAdminToken()}`);
 
-  if (options.body && !headers.has('Content-Type')) {
+  // FormData phai de trinh duyet tu dat Content-Type kem boundary; dat tay
+  // thanh application/json se lam may chu khong doc duoc file dinh kem.
+  const laFormData =
+    typeof FormData !== 'undefined' && options.body instanceof FormData;
+  if (options.body && !laFormData && !headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json');
   }
 

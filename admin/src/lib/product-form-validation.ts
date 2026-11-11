@@ -38,6 +38,40 @@ export function validateProductDetails({
   return null;
 }
 
+/**
+ * Sinh ma SKU cho mot bien the khi nguoi dung de trong o SKU.
+ *
+ * O SKU ghi "tu tao neu bo trong" nhung may chu lai bat buoc phai co, nen
+ * truoc day bo trong la bi tu choi. Ham nay giu dung loi hua do: ghep ten san
+ * pham (bo dau), size, mau va mot duoi ngau nhien ngan cho khoi trung, vi cot
+ * sku trong database la duy nhat tren toan bo he thong.
+ */
+export function taoSkuTuDong(tenSanPham: string, size: string, color: string): string {
+  const boDau = (text: string) =>
+    text
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[đĐ]/g, 'd')
+      .replace(/[^a-zA-Z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .toUpperCase();
+
+  const duoi = (
+    Date.now().toString(36).slice(-3) + Math.random().toString(36).slice(2, 5)
+  ).toUpperCase();
+
+  return [
+    // Cat 20 ky tu dau roi bo dau gach thua, khong thi ten bi cat giua chung
+    // se de lai hai dau gach lien nhau.
+    boDau(tenSanPham).slice(0, 20).replace(/-+$/, '') || 'SP',
+    boDau(size) || 'NA',
+    boDau(color) || 'NA',
+    duoi,
+  ]
+    .join('-')
+    .slice(0, 100);
+}
+
 export function validateProductVariants(variants: ProductVariantInput[]): string | null {
   if (variants.length < 1 || variants.length > 100) {
     return 'Sản phẩm cần có từ 1 đến 100 biến thể.';

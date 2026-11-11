@@ -4,7 +4,13 @@ import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { Image as ImageIcon, Package2, Save, X } from 'lucide-react';
 import { updateProduct } from '../lib/api';
-import { validateProductDetails } from '../lib/product-form-validation';
+import {
+  taoSkuTuDong,
+  validateProductDetails,
+  validateProductVariants,
+} from '../lib/product-form-validation';
+import { danhSachSize, type BienTheNhap } from '../lib/product-options';
+import { VariantEditor } from './VariantEditor';
 import type { Category, Product } from '../lib/types';
 
 interface EditProductModalProps {
@@ -24,8 +30,30 @@ export function EditProductModal({ product, categories, onClose, onSaved }: Edit
   const [price, setPrice] = useState(String(product.price));
   const [thumbnailUrl, setThumbnailUrl] = useState(product.thumbnailUrl || '');
   const [isActive, setIsActive] = useState(product.isActive !== false);
+  // Cac cap size + mau da co san tren may chu, chot lai luc mo form. O ton
+  // kho cua chung bi khoa: doi ton kho phai qua man Kho.
+  const [bienTheDaCo] = useState<Set<string>>(
+    () =>
+      new Set(
+        (product.variants ?? []).map(
+          (variant) =>
+            `${variant.size.trim().toLowerCase()}|${variant.color.trim().toLowerCase()}`,
+        ),
+      ),
+  );
+  const [variants, setVariants] = useState<BienTheNhap[]>(
+    (product.variants ?? []).map((variant) => ({
+      size: variant.size,
+      color: variant.color,
+      sku: variant.sku,
+      stock: String(variant.stock),
+    })),
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const danhMucDangChon = categories.find((item) => item.id === categoryId);
+  const sizes = danhSachSize(danhMucDangChon?.slug || danhMucDangChon?.name || '');
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -35,6 +63,23 @@ export function EditProductModal({ product, categories, onClose, onSaved }: Edit
       setError(validationError);
       return;
     }
+
+    // SKU de trong thi tu sinh, giong man them san pham.
+    const variantsCoSku = variants.map((variant) => ({
+      ...variant,
+      sku: variant.sku.trim() || taoSkuTuDong(name, variant.size, variant.color),
+    }));
+
+    // San pham chua co bien the nao thi khong ep phai them o day; chi kiem tra
+    // khi nguoi dung that su co khai bien the.
+    if (variantsCoSku.length > 0) {
+      const variantsError = validateProductVariants(variantsCoSku);
+      if (variantsError) {
+        setError(variantsError);
+        return;
+      }
+    }
+
     setLoading(true);
 
     try {
@@ -49,6 +94,16 @@ export function EditProductModal({ product, categories, onClose, onSaved }: Edit
         // neu khong thi anh cu van con nam lai va hien thanh o anh trong.
         images: anhDaiDien ? [anhDaiDien] : [],
         isActive,
+        ...(variantsCoSku.length > 0
+          ? {
+              variants: variantsCoSku.map((variant) => ({
+                size: variant.size.trim(),
+                color: variant.color.trim(),
+                sku: variant.sku.trim(),
+                stock: Number(variant.stock),
+              })),
+            }
+          : {}),
       });
       onSaved(updated);
       onClose();
@@ -143,8 +198,26 @@ export function EditProductModal({ product, categories, onClose, onSaved }: Edit
                     <p className="font-mono text-sm font-bold text-camel-dark">{Number(price || 0).toLocaleString('vi-VN')} ₫</p>
                   </div>
                 </div>
-                <p className="px-1 text-[11px] leading-5 text-ink-muted">Biến thể và số lượng tồn kho được quản lý trong phần chi tiết sản phẩm.</p>
+                <p className="px-1 text-[11px] leading-5 text-ink-muted">Ở đây chỉ thêm bớt size và màu. Nhập hàng hay kiểm kê thì vào mục Kho.</p>
               </aside>
+            </div>
+
+            <div className="mt-6 space-y-3 border-t border-line pt-6">
+              <div>
+                <h3 className="text-sm font-bold text-ink">Biến thể và tồn kho</h3>
+                <p className="text-xs text-ink-muted">
+                  Chọn nhiều size và nhiều màu, hệ thống tự ghép thành từng biến thể. Biến thể
+                  đã có thì ô tồn kho bị khóa — đổi số lượng ở mục Kho để được ghi nhật ký. Biến
+                  thể đã từng có đơn hàng thì không xóa được, hãy đưa tồn kho về 0 ở mục Kho để
+                  ngừng bán.
+                </p>
+              </div>
+              <VariantEditor
+                sizes={sizes}
+                variants={variants}
+                onChange={setVariants}
+                bienTheDaCo={bienTheDaCo}
+              />
             </div>
           </div>
 

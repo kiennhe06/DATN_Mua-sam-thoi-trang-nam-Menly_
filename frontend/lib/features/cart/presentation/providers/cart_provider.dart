@@ -6,6 +6,8 @@ import 'package:menly_app/features/cart/data/models/cart_item_model.dart';
 import 'package:menly_app/features/product/data/models/product_model.dart';
 import 'package:menly_app/features/voucher/data/models/voucher_model.dart';
 import 'package:menly_app/core/network/api_error.dart';
+import 'package:menly_app/features/order/data/models/shipping_policy_model.dart';
+import 'package:menly_app/features/order/data/services/shipping_policy_service.dart';
 
 /// Provider quan ly Gio hang va Ap dung ma giam gia
 /// Ket noi truc tiep cac API backend moi nhat (AP-GH1, AP-VC1):
@@ -19,18 +21,39 @@ class CartProvider extends ChangeNotifier {
   final ApiClient _api = ApiClient();
   final List<CartItemModel> _items = [];
   VoucherModel? _appliedVoucher;
-  final int _baseShippingFee = 25000;
   int? _shippingFeeFromApi;
+  /// Phuong thuc giao hang khach dang chon, de tinh tam dung muc phi khi
+  /// khong goi duoc API.
+  String _shippingMethod = 'standard';
   String? _shippingNote;
   bool _isLoading = false;
   String? _errorMessage;
+
+  /// Danh dau provider da bi thao, de khong goi notifyListeners nua.
+  bool _daHuy = false;
+
+  @override
+  void dispose() {
+    _daHuy = true;
+    super.dispose();
+  }
 
   final RegExp _uuidRegex = RegExp(
       r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$');
 
   CartProvider() {
     _loadFromLocalCache().then((_) => loadCartFromApi());
+    // Tai bang gia giao hang de co so lieu du phong khi API tinh phi loi.
+    // Co the provider da bi thao truoc khi API tra loi, luc do goi
+    // notifyListeners se nem loi "used after being disposed".
+    ShippingPolicyService.instance.tai().then((_) {
+      if (_daHuy) return;
+      notifyListeners();
+    });
   }
+
+  /// Bang gia giao hang may chu dang ap dung (null khi chua tai duoc).
+  ShippingPolicyModel? get shippingPolicy => ShippingPolicyService.instance.daTai;
 
   Future<void> _loadFromLocalCache() async {
     try {
@@ -86,18 +109,22 @@ class CartProvider extends ChangeNotifier {
     return _appliedVoucher!.calculateDiscount(selectedSubtotal);
   }
 
-  /// Phi van chuyen (ket hop API backend /orders/shipping-fee)
+  /// Phi van chuyen. Con so chinh thuc luon den tu API
+  /// POST /orders/shipping-fee; truong hop goi API that bai thi tinh tam theo
+  /// bang gia /orders/shipping-policy chu khong viet cung gia trong app.
   int get shippingFee {
     if (selectedItems.isEmpty) return 0;
     if (_shippingFeeFromApi != null) return _shippingFeeFromApi!;
 
-    // Chinh sach freeship chuan: don tu 499k hoac ma FREESHIP tu 300k
+    final policy = shippingPolicy;
+    if (policy == null) return 0;
+
     final code = _appliedVoucher?.code.toUpperCase() ?? '';
-    if (selectedSubtotal >= 499000 ||
-        (code.contains('FREESHIP') || code.startsWith('FS'))) {
-      return 0;
-    }
-    return _baseShippingFee;
+    final duocFreeship = selectedSubtotal >= policy.freeShippingThreshold ||
+        code.contains('FREESHIP') ||
+        code.startsWith('FS');
+    if (duocFreeship) return 0;
+    return policy.phiGoc(_shippingMethod);
   }
 
   /// Tong tien can thanh toan cuoi cung
@@ -112,6 +139,7 @@ class CartProvider extends ChangeNotifier {
       {String province = '',
       String shippingMethod = 'standard',
       int? customSubtotal}) async {
+    _shippingMethod = shippingMethod;
     final subtotal = customSubtotal ?? selectedSubtotal;
     if (subtotal <= 0 && selectedItems.isEmpty) {
       _shippingFeeFromApi = 0;

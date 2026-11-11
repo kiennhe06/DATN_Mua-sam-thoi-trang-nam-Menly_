@@ -1,6 +1,8 @@
 import 'package:dio/dio.dart';
 import 'package:menly_app/core/utils/format.dart';
 import 'package:menly_app/features/order/data/models/order_model.dart';
+import 'package:menly_app/features/order/data/models/shipping_policy_model.dart';
+import 'package:menly_app/features/order/data/services/shipping_policy_service.dart';
 import '../widgets/checkout_payment_cancelled_dialog.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
@@ -43,6 +45,9 @@ class CheckoutPage extends StatefulWidget {
 class _CheckoutPageState extends State<CheckoutPage> {
   String _paymentMethod = 'cod'; // 'cod' hoac 'vnpay'
   String _shippingMethod = 'standard'; // 'standard' hoac 'express'
+
+  /// Bang gia giao hang lay tu API, khong viet cung trong man hinh.
+  ShippingPolicyModel? _bangGiaGiaoHang;
   bool _isSubmitting = false;
 
   final _nameCtrl = TextEditingController();
@@ -86,6 +91,10 @@ class _CheckoutPageState extends State<CheckoutPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initAddressFromProvider();
       _recalculateShippingFee();
+    });
+    ShippingPolicyService.instance.tai().then((bangGia) {
+      if (!mounted) return;
+      setState(() => _bangGiaGiaoHang = bangGia);
     });
   }
 
@@ -735,31 +744,54 @@ class _CheckoutPageState extends State<CheckoutPage> {
   }
 
   Widget _buildShippingMethodCard(AppColors c, CartProvider cart) {
+    final bangGia = _bangGiaGiaoHang;
+
+    // Chua co bang gia thi khong doan phi, chi bao dang tai: con so hien o day
+    // phai la con so may chu dang tinh tien.
+    if (bangGia == null || bangGia.methods.isEmpty) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        decoration: BoxDecoration(
+          color: c.surface,
+          borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+          border: Border.all(color: c.border),
+        ),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(
+                  strokeWidth: 2, color: c.textMuted),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Text(
+              'Đang tải biểu phí giao hàng...',
+              style: TextStyle(color: c.textSecondary, fontSize: 13),
+            ),
+          ],
+        ),
+      );
+    }
+
     return Column(
       children: [
-        _buildOptionRow(
-          c: c,
-          selected: _shippingMethod == 'standard',
-          title: 'Giao hàng tiêu chuẩn',
-          subtitle: '2–4 ngày làm việc • 25.000 đ',
-          titleWeight: FontWeight.w600,
-          onTap: () {
-            setState(() => _shippingMethod = 'standard');
-            _recalculateShippingFee();
-          },
-        ),
-        const SizedBox(height: AppSpacing.md),
-        _buildOptionRow(
-          c: c,
-          selected: _shippingMethod == 'express',
-          title: 'Giao hàng hỏa tốc',
-          subtitle: 'Trong ngày hoặc 24h • 45.000 đ',
-          titleWeight: FontWeight.w600,
-          onTap: () {
-            setState(() => _shippingMethod = 'express');
-            _recalculateShippingFee();
-          },
-        ),
+        for (final phuongThuc in bangGia.methods) ...[
+          if (phuongThuc != bangGia.methods.first)
+            const SizedBox(height: AppSpacing.md),
+          _buildOptionRow(
+            c: c,
+            selected: _shippingMethod == phuongThuc.id,
+            title: phuongThuc.name,
+            subtitle: phuongThuc.dongTomTat,
+            titleWeight: FontWeight.w600,
+            onTap: () {
+              setState(() => _shippingMethod = phuongThuc.id);
+              _recalculateShippingFee();
+            },
+          ),
+        ],
         if (cart.shippingNote != null) ...[
           const SizedBox(height: AppSpacing.md),
           Container(

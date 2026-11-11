@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:menly_app/core/navigation/main_navigation_shell.dart';
 import 'package:menly_app/core/theme/app_colors.dart';
 import 'package:menly_app/core/theme/app_spacing.dart';
 import 'package:menly_app/core/widgets/category_tab.dart';
@@ -24,6 +23,8 @@ import '../widgets/home_banner_slider.dart';
 import '../widgets/home_filter_tab.dart';
 import '../widgets/home_info_footer.dart';
 import '../widgets/home_recently_viewed.dart';
+import 'package:menly_app/core/theme/app_theme.dart';
+import 'package:menly_app/core/widgets/pressable.dart';
 
 enum _HomeTabFilter { newest, bestSeller }
 
@@ -124,54 +125,33 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
     return Scaffold(
       backgroundColor: c.background,
+      // Thanh tren hai tang.
+      //
+      // Truoc day don het vao mot hang: chu MENLY canh giua nhung ben trai chi
+      // co mot icon con ben phai co ba, nen chu luon trong nhu bi lech; hai
+      // the do cua chuong va gio hang lai dung sat nhau.
+      //
+      // Nay: tang mot la ten thuong hieu ben trai va hai nut ben phai, tang hai
+      // la o tim kiem chay het chieu ngang. Tim kiem la viec nguoi mua lam
+      // nhieu nhat nhung truoc day bi giau sau mot icon nho.
       appBar: AppBar(
         backgroundColor: c.background,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
-        centerTitle: true,
-        titleSpacing: 0,
-        leading: IconButton(
-          tooltip: 'Tìm kiếm',
-          onPressed: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const SearchPage()),
-          ),
-          icon: Icon(Icons.search, color: c.textPrimary, size: 22),
-        ),
-        // Khoang dem trai bu lai khoang cach chu cuoi, de chu nam dung giua
-        title: Padding(
-          padding: const EdgeInsets.only(left: 5.5),
-          child: Text(
-            'MENLY',
-            style: TextStyle(
-              color: c.textPrimary,
-              fontSize: 17,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 5.5,
-            ),
+        centerTitle: false,
+        titleSpacing: AppSpacing.lg,
+        automaticallyImplyLeading: false,
+        title: Text(
+          'MENLY',
+          style: TextStyle(
+            color: c.textPrimary,
+            fontSize: 17,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 5.5,
           ),
         ),
         actions: [
           const NotificationBellButton(),
-          Consumer<CartProvider>(
-            builder: (_, cart, __) => IconButton(
-              tooltip: 'Giỏ hàng',
-              onPressed: () => const TabSwitchNotification(2).dispatch(context),
-              icon: Badge.count(
-                count: cart.totalItemCount,
-                isLabelVisible: cart.totalItemCount > 0,
-                backgroundColor: c.danger,
-                textColor: c.onPrimary,
-                textStyle:
-                    const TextStyle(fontSize: 9.5, fontWeight: FontWeight.w700),
-                child: Icon(
-                  Icons.shopping_bag_outlined,
-                  color: c.textPrimary,
-                  size: 22,
-                ),
-              ),
-            ),
-          ),
           IconButton(
             tooltip: 'Tài khoản',
             visualDensity: VisualDensity.compact,
@@ -191,7 +171,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 if (auth.isLoggedIn) {
                   return ProfileAvatar(
                     avatarUrl: auth.user?.avatarUrl,
-                    radius: 12,
+                    radius: 13,
                     fallbackText: auth.user?.fullName ?? 'M',
                   );
                 }
@@ -203,11 +183,29 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               },
             ),
           ),
-          const SizedBox(width: AppSpacing.sm),
+          const SizedBox(width: AppSpacing.md),
         ],
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1),
-          child: Divider(height: 1, thickness: 1, color: c.border),
+          preferredSize: const Size.fromHeight(57),
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.lg,
+                  0,
+                  AppSpacing.lg,
+                  AppSpacing.md,
+                ),
+                child: _ONhanTimKiem(
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const SearchPage()),
+                  ),
+                ),
+              ),
+              Divider(height: 1, thickness: 1, color: c.border),
+            ],
+          ),
         ),
       ),
       body: RefreshIndicator(
@@ -396,6 +394,48 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             },
           );
         },
+      ),
+    );
+  }
+}
+
+/// O tim kiem gia tren trang chu: bam vao la mo man tim kiem that.
+///
+/// De la o chu khong phai icon vi tim kiem la viec nguoi mua lam nhieu nhat;
+/// o co san chu goi y con cho biet shop ban nhung gi.
+class _ONhanTimKiem extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _ONhanTimKiem({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+    return Pressable(
+      onTap: onTap,
+      scale: 0.99,
+      borderRadius: BorderRadius.circular(AppTheme.radiusPill),
+      child: Container(
+        height: 44,
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+        decoration: BoxDecoration(
+          color: c.surfaceVariant,
+          borderRadius: BorderRadius.circular(AppTheme.radiusPill),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.search_rounded, size: 20, color: c.textMuted),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Text(
+                'Tìm áo sơ mi, polo, jeans...',
+                style: TextStyle(color: c.textMuted, fontSize: 13.5),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

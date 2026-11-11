@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { ProductVariant } from '../lib/types';
+import { NGUONG_SAP_HET } from '../lib/inventory-alert';
 
 export function getColorHex(colorName?: string): string {
   if (!colorName) return '#94a3b8';
@@ -37,26 +38,13 @@ export function CompactVariantDisplay({
   colorPrefix = 'Màu:',
   className = '',
 }: CompactVariantDisplayProps) {
-  // If no variants provided, show default size pills
+  // San pham chua khai bien the thi noi dung thang. Truoc day cho nay ve san
+  // day pill S/M/L/XL/XXL, nhin vao tuong san pham co du size trong khi kho
+  // khong he co dong nao.
   if (!variants || variants.length === 0) {
-    const defaultSizes = ['S', 'M', 'L', 'XL', 'XXL'];
     return (
       <div className={`flex flex-col gap-1.5 ${className}`}>
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="text-[10px] font-semibold text-ink-muted uppercase tracking-wider shrink-0">
-            {sizePrefix}
-          </span>
-          <div className="flex items-center gap-1 flex-wrap">
-            {defaultSizes.map((s) => (
-              <span
-                key={s}
-                className="px-1.5 py-0.5 rounded-md bg-panel border border-line-strong text-[11px] font-mono font-bold text-camel-dark shadow-xs"
-              >
-                {s}
-              </span>
-            ))}
-          </div>
-        </div>
+        <span className="text-[11px] italic text-ink-muted">Chưa có biến thể nào</span>
       </div>
     );
   }
@@ -102,11 +90,28 @@ export function CompactVariantDisplay({
           {uniqueSizes.map((s) => (
             <span
               key={s.size}
-              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-panel border border-line-strong text-[11px] font-mono shadow-xs"
+              title={showStockCount && s.stock <= NGUONG_SAP_HET ? `Size ${s.size} chỉ còn ${s.stock}` : undefined}
+              className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md border text-[11px] font-mono shadow-xs ${
+                showStockCount && s.stock <= NGUONG_SAP_HET
+                  ? 'bg-danger-bg border-danger-line'
+                  : 'bg-panel border-line-strong'
+              }`}
             >
-              <strong className="text-camel-dark font-bold">{s.size}</strong>
+              <strong
+                className={`font-bold ${
+                  showStockCount && s.stock <= NGUONG_SAP_HET ? 'text-danger' : 'text-camel-dark'
+                }`}
+              >
+                {s.size}
+              </strong>
               {showStockCount && (
-                <span className="text-ink text-[10px] font-bold">({s.stock})</span>
+                <span
+                  className={`text-[10px] font-bold ${
+                    s.stock <= NGUONG_SAP_HET ? 'text-danger' : 'text-ink'
+                  }`}
+                >
+                  ({s.stock})
+                </span>
               )}
             </span>
           ))}

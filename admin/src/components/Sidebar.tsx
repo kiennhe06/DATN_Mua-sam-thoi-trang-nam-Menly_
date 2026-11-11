@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   Boxes,
+  Images,
+  Undo2,
   LayoutDashboard,
   Menu,
   Shirt,
@@ -21,6 +23,8 @@ const NAV_ITEMS = [
   { href: '/orders', label: 'Đơn hàng', icon: ShoppingBag },
   { href: '/inventory', label: 'Kho hàng & tồn kho', icon: Boxes },
   { href: '/vouchers', label: 'Mã giảm giá', icon: Ticket },
+  { href: '/banners', label: 'Banner quảng cáo', icon: Images },
+  { href: '/returns', label: 'Yêu cầu trả hàng', icon: Undo2 },
   { href: '/reviews', label: 'Đánh giá', icon: Star },
   { href: '/users', label: 'Người dùng', icon: Users },
 ];

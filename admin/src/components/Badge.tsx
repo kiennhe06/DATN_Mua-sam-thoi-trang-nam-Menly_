@@ -14,6 +14,18 @@ export function OrderStatusBadge({ status }: { status: OrderStatus }) {
       text: 'text-blue-700',
       dot: 'bg-blue-600',
     },
+    delivered: {
+      label: 'Đã giao hàng',
+      bg: 'bg-ok-bg border-ok-line',
+      text: 'text-ok',
+      dot: 'bg-ok',
+    },
+    expired: {
+      label: 'Hết hạn thanh toán',
+      bg: 'bg-danger-bg border-danger-line',
+      text: 'text-danger',
+      dot: 'bg-danger',
+    },
     processing: {
       label: 'Đang xử lý',
       bg: 'bg-indigo-50 border-indigo-200',
@@ -53,11 +65,16 @@ export function OrderStatusBadge({ status }: { status: OrderStatus }) {
 }
 
 export function ReasonBadge({ reason }: { reason: string }) {
+  // Khoa o day phai dung bang gia tri database luu trong inventory_movements
+  // (order, cancel, restock, adjust, return). Truoc day bang nay dung ten
+  // admin_restock / order_created - khong khop voi gia tri nao - nen moi dong
+  // nhat ky deu roi xuong nhanh du phong va hien chu tieng Anh tho.
   const mapping: Record<string, { label: string; color: string }> = {
-    admin_restock: { label: 'Nhập kho', color: 'text-ok bg-ok-bg border-ok-line' },
-    admin_correction: { label: 'Hiệu chỉnh kho', color: 'text-warn bg-warn-bg border-warn-line' },
-    order_created: { label: 'Khách đặt hàng', color: 'text-blue-700 bg-blue-50 border-blue-200' },
-    order_cancelled: { label: 'Hủy đơn hoàn kho', color: 'text-purple-700 bg-purple-50 border-purple-200' },
+    restock: { label: 'Nhập kho mới', color: 'text-ok bg-ok-bg border-ok-line' },
+    adjust: { label: 'Hiệu chỉnh kiểm kê', color: 'text-warn bg-warn-bg border-warn-line' },
+    order: { label: 'Khách đặt hàng', color: 'text-blue-700 bg-blue-50 border-blue-200' },
+    cancel: { label: 'Hủy đơn, hoàn kho', color: 'text-purple-700 bg-purple-50 border-purple-200' },
+    return: { label: 'Trả hàng, nhập lại kho', color: 'text-camel-dark bg-camel-tint border-camel/30' },
   };
 
   const item = mapping[reason] || { label: reason, color: 'text-ink-muted bg-tint border-line-strong' };

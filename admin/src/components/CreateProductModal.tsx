@@ -2,22 +2,21 @@
 
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
-import { Plus, Trash2, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import { createAdminProduct } from '../lib/api';
-import { validateProductDetails, validateProductVariants } from '../lib/product-form-validation';
+import {
+  taoSkuTuDong,
+  validateProductDetails,
+  validateProductVariants,
+} from '../lib/product-form-validation';
+import { danhSachSize, type BienTheNhap } from '../lib/product-options';
+import { VariantEditor } from './VariantEditor';
 import type { Category, Product } from '../lib/types';
 
 interface CreateProductModalProps {
   categories: Category[];
   onClose: () => void;
   onCreated: (product: Product) => void;
-}
-
-interface VariantDraft {
-  size: string;
-  color: string;
-  sku: string;
-  stock: string;
 }
 
 const fieldClass = 'w-full rounded-lg border border-line-strong bg-panel px-3 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:border-camel focus:outline-none';
@@ -28,7 +27,7 @@ export function CreateProductModal({ categories, onClose, onCreated }: CreatePro
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState('');
   const [thumbnailUrl, setThumbnailUrl] = useState('');
-  const [variants, setVariants] = useState<VariantDraft[]>([
+  const [variants, setVariants] = useState<BienTheNhap[]>([
     { size: 'M', color: 'Đen', sku: '', stock: '0' },
   ]);
   const [loading, setLoading] = useState(false);
@@ -38,9 +37,31 @@ export function CreateProductModal({ categories, onClose, onCreated }: CreatePro
     if (!categoryId && categories.length > 0) setCategoryId(categories[0].id);
   }, [categories, categoryId]);
 
-  const setVariant = (index: number, key: keyof VariantDraft, value: string) => {
-    setVariants((current) => current.map((variant, i) => i === index ? { ...variant, [key]: value } : variant));
-  };
+  // Quan dung size so (28, 30...), ao dung size chu (S, M, L...). Lay theo
+  // danh muc dang chon chu khong bat nguoi dung nho.
+  const danhMucDangChon = categories.find((item) => item.id === categoryId);
+  const tenDanhMuc = danhMucDangChon?.slug || danhMucDangChon?.name || '';
+  const sizes = danhSachSize(tenDanhMuc);
+
+  // San pham moi chua luu gi, nen doi danh muc thi keo size ve bang cua danh
+  // muc do luon (quan dung size so). Man chinh sua khong lam vay vi o do doi
+  // size dong nghia voi xoa bien the that.
+  useEffect(() => {
+    const bangSize = danhSachSize(tenDanhMuc);
+    setVariants((current) => {
+      if (current.every((variant) => bangSize.includes(variant.size))) return current;
+      const daCo = new Set<string>();
+      const ketQua: BienTheNhap[] = [];
+      for (const variant of current) {
+        const size = bangSize.includes(variant.size) ? variant.size : bangSize[0];
+        const khoa = `${size}|${variant.color}`;
+        if (daCo.has(khoa)) continue;
+        daCo.add(khoa);
+        ketQua.push({ ...variant, size });
+      }
+      return ketQua;
+    });
+  }, [tenDanhMuc]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -57,13 +78,20 @@ export function CreateProductModal({ categories, onClose, onCreated }: CreatePro
       return;
     }
 
-    const variantsError = validateProductVariants(variants);
+    // O SKU ghi "tu tao neu bo trong", nen dien ho truoc khi kiem tra, khong
+    // thi nguoi dung bo trong dung nhu goi y lai bi bao loi thieu SKU.
+    const variantsCoSku = variants.map((variant) => ({
+      ...variant,
+      sku: variant.sku.trim() || taoSkuTuDong(name, variant.size, variant.color),
+    }));
+
+    const variantsError = validateProductVariants(variantsCoSku);
     if (variantsError) {
       setError(variantsError);
       return;
     }
 
-    const normalizedVariants = variants.map((variant) => ({
+    const normalizedVariants = variantsCoSku.map((variant) => ({
       size: variant.size.trim(),
       color: variant.color.trim(),
       sku: variant.sku.trim(),
@@ -143,27 +171,13 @@ export function CreateProductModal({ categories, onClose, onCreated }: CreatePro
           </label>
 
           <div className="space-y-3">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <h3 className="text-sm font-bold text-ink">Biến thể và tồn kho</h3>
-                <p className="text-xs text-ink-muted">Mỗi cặp size và màu là một biến thể riêng.</p>
-              </div>
-              <button type="button" onClick={() => setVariants((current) => [...current, { size: '', color: '', sku: '', stock: '0' }])} className="inline-flex items-center gap-1.5 rounded-lg border border-camel/30 bg-camel-tint px-3 py-2 text-xs font-semibold text-camel-dark hover:bg-camel/15">
-                <Plus className="h-3.5 w-3.5" /> Thêm biến thể
-              </button>
+            <div>
+              <h3 className="text-sm font-bold text-ink">Biến thể và tồn kho</h3>
+              <p className="text-xs text-ink-muted">
+                Chọn nhiều size và nhiều màu, hệ thống tự ghép thành từng biến thể.
+              </p>
             </div>
-
-            {variants.map((variant, index) => (
-              <div key={index} className="grid gap-3 rounded-xl border border-line bg-tint p-3 md:grid-cols-[1fr_1fr_1.3fr_0.7fr_auto]">
-                <input className={fieldClass} aria-label={`Size biến thể ${index + 1}`} value={variant.size} onChange={(event) => setVariant(index, 'size', event.target.value)} required maxLength={30} placeholder="Size" />
-                <input className={fieldClass} aria-label={`Màu biến thể ${index + 1}`} value={variant.color} onChange={(event) => setVariant(index, 'color', event.target.value)} required maxLength={60} placeholder="Màu" />
-                <input className={fieldClass} aria-label={`SKU biến thể ${index + 1}`} value={variant.sku} onChange={(event) => setVariant(index, 'sku', event.target.value)} maxLength={100} placeholder="SKU (tự tạo nếu bỏ trống)" />
-                <input className={fieldClass} aria-label={`Tồn kho biến thể ${index + 1}`} type="number" min="0" step="1" value={variant.stock} onChange={(event) => setVariant(index, 'stock', event.target.value)} required />
-                <button type="button" aria-label={`Xóa biến thể ${index + 1}`} disabled={variants.length === 1} onClick={() => setVariants((current) => current.filter((_, i) => i !== index))} className="flex items-center justify-center rounded-lg px-2 text-ink-muted hover:bg-danger-bg hover:text-danger disabled:cursor-not-allowed disabled:opacity-30">
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              </div>
-            ))}
+            <VariantEditor sizes={sizes} variants={variants} onChange={setVariants} />
           </div>
 
           <p className="rounded-xl border border-warn-line bg-warn-bg px-3 py-2.5 text-xs text-ink-mid">

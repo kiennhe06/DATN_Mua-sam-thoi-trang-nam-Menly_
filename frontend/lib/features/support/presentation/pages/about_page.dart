@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_theme.dart';
+import 'package:menly_app/features/order/data/models/shipping_policy_model.dart';
+import 'package:menly_app/features/order/data/services/shipping_policy_service.dart';
 
 /// Tieu de muc dung chung cho cac trang ho tro (gioi thieu, FAQ, lien he,
 /// chinh sach) de bon trang co cung mot kieu chu va cung khoang cach.
@@ -54,8 +56,25 @@ class SupportCard extends StatelessWidget {
 }
 
 /// Trang Gioi thieu thuong hieu Menly
-class AboutPage extends StatelessWidget {
+class AboutPage extends StatefulWidget {
   const AboutPage({super.key});
+
+  @override
+  State<AboutPage> createState() => _AboutPageState();
+}
+
+class _AboutPageState extends State<AboutPage> {
+  /// Bang gia giao hang lay tu API, khong go cung trong trang gioi thieu.
+  ShippingPolicyModel? _bangGiaGiaoHang;
+
+  @override
+  void initState() {
+    super.initState();
+    ShippingPolicyService.instance.tai().then((bangGia) {
+      if (!mounted) return;
+      setState(() => _bangGiaGiaoHang = bangGia);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -123,7 +142,8 @@ class AboutPage extends StatelessWidget {
           _infoCard(
             context,
             title: 'Giao hàng toàn quốc',
-            body: 'Đơn tiêu chuẩn 25.000 đ, hỏa tốc 45.000 đ. Miễn phí vận chuyển khi đơn từ 499.000 đ.',
+            body: _bangGiaGiaoHang?.moTaPhiGiaoHang ??
+                'Biểu phí giao hàng đang được cập nhật, bạn xem phí chính xác ở bước thanh toán.',
           ),
           const SizedBox(height: AppSpacing.sm),
           Text(

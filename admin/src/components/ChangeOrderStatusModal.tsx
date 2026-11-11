@@ -50,6 +50,7 @@ export function ChangeOrderStatusModal({
                   <option value="paid">Đã thanh toán (paid)</option>
                   <option value="processing">Đang xử lý (processing)</option>
                   <option value="shipping">Đang giao hàng (shipping)</option>
+                  <option value="delivered">Đã giao hàng (delivered)</option>
                   <option value="completed">Đã hoàn tất (completed)</option>
                   <option value="cancelled">Hủy đơn hàng (cancelled)</option>
                 </select>

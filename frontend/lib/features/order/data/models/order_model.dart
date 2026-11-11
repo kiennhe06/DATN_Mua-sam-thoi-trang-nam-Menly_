@@ -202,7 +202,7 @@ class OrderModel {
     this.isPaid = false,
     required this.subtotal,
     this.discountAmount = 0,
-    this.shippingFee = 25000,
+    this.shippingFee = 0,
     required this.total,
     required this.shipName,
     required this.shipPhone,
@@ -287,7 +287,9 @@ class OrderModel {
       isPaid: json['is_paid'] ?? false,
       subtotal: (json['subtotal'] is num) ? (json['subtotal'] as num).toInt() : 0,
       discountAmount: (json['discount_amount'] is num) ? (json['discount_amount'] as num).toInt() : 0,
-      shippingFee: (json['shipping_fee'] is num) ? (json['shipping_fee'] as num).toInt() : 25000,
+      // Phi ship la so da luu cung don hang; thieu truong thi de 0 chu khong
+      // doan mot muc phi, vi doan sai se lam tong tien hien ra khong khop.
+      shippingFee: (json['shipping_fee'] is num) ? (json['shipping_fee'] as num).toInt() : 0,
       total: (json['total'] is num) ? (json['total'] as num).toInt() : 0,
       shipName: json['ship_name']?.toString() ?? '',
       shipPhone: json['ship_phone']?.toString() ?? '',

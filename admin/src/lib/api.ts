@@ -121,6 +121,12 @@ export type UpdateProductInput = Partial<
   Omit<Product, 'id' | 'createdAt' | 'variants' | 'images'>
 > & {
   images?: string[];
+  /**
+   * Danh sach bien the day du sau khi sua. May chu doi chieu theo cap size +
+   * mau: cap moi thi them, cap cu thi cap nhat, cap khong con trong danh sach
+   * thi xoa (tru khi da tung co don hang).
+   */
+  variants?: Array<{ size: string; color: string; sku: string; stock: number }>;
 };
 
 export async function updateProduct(
@@ -366,6 +372,99 @@ export async function getLockoutStatus(email: string): Promise<unknown> {
   return res.json();
 }
 
+// ========== BANNERS ==========
+export interface Banner {
+  id: string;
+  title: string;
+  imageUrl: string;
+  linkUrl: string | null;
+  sortOrder: number;
+  isActive: boolean;
+  startDate: string;
+  endDate: string;
+}
+
+/** May chu tra ve snake_case; trang quan tri dung camelCase. */
+function normalizeBanner(raw: Record<string, unknown>): Banner {
+  return {
+    id: String(raw.id ?? ''),
+    title: String(raw.title ?? ''),
+    imageUrl: String(raw.image_url ?? raw.imageUrl ?? ''),
+    linkUrl: (raw.link_url ?? raw.linkUrl ?? null) as string | null,
+    sortOrder: Number(raw.sort_order ?? raw.sortOrder ?? 0),
+    isActive: (raw.is_active ?? raw.isActive ?? true) as boolean,
+    startDate: String(raw.start_date ?? raw.startDate ?? ''),
+    endDate: String(raw.end_date ?? raw.endDate ?? ''),
+  };
+}
+
+export interface BannerInput {
+  title: string;
+  imageUrl: string;
+  linkUrl?: string | null;
+  sortOrder: number;
+  isActive: boolean;
+  startDate?: string;
+  endDate: string;
+}
+
+export async function fetchAdminBanners(): Promise<Banner[]> {
+  const res = await apiFetch<any>('/api/v1/admin/banners');
+  const rows = Array.isArray(res) ? res : res?.data ?? [];
+  return rows.map(normalizeBanner);
+}
+
+export async function createBanner(payload: BannerInput): Promise<Banner> {
+  const res = await apiFetch<any>('/api/v1/admin/banners', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+  return normalizeBanner(res?.data ?? res);
+}
+
+export async function updateBanner(
+  id: string,
+  payload: Partial<BannerInput>
+): Promise<Banner> {
+  const res = await apiFetch<any>(`/api/v1/admin/banners/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  });
+  return normalizeBanner(res?.data ?? res);
+}
+
+/** Bat tat hien thi banner tren trang chu cua ung dung. */
+export async function setBannerActive(id: string, isActive: boolean): Promise<Banner> {
+  const res = await apiFetch<any>(`/api/v1/admin/banners/${id}/active`, {
+    method: 'PATCH',
+    body: JSON.stringify({ isActive }),
+  });
+  return normalizeBanner(res?.data ?? res);
+}
+
+/**
+ * Tai mot anh banner tu may len may chu, tra ve dia chi cong khai cua anh.
+ * Dung cho nut "Tai anh tu may" o form banner, thay vi bat nguoi dung tu di
+ * tim link anh tren mang.
+ */
+export async function uploadBannerImage(file: File): Promise<string> {
+  const form = new FormData();
+  form.append('image', file);
+  const res = await apiFetch<any>('/api/v1/admin/banners/upload', {
+    method: 'POST',
+    body: form,
+  });
+  const url = res?.data?.imageUrl ?? res?.imageUrl;
+  if (typeof url !== 'string' || !url) {
+    throw new Error('Máy chủ không trả về đường dẫn ảnh sau khi tải lên');
+  }
+  return url;
+}
+
+export async function deleteBanner(id: string): Promise<void> {
+  await apiFetch<any>(`/api/v1/admin/banners/${id}`, { method: 'DELETE' });
+}
+
 // ========== VOUCHERS ==========
 export async function fetchAdminVouchers(): Promise<Voucher[]> {
   const data = await apiFetch<Voucher[] | { data?: Voucher[] }>('/api/v1/admin/vouchers');
@@ -392,4 +491,71 @@ export async function deleteVoucher(id: string): Promise<boolean> {
   return apiFetch<{ success: boolean }>(`/api/v1/admin/vouchers/${id}`, {
     method: 'DELETE',
   }).then((r) => r.success);
+}
+
+// ========== TRẢ HÀNG ==========
+
+export interface OrderReturn {
+  id: string;
+  orderId: string;
+  userId: string;
+  reason: string;
+  proofImages: string[];
+  status: string;
+  refundAmount: number;
+  rejectionReason: string | null;
+  adminResolutionNote: string | null;
+  /** true: hàng còn bán được và đã nhập lại kho; false: hàng lỗi. */
+  restocked: boolean | null;
+  createdAt: string;
+  resolvedAt: string | null;
+}
+
+function normalizeReturn(raw: Record<string, unknown>): OrderReturn {
+  const lay = <T>(camel: string, snake: string, macDinh: T): T => {
+    const giaTri = raw[camel] ?? raw[snake];
+    return (giaTri === undefined || giaTri === null ? macDinh : giaTri) as T;
+  };
+  return {
+    id: String(raw.id ?? ''),
+    orderId: lay('orderId', 'order_id', ''),
+    userId: lay('userId', 'user_id', ''),
+    reason: lay('reason', 'reason', ''),
+    proofImages: lay<string[]>('proofImages', 'proof_images', []),
+    status: lay('status', 'status', 'requested'),
+    refundAmount: Number(lay('refundAmount', 'refund_amount', 0)),
+    rejectionReason: lay<string | null>('rejectionReason', 'rejection_reason', null),
+    adminResolutionNote: lay<string | null>('adminResolutionNote', 'admin_resolution_note', null),
+    restocked: lay<boolean | null>('restocked', 'restocked', null),
+    createdAt: lay('createdAt', 'created_at', ''),
+    resolvedAt: lay<string | null>('resolvedAt', 'resolved_at', null),
+  };
+}
+
+export async function fetchOrderReturns(): Promise<OrderReturn[]> {
+  const res = await apiFetch<any>('/api/v1/order-returns/admin');
+  const rows = Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : [];
+  return rows.map(normalizeReturn);
+}
+
+/**
+ * Doi trang thai mot yeu cau tra hang.
+ *
+ * Khi chuyen sang 'refunded' bat buoc phai noi hang con ban lai duoc khong:
+ * con ban duoc thi may chu cong lai kho, hang loi thi khong.
+ */
+export async function updateOrderReturn(
+  id: string,
+  payload: {
+    status: string;
+    restock?: boolean;
+    rejectionReason?: string | null;
+    adminResolutionNote?: string | null;
+  },
+): Promise<OrderReturn> {
+  const res = await apiFetch<any>(`/api/v1/order-returns/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  });
+  return normalizeReturn(res?.data ?? res);
 }

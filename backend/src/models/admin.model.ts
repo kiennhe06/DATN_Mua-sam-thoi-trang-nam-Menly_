@@ -415,6 +415,88 @@ export class AdminModel {
     return data ?? [];
   }
 
+  /// Doi mot phan thong tin banner. Chi ghi nhung truong duoc gui len.
+  async updateBanner(id: string, input: Partial<BannerInput>) {
+    const updates: Record<string, string | number | boolean | null> = {};
+    if (input.title !== undefined) updates.title = input.title;
+    if (input.imageUrl !== undefined) updates.image_url = input.imageUrl;
+    if (input.linkUrl !== undefined) updates.link_url = input.linkUrl || null;
+    if (input.sortOrder !== undefined) updates.sort_order = input.sortOrder;
+    if (input.isActive !== undefined) updates.is_active = input.isActive;
+    if (input.startDate !== undefined) updates.start_date = input.startDate;
+    if (input.endDate !== undefined) updates.end_date = input.endDate;
+
+    const { data, error } = await this.db
+      .from('banners')
+      .update(updates)
+      .eq('id', id)
+      .select('*')
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    return data;
+  }
+
+  /// Bat hoac tat hien thi banner tren trang chu.
+  async setBannerActive(id: string, isActive: boolean) {
+    const { data, error } = await this.db
+      .from('banners')
+      .update({ is_active: isActive })
+      .eq('id', id)
+      .select('*')
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    return data;
+  }
+
+  async deleteBanner(id: string) {
+    const { data, error } = await this.db
+      .from('banners')
+      .delete()
+      .eq('id', id)
+      .select('id')
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    return data;
+  }
+
+  /// Ten kho anh banner tren Supabase Storage.
+  private bannerBucket = 'banners';
+
+  /// Tao kho anh banner neu chua co. Kho de o che do cong khai vi anh banner
+  /// hien tren trang chu cho moi nguoi xem.
+  private async taoKhoAnhBannerNeuChua() {
+    const { data: buckets } = await this.db.storage.listBuckets();
+    const daCo = buckets?.some((bucket) => bucket.name === this.bannerBucket);
+    if (!daCo) {
+      await this.db.storage.createBucket(this.bannerBucket, { public: true });
+    }
+  }
+
+  /**
+   * Tai mot anh banner tu may quan tri len Supabase Storage va tra ve dia chi
+   * cong khai cua anh. Nho vay nguoi quan tri khong can di tim link anh tren
+   * mang nua, chi can chon file trong may.
+   */
+  async uploadBannerImage(file: Express.Multer.File): Promise<string> {
+    await this.taoKhoAnhBannerNeuChua();
+
+    const duoiFile = file.originalname.match(/\.([a-zA-Z0-9]+)$/);
+    const duoi = duoiFile ? duoiFile[1].toLowerCase() : (file.mimetype?.split('/')[1] || 'jpg');
+    const tenFile = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}.${duoi}`;
+    const kieuNoiDung =
+      file.mimetype && file.mimetype !== 'application/octet-stream'
+        ? file.mimetype
+        : `image/${duoi === 'jpg' ? 'jpeg' : duoi}`;
+
+    const { error } = await this.db.storage
+      .from(this.bannerBucket)
+      .upload(tenFile, file.buffer, { contentType: kieuNoiDung, upsert: false });
+    if (error) throw new Error(`Lỗi tải ảnh banner lên kho lưu trữ: ${error.message}`);
+
+    const { data } = this.db.storage.from(this.bannerBucket).getPublicUrl(tenFile);
+    return data.publicUrl;
+  }
+
   async createBanner(input: BannerInput) {
     const { data, error } = await this.db
       .from('banners')

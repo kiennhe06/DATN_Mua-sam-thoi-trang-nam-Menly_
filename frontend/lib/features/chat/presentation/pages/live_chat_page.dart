@@ -13,6 +13,8 @@ import '../../../product/presentation/pages/product_detail_page.dart';
 import '../../data/models/chat_message_model.dart';
 import '../../data/services/ai_chat_service.dart';
 import 'package:menly_app/core/widgets/app_image.dart';
+import 'package:menly_app/features/order/data/models/shipping_policy_model.dart';
+import 'package:menly_app/features/order/data/services/shipping_policy_service.dart';
 
 class LiveChatPage extends StatefulWidget {
   const LiveChatPage({super.key});
@@ -28,6 +30,19 @@ class _LiveChatPageState extends State<LiveChatPage> {
   bool _isStaffTyping = false;
   int? _heightCm;
   int? _weightKg;
+
+  /// Bang gia giao hang lay tu API de cau tra loi ve phi ship khong lech voi
+  /// gia may chu dang tinh tien.
+  ShippingPolicyModel? _bangGiaGiaoHang;
+
+  @override
+  void initState() {
+    super.initState();
+    ShippingPolicyService.instance.tai().then((bangGia) {
+      if (!mounted) return;
+      setState(() => _bangGiaGiaoHang = bangGia);
+    });
+  }
   static const List<String> _sizes = ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL'];
   final List<ChatMessageModel> _messages = [
     ChatMessageModel(
@@ -267,7 +282,11 @@ class _LiveChatPageState extends State<LiveChatPage> {
     } else if (lower.contains('phối đồ') || lower.contains('lookbook')) {
       return 'Dạ ngay dưới từng sản phẩm đều có chuyên mục "Lookbook - Gợi ý phối đồ chuẩn Quý ông" (Áo sơ mi Oxford + Quần tây công sở + Áo blazer) giảm 15% khi mua trọn bộ combo đấy ạ!';
     } else if (lower.contains('vận chuyển') || lower.contains('ship')) {
-      return 'Dạ Menly miễn phí vận chuyển toàn quốc cho đơn hàng từ 499.000đ. Đơn nội thành HCM/Hà Nội nhận hàng trong 1-2 ngày, các tỉnh thành khác từ 2-4 ngày anh/chị nhé!';
+      final bangGia = _bangGiaGiaoHang;
+      final phi = bangGia == null
+          ? 'Biểu phí giao hàng đang được cập nhật, anh/chị xem phí chính xác ở bước thanh toán giúp em ạ.'
+          : bangGia.moTaPhiGiaoHang;
+      return 'Dạ $phi Đơn nội thành HCM/Hà Nội nhận hàng trong 1-2 ngày, các tỉnh thành khác từ 2-4 ngày anh/chị nhé!';
     }
     return 'Dạ em đã ghi nhận thông tin từ bạn: "$text". Nhân viên tư vấn Menly đang sẵn sàng hỗ trợ, bạn cần em giải đáp thêm chi tiết nào nữa không ạ?';
   }
