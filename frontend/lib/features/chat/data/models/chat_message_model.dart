@@ -25,6 +25,14 @@ class SuggestedProductItem {
     );
   }
 
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+        'price': price,
+        'thumbnail_url': thumbnailUrl,
+        'slug': slug,
+      };
+
   ProductModel toProductModel() {
     return ProductModel(
       id: id,
@@ -59,6 +67,37 @@ class ChatMessageModel {
     required this.isStaff,
     this.suggestedProducts,
   });
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'sender_type': senderType,
+        'sender_name': senderName,
+        'content': content,
+        'created_at': createdAt.toIso8601String(),
+        'is_staff': isStaff,
+        if (suggestedProducts != null)
+          'suggested_products':
+              suggestedProducts!.map((p) => p.toJson()).toList(),
+      };
+
+  factory ChatMessageModel.fromJson(Map<String, dynamic> json) {
+    return ChatMessageModel(
+      id: json['id']?.toString() ?? '',
+      senderType: json['sender_type']?.toString() ??
+          (json['is_staff'] == true ? 'staff' : 'user'),
+      senderName: json['sender_name']?.toString() ?? '',
+      content: json['content']?.toString() ?? '',
+      createdAt: DateTime.tryParse(json['created_at']?.toString() ?? '') ??
+          DateTime.now(),
+      isStaff: json['is_staff'] == true || json['sender_type'] == 'staff',
+      suggestedProducts: json['suggested_products'] is List
+          ? (json['suggested_products'] as List)
+              .map((p) => SuggestedProductItem.fromJson(
+                  Map<String, dynamic>.from(p as Map)))
+              .toList()
+          : null,
+    );
+  }
 
   // Getters tương thích
   String get text => content;

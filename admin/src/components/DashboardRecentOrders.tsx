@@ -42,7 +42,7 @@ export function DashboardRecentOrders({
         <StatCard
           title="Doanh thu tạm tính"
           value={`${totalRevenue.toLocaleString('vi-VN')} đ`}
-          subtitle="COD & VNPay Sandbox"
+          subtitle="COD & VNPay"
           icon={TrendingUp}
           trend="+18.5%"
           color="emerald"

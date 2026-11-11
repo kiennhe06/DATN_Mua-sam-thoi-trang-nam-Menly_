@@ -1,7 +1,9 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -15,6 +17,7 @@ import '../../data/services/ai_chat_service.dart';
 import 'package:menly_app/core/widgets/app_image.dart';
 import 'package:menly_app/features/order/data/models/shipping_policy_model.dart';
 import 'package:menly_app/features/order/data/services/shipping_policy_service.dart';
+import 'package:menly_app/features/support/presentation/pages/support_chat_page.dart';
 
 class LiveChatPage extends StatefulWidget {
   const LiveChatPage({super.key});
@@ -35,35 +38,126 @@ class _LiveChatPageState extends State<LiveChatPage> {
   /// gia may chu dang tinh tien.
   ShippingPolicyModel? _bangGiaGiaoHang;
 
+  static const List<String> _sizes = ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL'];
+  List<ChatMessageModel> _messages = [];
+  bool _isLoadingHistory = true;
+
   @override
   void initState() {
     super.initState();
+    _loadSavedMessages();
     ShippingPolicyService.instance.tai().then((bangGia) {
       if (!mounted) return;
       setState(() => _bangGiaGiaoHang = bangGia);
     });
   }
-  static const List<String> _sizes = ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL'];
-  final List<ChatMessageModel> _messages = [
-    ChatMessageModel(
-      id: 'm1',
-      senderType: 'staff',
-      senderName: 'Nhân viên tư vấn Menly',
-      content:
-          'Xin chào bạn! Em là nhân viên tư vấn của Menly. Rất hân hạnh được đồng hành và hỗ trợ bạn chọn size chuẩn, giải đáp đơn hàng hoặc tư vấn phối đồ.',
-      createdAt: DateTime.now().subtract(const Duration(minutes: 5)),
-      isStaff: true,
-    ),
-    ChatMessageModel(
-      id: 'm2',
-      senderType: 'staff',
-      senderName: 'Nhân viên tư vấn Menly',
-      content:
-          'Bạn có thể gõ câu hỏi hoặc chọn nhanh một trong các chủ đề gợi ý phía dưới để được em hỗ trợ ngay nhé!',
-      createdAt: DateTime.now().subtract(const Duration(minutes: 4)),
-      isStaff: true,
-    ),
-  ];
+
+  String _getStorageKey() {
+    final user = context.read<AuthProvider>().user;
+    return 'menly_staff_chat_messages_${user?.id ?? 'guest'}';
+  }
+
+  List<ChatMessageModel> _defaultWelcomeMessages() {
+    return [
+      ChatMessageModel(
+        id: 'm1',
+        senderType: 'staff',
+        senderName: 'Nhân viên tư vấn Menly',
+        content:
+            'Xin chào bạn! Em là nhân viên tư vấn của Menly. Rất hân hạnh được đồng hành và hỗ trợ bạn chọn size chuẩn, giải đáp đơn hàng hoặc tư vấn phối đồ.',
+        createdAt: DateTime.now().subtract(const Duration(minutes: 5)),
+        isStaff: true,
+      ),
+      ChatMessageModel(
+        id: 'm2',
+        senderType: 'staff',
+        senderName: 'Nhân viên tư vấn Menly',
+        content:
+            'Bạn có thể gõ câu hỏi hoặc chọn nhanh một trong các chủ đề gợi ý phía dưới để được em hỗ trợ ngay nhé!',
+        createdAt: DateTime.now().subtract(const Duration(minutes: 4)),
+        isStaff: true,
+      ),
+    ];
+  }
+
+  Future<void> _loadSavedMessages() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final key = _getStorageKey();
+      final raw = prefs.getString(key);
+      if (raw != null && raw.isNotEmpty) {
+        final decoded = jsonDecode(raw);
+        if (decoded is List) {
+          final loaded = decoded
+              .map((item) => ChatMessageModel.fromJson(
+                  Map<String, dynamic>.from(item as Map)))
+              .toList();
+          if (loaded.isNotEmpty && mounted) {
+            setState(() {
+              _messages = loaded;
+              _isLoadingHistory = false;
+            });
+            _scrollToBottom();
+            return;
+          }
+        }
+      }
+    } catch (_) {}
+
+    if (mounted) {
+      setState(() {
+        _messages = _defaultWelcomeMessages();
+        _isLoadingHistory = false;
+      });
+      _scrollToBottom();
+    }
+  }
+
+  Future<void> _saveMessages() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final key = _getStorageKey();
+      final toSave = _messages.length > 100
+          ? _messages.sublist(_messages.length - 100)
+          : _messages;
+      final encoded = jsonEncode(toSave.map((m) => m.toJson()).toList());
+      await prefs.setString(key, encoded);
+    } catch (_) {}
+  }
+
+  void _confirmClearHistory() {
+    final c = AppColors.of(context);
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Làm mới đoạn chat?'),
+        content: const Text(
+          'Đoạn chat hiện tại sẽ được xoá và đưa về lời chào ban đầu từ nhân viên tư vấn.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Huỷ'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              final prefs = await SharedPreferences.getInstance();
+              await prefs.remove(_getStorageKey());
+              if (!mounted) return;
+              setState(() {
+                _messages = _defaultWelcomeMessages();
+              });
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Đã làm mới đoạn chat')),
+              );
+            },
+            child: Text('Làm mới', style: TextStyle(color: c.danger)),
+          ),
+        ],
+      ),
+    );
+  }
 
   final List<String> _quickTopics = [
     '📏 Tư vấn chọn Size chuẩn',
@@ -120,6 +214,7 @@ class _LiveChatPageState extends State<LiveChatPage> {
       _isStaffTyping = true;
     });
     _scrollToBottom();
+    _saveMessages();
 
     // 2. Lấy tối đa 10 tin nhắn gần nhất để gửi kèm ngữ cảnh cho AI
     final recentHistory = _messages
@@ -163,6 +258,7 @@ class _LiveChatPageState extends State<LiveChatPage> {
       );
     });
     _scrollToBottom();
+    _saveMessages();
   }
 
   /// Tách chiều cao (cm) và cân nặng (kg) từ câu chat tự do.
@@ -389,6 +485,45 @@ class _LiveChatPageState extends State<LiveChatPage> {
             ),
           ],
         ),
+        actions: [
+          PopupMenuButton<String>(
+            tooltip: 'Tuỳ chọn',
+            icon: Icon(Icons.more_vert_rounded, color: c.textSecondary),
+            onSelected: (val) {
+              if (val == 'clear') {
+                _confirmClearHistory();
+              } else if (val == 'support') {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const SupportChatPage()),
+                );
+              }
+            },
+            itemBuilder: (ctx) => [
+              const PopupMenuItem(
+                value: 'support',
+                child: Row(
+                  children: [
+                    Icon(Icons.headset_mic_outlined, size: 20),
+                    SizedBox(width: 8),
+                    Text('Gặp nhân viên CSKH trực tiếp'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'clear',
+                child: Row(
+                  children: [
+                    Icon(Icons.refresh_rounded, size: 20, color: Colors.red),
+                    SizedBox(width: 8),
+                    Text('Làm mới đoạn chat',
+                        style: TextStyle(color: Colors.red)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -421,18 +556,20 @@ class _LiveChatPageState extends State<LiveChatPage> {
 
           // Message list
           Expanded(
-            child: ListView.builder(
-              controller: _scrollCtrl,
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.lg,
-                vertical: AppSpacing.md,
-              ),
-              itemCount: _messages.length,
-              itemBuilder: (context, index) {
-                final msg = _messages[index];
-                return _buildMessageBubble(msg, c);
-              },
-            ),
+            child: _isLoadingHistory
+                ? const Center(child: CircularProgressIndicator())
+                : ListView.builder(
+                    controller: _scrollCtrl,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.lg,
+                      vertical: AppSpacing.md,
+                    ),
+                    itemCount: _messages.length,
+                    itemBuilder: (context, index) {
+                      final msg = _messages[index];
+                      return _buildMessageBubble(msg, c);
+                    },
+                  ),
           ),
 
           // Typing indicator

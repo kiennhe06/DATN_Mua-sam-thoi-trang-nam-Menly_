@@ -1,9 +1,12 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/state_views.dart';
+import '../../../auth/presentation/pages/login_page.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../data/support_chat_service.dart';
 import 'package:menly_app/features/chat/presentation/pages/live_chat_page.dart';
 
@@ -82,13 +85,34 @@ class _SupportChatPageState extends State<SupportChatPage> {
     final conversation = _conversation;
     if (content.isEmpty || conversation == null || _isSending) return;
 
-    setState(() => _isSending = true);
+    final authUser = context.read<AuthProvider>().user;
+    final role = widget.isStaffConversation
+        ? (authUser?.role ?? 'staff')
+        : 'customer';
+
+    final tempMessage = SupportChatMessage(
+      id: 'local_${DateTime.now().millisecondsSinceEpoch}',
+      conversationId: conversation.id,
+      senderId: authUser?.id ?? '',
+      senderRole: role,
+      content: content,
+      createdAt: DateTime.now(),
+    );
+
+    setState(() {
+      _isSending = true;
+      _messages.add(tempMessage);
+    });
+    _messageController.clear();
+
     try {
       await _service.sendMessage(conversation.id, content);
-      _messageController.clear();
       await _loadChat(silent: true);
     } catch (error) {
       if (mounted) {
+        setState(() {
+          _messages.remove(tempMessage);
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(error.toString().replaceFirst('Exception: ', '')),
@@ -109,6 +133,32 @@ class _SupportChatPageState extends State<SupportChatPage> {
   @override
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
+    final auth = context.watch<AuthProvider>();
+
+    // Nếu là khách hàng nhưng chưa đăng nhập, hiển thị thông báo yêu cầu đăng nhập
+    if (!widget.isStaffConversation && !auth.isLoggedIn) {
+      return Scaffold(
+        backgroundColor: c.background,
+        appBar: AppBar(title: const Text('Chat với CSKH')),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.xl),
+            child: StatusView(
+              icon: Icons.lock_outline_rounded,
+              title: 'Vui lòng đăng nhập',
+              message:
+                  'Bạn cần đăng nhập tài khoản Menly để lưu giữ và trao đổi đoạn chat với nhân viên CSKH.',
+              actionLabel: 'Đăng nhập ngay',
+              onAction: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const LoginPage()),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
     final conversation = _conversation;
     final title = widget.isStaffConversation
         ? (conversation?.customerName?.trim().isNotEmpty == true

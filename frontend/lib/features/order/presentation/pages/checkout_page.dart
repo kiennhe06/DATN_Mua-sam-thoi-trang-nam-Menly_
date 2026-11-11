@@ -1017,19 +1017,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
           subtitle:
               'Quét mã VNPAY-QR, thẻ ATM nội địa hoặc thẻ Visa/Master',
           onTap: () => setState(() => _paymentMethod = 'vnpay'),
-          titleTrailing: Container(
-            padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
-            decoration: BoxDecoration(
-              color: c.primary,
-              borderRadius: BorderRadius.circular(AppTheme.radiusPill),
-            ),
-            child: Text('Sandbox',
-                style: TextStyle(
-                    color: c.onPrimary,
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold)),
-          ),
         ),
       ],
     );
