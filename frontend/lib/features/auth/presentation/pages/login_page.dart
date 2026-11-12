@@ -4,14 +4,19 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:menly_app/core/network/api_client.dart';
+import 'package:menly_app/core/theme/app_colors.dart';
+import 'package:menly_app/core/theme/app_spacing.dart';
+import 'package:menly_app/core/widgets/app_buttons.dart';
 import 'package:menly_app/features/auth/presentation/pages/forgot_password_page.dart';
 import 'package:menly_app/features/auth/presentation/pages/register_page.dart';
 import 'package:menly_app/features/auth/presentation/providers/auth_provider.dart';
 import 'package:menly_app/core/navigation/main_navigation_shell.dart';
+import 'package:menly_app/core/navigation/staff_navigation_shell.dart';
 import 'package:menly_app/features/cart/presentation/providers/cart_provider.dart';
 import 'package:menly_app/features/notification/presentation/providers/notification_provider.dart';
 import 'package:menly_app/features/order/presentation/providers/order_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:menly_app/core/session/user_session.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -109,34 +114,51 @@ class _LoginPageState extends State<LoginPage> {
 
       if (!mounted) return;
 
+      // Xoa du lieu cua nguoi dung truoc truoc khi nap du lieu nguoi vua dang
+      // nhap. Cac provider song suot vong doi ung dung nen khong tu mat.
+      clearUserDataInMemory(context);
+
       // Cap nhat ngay thong tin nguoi dung vao AuthProvider de khi chuyen sang
       // tab Ca nhan khong bi coi la chua dang nhap (khong phai dang nhap lai).
       final userJson = payload['user'];
+      String userRole = 'customer';
       if (userJson is Map) {
-        await context.read<AuthProvider>().setUserFromLogin(
-              UserModel.fromJson(Map<String, dynamic>.from(userJson)),
-            );
+        final userModel = UserModel.fromJson(Map<String, dynamic>.from(userJson));
+        userRole = userModel.role;
+        await context.read<AuthProvider>().setUserFromLogin(userModel);
         if (!mounted) return;
         await context.read<NotificationProvider>().loadNotifications();
         if (!mounted) return;
       }
-      context.read<CartProvider>().loadCartFromApi();
-      context.read<OrderProvider>().loadOrders();
+      if (userRole == 'staff') {
+        context.read<OrderProvider>().loadStaffOrders();
+      } else {
+        context.read<CartProvider>().loadCartFromApi();
+        context.read<OrderProvider>().loadOrders();
+      }
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Đăng nhập thành công.'),
-          backgroundColor: Colors.green,
+        SnackBar(
+          content: Text(userRole == 'staff'
+              ? 'Đăng nhập Cổng Nhân Viên thành công.'
+              : 'Đăng nhập thành công.'),
+          backgroundColor: AppColors.of(context).success,
         ),
       );
+      final Widget destination = userRole == 'staff'
+          ? const StaffNavigationShell()
+          : const MainNavigationShell();
       Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => const MainNavigationShell()),
+        MaterialPageRoute(builder: (_) => destination),
         (route) => false,
       );
     } on DioException catch (e) {
       final message = e.response?.data['error']?.toString() ?? 'Đăng nhập thất bại. Vui lòng thử lại.';
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message), backgroundColor: Colors.red),
+        SnackBar(
+          content: Text(message),
+          backgroundColor: AppColors.of(context).danger,
+        ),
       );
     } finally {
       if (mounted) {
@@ -154,6 +176,7 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     return Scaffold(
       appBar: AppBar(
         title: const Text('Đăng nhập'),
@@ -162,7 +185,7 @@ class _LoginPageState extends State<LoginPage> {
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(AppSpacing.xxl),
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 420),
               child: Form(
@@ -170,27 +193,22 @@ class _LoginPageState extends State<LoginPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-
                     const Text(
                       'Chào mừng bạn quay lại',
                       textAlign: TextAlign.center,
                       style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
                     ),
-                    const SizedBox(height: 8),
-                    const Text(
+                    const SizedBox(height: AppSpacing.sm),
+                    Text(
                       'Đăng nhập để tiếp tục mua sắm tại Menly',
                       textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.grey, fontSize: 15),
+                      style: TextStyle(color: c.textMuted, fontSize: 15),
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: AppSpacing.xxl),
                     TextFormField(
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
-                      decoration: const InputDecoration(
-                        labelText: 'Email',
-                        
-                        border: OutlineInputBorder(),
-                      ),
+                      decoration: const InputDecoration(labelText: 'Email'),
                       validator: (value) {
                         final email = value?.trim() ?? '';
                         if (email.isEmpty) {
@@ -202,16 +220,20 @@ class _LoginPageState extends State<LoginPage> {
                         return null;
                       },
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: AppSpacing.lg),
                     TextFormField(
                       controller: _passwordController,
                       obscureText: _obscurePassword,
                       decoration: InputDecoration(
                         labelText: 'Mật khẩu',
-                        
-                        border: const OutlineInputBorder(),
                         suffixIcon: TextButton(
-                          child: Text(_obscurePassword ? 'Hiện' : 'Ẩn', style: const TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+                          child: Text(
+                            _obscurePassword ? 'Hiện' : 'Ẩn',
+                            style: TextStyle(
+                              color: c.textMuted,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                           onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                         ),
                       ),
@@ -222,7 +244,7 @@ class _LoginPageState extends State<LoginPage> {
                         return null;
                       },
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: AppSpacing.md),
                     Row(
                       children: [
                         Checkbox(
@@ -235,7 +257,8 @@ class _LoginPageState extends State<LoginPage> {
                         GestureDetector(
                           onTap: () =>
                               setState(() => _rememberMe = !_rememberMe),
-                          child: const Text('Nhớ mật khẩu'),
+                          child: Text('Nhớ mật khẩu',
+                              style: TextStyle(color: c.textPrimary)),
                         ),
                         const Spacer(),
                         TextButton(
@@ -244,20 +267,17 @@ class _LoginPageState extends State<LoginPage> {
                               MaterialPageRoute(builder: (_) => const ForgotPasswordPage()),
                             );
                           },
-                          child: const Text('Quên mật khẩu?', style: TextStyle(color: Colors.black87)),
+                          child: Text('Quên mật khẩu?',
+                              style: TextStyle(color: c.textPrimary)),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 8),
-                    FilledButton(
+                    const SizedBox(height: AppSpacing.sm),
+                    PrimaryButton(
+                      label: _isSubmitting ? 'Đang đăng nhập...' : 'Đăng nhập',
                       onPressed: _isSubmitting ? null : _submitLogin,
-                      style: FilledButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        backgroundColor: Colors.black87,
-                      ),
-                      child: Text(_isSubmitting ? 'Đang đăng nhập...' : 'Đăng nhập'),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: AppSpacing.lg),
                     Wrap(
                       alignment: WrapAlignment.center,
                       crossAxisAlignment: WrapCrossAlignment.center,

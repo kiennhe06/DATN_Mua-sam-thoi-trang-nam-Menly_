@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../widgets/app_bottom_nav.dart';
 import '../../features/auth/presentation/pages/profile_page.dart';
+import '../../features/auth/presentation/providers/auth_provider.dart';
 import '../../features/cart/presentation/pages/cart_page.dart';
 import '../../features/cart/presentation/providers/cart_provider.dart';
 import '../../features/home/presentation/pages/home_page.dart';
+import '../../features/product/presentation/providers/product_provider.dart';
 import '../../features/wishlist/presentation/pages/wishlist_page.dart';
+import 'staff_navigation_shell.dart';
 
 class TabSwitchNotification extends Notification {
   final int targetIndex;
@@ -33,6 +36,12 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
 
   @override
   Widget build(BuildContext context) {
+    final auth = context.watch<AuthProvider>();
+    // Nhan vien duoc cach ly hoan toan khoi giao dien mua hang cua khach
+    if (auth.isLoggedIn && auth.user?.role == 'staff') {
+      return const StaffNavigationShell();
+    }
+
     final cart = context.watch<CartProvider>();
     return NotificationListener<TabSwitchNotification>(
       onNotification: (notif) {
@@ -47,7 +56,17 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
         ),
         bottomNavigationBar: AppBottomNav(
           currentIndex: _currentIndex,
-          onTap: (idx) => setState(() => _currentIndex = idx),
+          onTap: (idx) {
+            if (idx == 0) {
+              final productProv = context.read<ProductProvider>();
+              productProv.clearSearchQuery();
+              // IndexedStack giu nguyen trang chu nen no khong tu dung lai.
+              // Quay ve tab nay thi lay du lieu moi, de san pham vua them hoac
+              // vua duyet ben web hien ra ngay.
+              productProv.refreshIfStale();
+            }
+            setState(() => _currentIndex = idx);
+          },
           items: [
             const BottomNavItem(
               Icons.home_outlined,

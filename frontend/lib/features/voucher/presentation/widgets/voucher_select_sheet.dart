@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:menly_app/core/theme/app_colors.dart';
+import 'package:menly_app/core/theme/app_spacing.dart';
+import 'package:menly_app/core/theme/app_theme.dart';
+import 'package:menly_app/core/widgets/app_buttons.dart';
 import 'package:menly_app/features/cart/presentation/providers/cart_provider.dart';
 import 'package:menly_app/features/voucher/presentation/providers/voucher_provider.dart';
 
@@ -22,6 +26,8 @@ class _VoucherSelectSheetState extends State<VoucherSelectSheet> {
   }
 
   void _applyInputCode(CartProvider cart, VoucherProvider voucherProv) {
+    // Doc mau truoc khi dong sheet vi sau pop khong tra cuu theme duoc nua.
+    final c = AppColors.of(context);
     setState(() => _errorMessage = null);
     final code = _codeController.text.trim();
     if (code.isEmpty) {
@@ -43,9 +49,9 @@ class _VoucherSelectSheetState extends State<VoucherSelectSheet> {
     } else {
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Đã áp dụng mã giảm giá thành công!'),
-          backgroundColor: Colors.green,
+        SnackBar(
+          content: const Text('Đã áp dụng mã giảm giá thành công!'),
+          backgroundColor: c.success,
         ),
       );
     }
@@ -53,16 +59,17 @@ class _VoucherSelectSheetState extends State<VoucherSelectSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     final cart = context.watch<CartProvider>();
     final voucherProv = context.watch<VoucherProvider>();
     final vouchers = voucherProv.vouchers;
 
     return Container(
       padding: EdgeInsets.only(
-        top: 20,
-        left: 16,
-        right: 16,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+        top: AppSpacing.xl,
+        left: AppSpacing.lg,
+        right: AppSpacing.lg,
+        bottom: MediaQuery.of(context).viewInsets.bottom + AppSpacing.xl,
       ),
       constraints: BoxConstraints(
         maxHeight: MediaQuery.of(context).size.height * 0.8,
@@ -74,19 +81,27 @@ class _VoucherSelectSheetState extends State<VoucherSelectSheet> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 'Mã giảm giá Menly',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: c.textPrimary,
+                ),
               ),
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('Đóng',
-                    style: TextStyle(
-                        color: Colors.grey, fontWeight: FontWeight.bold)),
+                child: Text(
+                  'Đóng',
+                  style: TextStyle(
+                    color: c.textMuted,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.md),
           // O nhap ma truc tiep
           Row(
             children: [
@@ -97,47 +112,48 @@ class _VoucherSelectSheetState extends State<VoucherSelectSheet> {
                   decoration: InputDecoration(
                     hintText: 'Nhập mã voucher (VD: WELCOME20, MENLY10)',
                     border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10)),
+                      borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+                    ),
                     contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 10),
+                      horizontal: AppSpacing.md,
+                      vertical: AppSpacing.sm,
+                    ),
                     isDense: true,
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.black87,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10)),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                ),
+              const SizedBox(width: AppSpacing.sm),
+              PrimaryButton(
+                label: 'Áp dụng',
+                expanded: false,
+                height: 46,
                 onPressed: () => _applyInputCode(cart, voucherProv),
-                child: const Text('Áp dụng'),
               ),
             ],
           ),
           if (_errorMessage != null) ...[
-            const SizedBox(height: 6),
+            const SizedBox(height: AppSpacing.xs),
             Text(
               _errorMessage!,
-              style: const TextStyle(color: Colors.red, fontSize: 12),
+              style: TextStyle(color: c.danger, fontSize: 12),
             ),
           ],
-          const SizedBox(height: 16),
-          const Text(
+          const SizedBox(height: AppSpacing.lg),
+          Text(
             'Mã giảm giá khả dụng',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
+              color: c.textPrimary,
+            ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.sm),
           // Danh sach voucher
           Flexible(
             child: ListView.separated(
               shrinkWrap: true,
               itemCount: vouchers.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 10),
+              separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.md),
               itemBuilder: (ctx, index) {
                 final v = vouchers[index];
                 final isSelected = cart.appliedVoucher?.id == v.id;
@@ -148,51 +164,55 @@ class _VoucherSelectSheetState extends State<VoucherSelectSheet> {
                     if (err != null) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                            content: Text(err), backgroundColor: Colors.red),
+                          content: Text(err),
+                          backgroundColor: c.danger,
+                        ),
                       );
                     } else {
                       Navigator.pop(context);
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text('Đã áp dụng mã "${v.code}"!'),
-                          backgroundColor: Colors.green,
+                          backgroundColor: c.success,
                         ),
                       );
                     }
                   },
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(AppTheme.radiusSm),
                   child: Container(
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(AppSpacing.md),
                     decoration: BoxDecoration(
                       border: Border.all(
-                        color: isSelected
-                            ? Colors.deepOrange
-                            : Colors.grey.shade300,
+                        color: isSelected ? c.primary : c.border,
                         width: isSelected ? 2 : 1,
                       ),
-                      borderRadius: BorderRadius.circular(10),
-                      color: isSelected ? Colors.amber.shade50 : Colors.white,
+                      borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+                      color: isSelected ? c.primarySoft : c.surface,
                     ),
                     child: Row(
                       children: [
                         Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 6),
+                            horizontal: AppSpacing.sm,
+                            vertical: AppSpacing.xs,
+                          ),
                           decoration: BoxDecoration(
-                            color: Colors.orange.shade100,
-                            borderRadius: BorderRadius.circular(6),
+                            color: c.primary.withValues(alpha: 0.1),
+                            borderRadius:
+                                BorderRadius.circular(AppTheme.radiusXs),
                           ),
                           child: Text(
                             v.discountType == 'percentage'
                                 ? '${v.discountValue}%'
                                 : '${v.discountValue ~/ 1000}k',
-                            style: const TextStyle(
-                                color: Colors.deepOrange,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 13),
+                            style: TextStyle(
+                              color: c.primary,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                            ),
                           ),
                         ),
-                        const SizedBox(width: 12),
+                        const SizedBox(width: AppSpacing.md),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -201,47 +221,64 @@ class _VoucherSelectSheetState extends State<VoucherSelectSheet> {
                                 children: [
                                   Text(
                                     v.code,
-                                    style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 15),
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 15,
+                                      color: c.textPrimary,
+                                    ),
                                   ),
                                   if (isSelected)
                                     Container(
-                                      margin: const EdgeInsets.only(left: 8),
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 6, vertical: 2),
-                                      decoration: BoxDecoration(
-                                        color: Colors.green,
-                                        borderRadius: BorderRadius.circular(6),
+                                      margin: const EdgeInsets.only(
+                                        left: AppSpacing.sm,
                                       ),
-                                      child: const Text('Đang dùng',
-                                          style: TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 10,
-                                              fontWeight: FontWeight.bold)),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: AppSpacing.xs,
+                                        vertical: 2,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: c.success,
+                                        borderRadius: BorderRadius.circular(
+                                          AppTheme.radiusXs,
+                                        ),
+                                      ),
+                                      child: Text(
+                                        'Đang dùng',
+                                        style: TextStyle(
+                                          color: c.onInk,
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
                                     ),
                                 ],
                               ),
                               const SizedBox(height: 2),
-                              Text(v.title,
-                                  style: TextStyle(
-                                      fontSize: 13,
-                                      color: Colors.grey.shade800)),
-                              const SizedBox(height: 4),
+                              Text(
+                                v.title,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: c.textSecondary,
+                                ),
+                              ),
+                              const SizedBox(height: AppSpacing.xs),
                               Text(
                                 'Không giới hạn đơn tối thiểu • HSD: ${v.endDate.day}/${v.endDate.month}/${v.endDate.year}',
                                 style: TextStyle(
-                                    fontSize: 11, color: Colors.grey.shade600),
+                                  fontSize: 11,
+                                  color: c.textMuted,
+                                ),
                               ),
                             ],
                           ),
                         ),
                         Text(
                           isSelected ? '✓' : '',
-                          style: const TextStyle(
-                              color: Colors.deepOrange,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 20),
+                          style: TextStyle(
+                            color: c.primary,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 20,
+                          ),
                         ),
                       ],
                     ),
@@ -251,22 +288,15 @@ class _VoucherSelectSheetState extends State<VoucherSelectSheet> {
             ),
           ),
           if (cart.appliedVoucher != null) ...[
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton(
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.red,
-                  side: const BorderSide(color: Colors.red),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10)),
-                ),
-                onPressed: () {
-                  cart.removeVoucher();
-                  Navigator.pop(context);
-                },
-                child: const Text('Bỏ chọn mã giảm giá'),
-              ),
+            const SizedBox(height: AppSpacing.md),
+            SecondaryButton(
+              label: 'Bỏ chọn mã giảm giá',
+              height: 46,
+              foreground: c.danger,
+              onPressed: () {
+                cart.removeVoucher();
+                Navigator.pop(context);
+              },
             ),
           ],
         ],

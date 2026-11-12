@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_spacing.dart';
 import '../theme/app_theme.dart';
 import 'pressable.dart';
 
@@ -13,9 +14,9 @@ class BottomNavItem {
 
 /// Thanh dieu huong duoi cua Menly.
 ///
-/// Thanh phang tren nen kem, chi mot duong ke mong o tren. Tab dang mo khong
-/// duoc to nen ma chi dam mau icon len va hien mot cham camel ben duoi, de thanh
-/// nay khong canh tranh su chu y voi noi dung man hinh.
+/// Dang vien thuoc mau ink noi tren noi dung, cach le hai ben va le duoi.
+/// Tab dang mo nam trong mot vong tron sang, cac tab con lai la icon mo tren
+/// nen ink. Day la dau nhan de nhan ra nhat cua bo giao dien.
 class AppBottomNav extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onTap;
@@ -31,26 +32,40 @@ class AppBottomNav extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
-    return Container(
-      decoration: BoxDecoration(
-        color: c.background,
-        border: Border(top: BorderSide(color: c.border)),
-      ),
-      child: SafeArea(
-        top: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(32, 11, 32, 10),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              for (int i = 0; i < items.length; i++)
-                _NavButton(
-                  item: items[i],
-                  selected: i == currentIndex,
-                  onTap: () => onTap(i),
-                ),
-            ],
-          ),
+    return SafeArea(
+      top: false,
+      child: Container(
+        margin: const EdgeInsets.fromLTRB(
+          AppSpacing.lg,
+          AppSpacing.sm,
+          AppSpacing.lg,
+          AppSpacing.md,
+        ),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.sm,
+        ),
+        decoration: BoxDecoration(
+          color: c.inkCard,
+          borderRadius: BorderRadius.circular(AppTheme.radiusPill),
+          boxShadow: [
+            BoxShadow(
+              color: c.shadow,
+              blurRadius: 18,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            for (int i = 0; i < items.length; i++)
+              _NavButton(
+                item: items[i],
+                selected: i == currentIndex,
+                onTap: () => onTap(i),
+              ),
+          ],
         ),
       ),
     );
@@ -74,41 +89,35 @@ class _NavButton extends StatelessWidget {
     return Pressable(
       onTap: onTap,
       scale: 0.9,
-      borderRadius: BorderRadius.circular(AppTheme.radiusSm),
-      child: SizedBox(
-        width: 44,
-        child: Semantics(
-          label: item.label,
-          selected: selected,
-          button: true,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Badge.count(
-                count: item.badge,
-                isLabelVisible: item.badge > 0,
-                backgroundColor: c.danger,
-                textColor: c.onPrimary,
-                textStyle:
-                    const TextStyle(fontSize: 10, fontWeight: FontWeight.w700),
-                child: Icon(
-                  item.icon,
-                  size: 21,
-                  color: selected ? c.textPrimary : c.textSecondary,
-                ),
+      borderRadius: BorderRadius.circular(AppTheme.radiusPill),
+      child: Semantics(
+        label: item.label,
+        selected: selected,
+        button: true,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOut,
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            // Tab dang mo duoc boc trong vong tron sang de noi hẳn tren nen ink.
+            color: selected ? c.surface : Colors.transparent,
+            shape: BoxShape.circle,
+          ),
+          child: Center(
+            child: Badge.count(
+              count: item.badge,
+              isLabelVisible: item.badge > 0,
+              backgroundColor: c.danger,
+              textColor: c.onPrimary,
+              textStyle:
+                  const TextStyle(fontSize: 10, fontWeight: FontWeight.w700),
+              child: Icon(
+                item.icon,
+                size: 22,
+                color: selected ? c.textPrimary : c.onInk.withValues(alpha: 0.72),
               ),
-              const SizedBox(height: 6),
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 180),
-                curve: Curves.easeOut,
-                width: 4,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: selected ? c.secondary : Colors.transparent,
-                  borderRadius: BorderRadius.circular(AppTheme.radiusPill),
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),

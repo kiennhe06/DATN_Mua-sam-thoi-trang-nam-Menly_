@@ -5,9 +5,12 @@ import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/app_snackbar.dart';
 import '../providers/review_provider.dart';
+import 'package:menly_app/core/widgets/app_buttons.dart';
+import 'package:menly_app/core/widgets/app_image.dart';
 
 class ReviewFormPage extends StatefulWidget {
   final String? orderItemId;
@@ -115,15 +118,20 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
         ),
       ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.lg,
+          AppSpacing.lg,
+          AppSpacing.lg,
+          AppSpacing.xxxl,
+        ),
         children: [
           _buildProductRow(c),
-          const SizedBox(height: 20),
+          const SizedBox(height: AppSpacing.xl),
           Text(
             'Bạn cảm thấy sản phẩm thế nào?',
             style: TextStyle(color: c.textPrimary, fontSize: 15, fontWeight: FontWeight.w700),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.sm),
           Row(
             children: List.generate(5, (index) {
               final selected = index < _rating;
@@ -133,13 +141,13 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
                 onPressed: () => setState(() => _rating = index + 1),
                 icon: Icon(
                   selected ? Icons.star_rounded : Icons.star_border_rounded,
-                  color: Colors.amber,
+                  color: c.secondary,
                   size: 36,
                 ),
               );
             }),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.lg),
           TextField(
             controller: _commentController,
             maxLines: 5,
@@ -150,7 +158,7 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
               alignLabelWithHint: true,
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.md),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -164,28 +172,21 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
               ),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: AppSpacing.md),
           Wrap(
-            spacing: 10,
-            runSpacing: 10,
+            spacing: AppSpacing.md,
+            runSpacing: AppSpacing.md,
             children: [
               for (int i = 0; i < _images.length; i++) _buildImagePreview(i, c),
               if (_images.length < _maxImages) _buildAddImageButton(c),
             ],
           ),
-          const SizedBox(height: 28),
-          SizedBox(
+          const SizedBox(height: AppSpacing.xxl),
+          PrimaryButton(
+            label: 'Gửi đánh giá',
             height: 50,
-            child: ElevatedButton(
-              onPressed: _submitting ? null : _submit,
-              child: _submitting
-                  ? const SizedBox(
-                      width: 22,
-                      height: 22,
-                      child: CircularProgressIndicator(strokeWidth: 2.4, color: Colors.white),
-                    )
-                  : const Text('Gửi đánh giá'),
-            ),
+            loading: _submitting,
+            onPressed: _submit,
           ),
         ],
       ),
@@ -194,7 +195,7 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
 
   Widget _buildProductRow(AppColors c) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
         color: c.surface,
         borderRadius: BorderRadius.circular(AppTheme.radiusMd),
@@ -203,20 +204,19 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
       child: Row(
         children: [
           ClipRRect(
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(AppTheme.radiusSm),
             child: SizedBox(
               width: 56,
               height: 56,
-              child: widget.thumbnailUrl.isNotEmpty
-                  ? Image.network(
-                      widget.thumbnailUrl,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Container(color: c.surfaceVariant),
-                    )
-                  : Container(color: c.surfaceVariant),
+              child: AppImage(
+                url: widget.thumbnailUrl,
+                fit: BoxFit.cover,
+                placeholder: (_) => Container(color: c.surfaceVariant),
+                errorWidget: (_) => Container(color: c.surfaceVariant),
+              ),
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Text(
               widget.productName,
@@ -252,9 +252,9 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
           child: GestureDetector(
             onTap: () => _removeImage(index),
             child: Container(
-              padding: const EdgeInsets.all(3),
+              padding: const EdgeInsets.all(AppSpacing.xs),
               decoration: BoxDecoration(color: c.danger, shape: BoxShape.circle),
-              child: const Icon(Icons.close, color: Colors.white, size: 15),
+              child: Icon(Icons.close, color: c.onPrimary, size: 15),
             ),
           ),
         ),
@@ -278,7 +278,7 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(Icons.add_photo_alternate_outlined, color: c.textSecondary, size: 28),
-            const SizedBox(height: 4),
+            const SizedBox(height: AppSpacing.xs),
             Text('Thêm ảnh', style: TextStyle(color: c.textSecondary, fontSize: 11)),
           ],
         ),

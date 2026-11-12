@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/network/api_client.dart';
 
@@ -191,16 +192,99 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  /// Tải ảnh đại diện từ file (bộ sưu tập / camera) lên máy chủ Supabase Storage
+  Future<String?> uploadAvatar(XFile file) async {
+    if (_user == null) {
+      _profileUpdateError = 'Vui lòng đăng nhập để cập nhật ảnh đại diện';
+      return null;
+    }
+    _isLoading = true;
+    _profileUpdateError = null;
+    notifyListeners();
+
+    try {
+      final bytes = await file.readAsBytes();
+      final form = FormData();
+
+      form.files.add(
+        MapEntry(
+          'avatar',
+          MultipartFile.fromBytes(
+            bytes,
+            filename: file.name.isNotEmpty ? file.name : 'avatar.jpg',
+          ),
+        ),
+      );
+
+      final res = await _api.dio.post(
+        '/profile/upload-avatar',
+        data: form,
+        options: Options(contentType: 'multipart/form-data'),
+      );
+
+      final body = res.data;
+      final data = body is Map ? (body['data'] ?? body) : null;
+      final newAvatarUrl = data is Map ? data['avatarUrl']?.toString() : null;
+
+      if (newAvatarUrl != null && newAvatarUrl.isNotEmpty) {
+        _user = _user!.copyWith(avatarUrl: newAvatarUrl);
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('user_profile', jsonEncode(_user!.toJson()));
+      }
+      _isLoading = false;
+      notifyListeners();
+      return newAvatarUrl;
+    } on DioException catch (error) {
+      final response = error.response?.data;
+      _profileUpdateError = response is Map && response['error'] is String
+          ? response['error'] as String
+          : 'Không thể tải ảnh đại diện lên máy chủ';
+      _isLoading = false;
+      notifyListeners();
+      return null;
+    } catch (error) {
+      _profileUpdateError = 'Lỗi tải ảnh đại diện: $error';
+      _isLoading = false;
+      notifyListeners();
+      return null;
+    }
+  }
+
   Future<void> logout() async {
     final prefs = await SharedPreferences.getInstance();
     await _clearSession(prefs);
   }
 
+  /// Moi thu luu tren may gan voi MOT nguoi dung cu the.
+  ///
+  /// Truoc day dang xuat chi xoa ba khoa phien dang nhap, con gio hang, dia chi,
+  /// don hang, lich su tim kiem thi de nguyen. Nguoi dang nhap sau tren cung mot
+  /// may se thay du lieu cua nguoi truoc.
+  static const List<String> perUserKeys = [
+    'access_token',
+    'refresh_token',
+    'user_profile',
+    'cached_cart_items',
+    'cached_orders',
+    'saved_addresses',
+    'last_ship_name',
+    'last_ship_phone',
+    'last_ship_address',
+    'last_ship_detail',
+    'last_ship_province',
+    'last_ship_district',
+    'last_ship_ward',
+    'saved_user_name',
+    'saved_user_phone',
+    'recently_viewed_ids',
+    'search_history',
+  ];
+
   /// Xoa sach dau vet phien dang nhap va bao giao dien ve trang thai khach.
   Future<void> _clearSession(SharedPreferences prefs) async {
-    await prefs.remove('access_token');
-    await prefs.remove('refresh_token');
-    await prefs.remove('user_profile');
+    for (final key in perUserKeys) {
+      await prefs.remove(key);
+    }
     _user = null;
     notifyListeners();
   }
@@ -208,9 +292,23 @@ class AuthProvider extends ChangeNotifier {
   /// Cap nhat thong tin nguoi dung ngay sau khi dang nhap thanh cong,
   /// luu ca vao bo nho va SharedPreferences de khong bi mat phien khi chuyen tab.
   Future<void> setUserFromLogin(UserModel user) async {
+    // Don du lieu con sot cua nguoi dung truoc tren may nay. Can lam ca o day
+    // chu khong chi luc dang xuat: neu ung dung bi tat dot ngot thi lan dang
+    // nhap sau se khong co buoc dang xuat nao chay ca.
+    await _clearPreviousUserStorage();
     _user = user;
     notifyListeners();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('user_profile', jsonEncode(user.toJson()));
+  }
+
+  /// Xoa du lieu cua nguoi dung truoc nhung giu lai phien dang nhap vua tao.
+  Future<void> _clearPreviousUserStorage() async {
+    const sessionKeys = {'access_token', 'refresh_token', 'user_profile'};
+    final prefs = await SharedPreferences.getInstance();
+    for (final key in perUserKeys) {
+      if (sessionKeys.contains(key)) continue;
+      await prefs.remove(key);
+    }
   }
 }

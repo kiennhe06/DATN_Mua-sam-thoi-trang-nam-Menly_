@@ -21,10 +21,14 @@ class AppTheme {
   static const double radiusXl = 20; // hero images, bottom sheets
   static const double radiusPill = 999; // chips, dots, swatches, avatars
 
-  // Mau chu dao: Den sau tham & Xam kim loai (Zara, Coolmate, Routine)
+  // Tong chu dao: nen be nhat, chu va nut mau ink den.
+  //
+  // primaryAccent tung la nau camel. Be nhat khong dung lam mau chu duoc vi
+  // gan trung nen, nen cac cho dang to nhan bang primaryAccent chuyen sang ink.
+  // Sac be chi xuat hien o nen, vien va vung to nhe qua AppColors.
   static const Color primary = Color(0xFF1C1B17); // Ink neutral
   static const Color primaryLight = Color(0xFF2E2B25);
-  static const Color primaryAccent = Color(0xFFB8824A); // Camel gold
+  static const Color primaryAccent = Color(0xFF1C1B17); // Ink, khong con nau
   static const Color primaryDark = Color(0xFF0F172A);
 
   // Mau nhan (Sale, Hot, Voucher, Gia)
@@ -32,7 +36,7 @@ class AppTheme {
   static const Color accentGreen = Color(0xFF3E7C5A);
 
   // Mau nen & Mat be mat
-  static const Color scaffoldBackground = Color(0xFFF7F5F1); // Boutique cream
+  static const Color scaffoldBackground = Color(0xFFFAFAF8); // Trang nga
   static const Color surface = Colors.white;
   static const Color surfaceElevated = Color(0xFFFFFFFF);
   static const Color cardColor = Colors.white;
@@ -43,8 +47,8 @@ class AppTheme {
   static const Color textMuted = Color(0xFFA7A294);
 
   // Mau vien & Duong chia
-  static const Color border = Color(0xFFE8E2D7);
-  static const Color divider = Color(0xFFE8E2D7);
+  static const Color border = Color(0xFFE7E5E0);
+  static const Color divider = Color(0xFFE7E5E0);
 
   // Shadow nhe sang trong
   static List<BoxShadow> get softShadow => [
@@ -83,6 +87,25 @@ class AppTheme {
         surface: c.surface,
         error: c.danger,
       ),
+      // Khong dat nhung cai nay thi Flutter tu sinh mau nen tu mau goc cua
+      // bang mau, nen sheet va hop thoai bi am mau theo tong nhan — tong ruou
+      // vang tung lam ca sheet dia chi hong hong.
+      bottomSheetTheme: BottomSheetThemeData(
+        backgroundColor: c.surface,
+        surfaceTintColor: Colors.transparent,
+        modalBackgroundColor: c.surface,
+        elevation: 0,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(radiusXl)),
+        ),
+      ),
+      dialogTheme: DialogThemeData(
+        backgroundColor: c.surface,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(radiusXl),
+        ),
+      ),
       appBarTheme: AppBarTheme(
         backgroundColor: c.background,
         surfaceTintColor: Colors.transparent,
@@ -101,8 +124,11 @@ class AppTheme {
         iconTheme: IconThemeData(color: c.textPrimary),
       ),
       inputDecorationTheme: InputDecorationTheme(
+        // O nhap de nen the trang co vien, khong to nen xam. Mot form co bon
+        // nam o xam dac xep lien nhau tren the trang nhin rat nang; vien mong
+        // da du de thay day la cho nhap.
         filled: true,
-        fillColor: c.surfaceVariant,
+        fillColor: c.surface,
         hintStyle: TextStyle(color: c.textMuted, fontSize: 14),
         contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
         border: OutlineInputBorder(
@@ -154,13 +180,13 @@ class AppTheme {
   /// Default Light Theme
   static ThemeData get lightTheme => build(
         brightness: Brightness.light,
-        accent: AppAccent.camel,
+        accent: AppAccent.mucDen,
       );
 
   /// Default Dark Theme
   static ThemeData get darkTheme => build(
         brightness: Brightness.dark,
-        accent: AppAccent.camel,
+        accent: AppAccent.mucDen,
       );
 
   /// Alias for dark theme

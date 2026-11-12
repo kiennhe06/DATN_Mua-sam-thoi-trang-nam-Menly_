@@ -5,8 +5,8 @@ import 'pressable.dart';
 
 /// Nut "CHON MUA" duoi moi the san pham.
 ///
-/// Vien mong tren nen trong thay vi nen dac: the san pham nam trang tren nen
-/// kem nen mot nut dac se keo het su chu y khoi anh san pham.
+/// Dang vien thuoc nen dac mau ink, cung ngon ngu voi cac nut hanh dong khac.
+/// Vien mong truoc day lam nut chim han xuong, nhin khong ra la nut bam.
 class AddToCartButton extends StatelessWidget {
   final VoidCallback? onTap;
   final String label;
@@ -16,7 +16,7 @@ class AddToCartButton extends StatelessWidget {
     super.key,
     required this.onTap,
     this.label = 'CHỌN MUA',
-    this.height = 36,
+    this.height = 38,
   });
 
   @override
@@ -25,21 +25,21 @@ class AddToCartButton extends StatelessWidget {
     return Pressable(
       onTap: onTap,
       scale: 0.96,
-      borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+      borderRadius: BorderRadius.circular(AppTheme.radiusPill),
       child: Container(
         height: height,
         width: double.infinity,
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          border: Border.all(color: c.textPrimary),
-          borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+          color: c.primary,
+          borderRadius: BorderRadius.circular(AppTheme.radiusPill),
         ),
         child: Text(
           label,
           style: TextStyle(
-            color: c.textPrimary,
+            color: c.onPrimary,
             fontSize: 10.5,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w700,
             letterSpacing: 1.3,
           ),
         ),

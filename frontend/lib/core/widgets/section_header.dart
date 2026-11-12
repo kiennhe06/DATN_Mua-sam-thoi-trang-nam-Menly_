@@ -38,7 +38,8 @@ class SectionHeader extends StatelessWidget {
             child: Text(
               actionLabel!,
               style: TextStyle(
-                color: c.secondary,
+                // Be nhat gan trung nen trang nen chu se mo; dung ink cho ro.
+                color: c.primary,
                 fontSize: 13.5,
                 fontWeight: FontWeight.w700,
               ),

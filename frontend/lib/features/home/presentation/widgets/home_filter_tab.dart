@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
-import '../../../../core/theme/app_theme.dart';
+import 'package:menly_app/core/widgets/category_tab.dart';
 
+/// Tab loc nhanh o trang chu ("Mới", "Bán chạy").
+///
+/// Dung lai chip vien thuoc dung chung cua ung dung de moi cho loc deu cung
+/// mot hinh khoi, thay cho gach chan cu.
 class HomeFilterTab extends StatelessWidget {
   final String label;
   final bool active;
@@ -15,37 +19,10 @@ class HomeFilterTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
+    return CategoryTab(
+      label: label,
+      selected: active,
       onTap: onTap,
-      splashColor: Colors.transparent,
-      highlightColor: Colors.transparent,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: active ? FontWeight.w800 : FontWeight.w600,
-                color: active ? AppTheme.textPrimary : AppTheme.textMuted,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Container(
-              height: 2.5,
-              width: 28,
-              decoration: BoxDecoration(
-                color: active ? AppTheme.primary : Colors.transparent,
-                borderRadius: BorderRadius.circular(999),
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
-

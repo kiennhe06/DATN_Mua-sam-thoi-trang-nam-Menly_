@@ -1,9 +1,11 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:menly_app/core/navigation/main_navigation_shell.dart';
-import 'package:menly_app/core/theme/app_theme.dart';
+import 'package:menly_app/core/theme/app_colors.dart';
+import 'package:menly_app/core/theme/app_spacing.dart';
 import 'package:menly_app/core/widgets/category_tab.dart';
+import 'package:menly_app/core/widgets/section_header.dart';
+import 'package:menly_app/core/widgets/state_views.dart';
 import 'package:menly_app/core/widgets/product_card.dart';
 import 'package:menly_app/features/product/presentation/pages/search_page.dart';
 import 'package:menly_app/features/product/data/models/product_model.dart';
@@ -21,6 +23,8 @@ import '../widgets/home_banner_slider.dart';
 import '../widgets/home_filter_tab.dart';
 import '../widgets/home_info_footer.dart';
 import '../widgets/home_recently_viewed.dart';
+import 'package:menly_app/core/theme/app_theme.dart';
+import 'package:menly_app/core/widgets/pressable.dart';
 
 enum _HomeTabFilter { newest, bestSeller }
 
@@ -32,7 +36,7 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   static const int _homeProductLimit = 8;
   final PageController _bannerController = PageController();
   int _currentBannerIndex = 0;
@@ -42,7 +46,22 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _startBannerAutoScroll();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        context.read<ProductProvider>().clearSearchQuery();
+      }
+    });
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Quay lai app thi tai lai kho hang: quan tri co the da them hoac xoa san
+    // pham tren web trong luc app nam nen. Provider tu bo qua neu vua tai xong.
+    if (state == AppLifecycleState.resumed && mounted) {
+      context.read<ProductProvider>().refreshIfStale();
+    }
   }
 
   void _startBannerAutoScroll() {
@@ -63,6 +82,7 @@ class _HomePageState extends State<HomePage> {
   @override
   void dispose() {
     _bannerTimer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
     _bannerController.dispose();
     super.dispose();
   }
@@ -80,7 +100,15 @@ class _HomePageState extends State<HomePage> {
         if (list.isNotEmpty) {
           return list.take(_homeProductLimit).toList();
         }
-        return baseProducts.reversed.take(_homeProductLimit).toList();
+        // Chua san pham nao du luot danh gia de goi la ban chay: xep theo so
+        // danh gia giam dan. Truoc day cho nay tra ve danh sach dao nguoc,
+        // tuc la dung nhung san pham cu nhat lam "ban chay".
+        final byPopularity = [...baseProducts]
+          ..sort((a, b) {
+            final byCount = b.ratingCount.compareTo(a.ratingCount);
+            return byCount != 0 ? byCount : b.ratingAvg.compareTo(a.ratingAvg);
+          });
+        return byPopularity.take(_homeProductLimit).toList();
     }
   }
 
@@ -90,59 +118,40 @@ class _HomePageState extends State<HomePage> {
     final wishlistProv = context.watch<WishlistProvider>();
 
     final currentCategory = productProv.selectedCategory;
-    final baseProducts = productProv.products;
+    // Trang chu luon hien thi toan bo san pham theo danh muc, khong bi kẹt boi query tim kiem
+    final baseProducts = productProv.getCategoryProducts(currentCategory);
     final displayedProducts = _filterProducts(baseProducts);
+    final c = AppColors.of(context);
 
     return Scaffold(
-      backgroundColor: AppTheme.scaffoldBackground,
+      backgroundColor: c.background,
+      // Thanh tren hai tang.
+      //
+      // Truoc day don het vao mot hang: chu MENLY canh giua nhung ben trai chi
+      // co mot icon con ben phai co ba, nen chu luon trong nhu bi lech; hai
+      // the do cua chuong va gio hang lai dung sat nhau.
+      //
+      // Nay: tang mot la ten thuong hieu ben trai va hai nut ben phai, tang hai
+      // la o tim kiem chay het chieu ngang. Tim kiem la viec nguoi mua lam
+      // nhieu nhat nhung truoc day bi giau sau mot icon nho.
       appBar: AppBar(
-        backgroundColor: AppTheme.scaffoldBackground,
+        backgroundColor: c.background,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
-        centerTitle: true,
-        titleSpacing: 0,
-        leading: IconButton(
-          tooltip: 'Tìm kiếm',
-          onPressed: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const SearchPage()),
-          ),
-          icon: const Icon(Icons.search, color: AppTheme.textPrimary, size: 22),
-        ),
-        // Khoang dem trai bu lai khoang cach chu cuoi, de chu nam dung giua
-        title: const Padding(
-          padding: EdgeInsets.only(left: 5.5),
-          child: Text(
-            'MENLY',
-            style: TextStyle(
-              color: AppTheme.textPrimary,
-              fontSize: 17,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 5.5,
-            ),
+        centerTitle: false,
+        titleSpacing: AppSpacing.lg,
+        automaticallyImplyLeading: false,
+        title: Text(
+          'MENLY',
+          style: TextStyle(
+            color: c.textPrimary,
+            fontSize: 17,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 5.5,
           ),
         ),
         actions: [
           const NotificationBellButton(),
-          Consumer<CartProvider>(
-            builder: (_, cart, __) => IconButton(
-              tooltip: 'Giỏ hàng',
-              onPressed: () => const TabSwitchNotification(2).dispatch(context),
-              icon: Badge.count(
-                count: cart.totalItemCount,
-                isLabelVisible: cart.totalItemCount > 0,
-                backgroundColor: AppTheme.accentRed,
-                textColor: Colors.white,
-                textStyle:
-                    const TextStyle(fontSize: 9.5, fontWeight: FontWeight.w700),
-                child: const Icon(
-                  Icons.shopping_bag_outlined,
-                  color: AppTheme.textPrimary,
-                  size: 22,
-                ),
-              ),
-            ),
-          ),
           IconButton(
             tooltip: 'Tài khoản',
             visualDensity: VisualDensity.compact,
@@ -162,27 +171,48 @@ class _HomePageState extends State<HomePage> {
                 if (auth.isLoggedIn) {
                   return ProfileAvatar(
                     avatarUrl: auth.user?.avatarUrl,
-                    radius: 12,
+                    radius: 13,
                     fallbackText: auth.user?.fullName ?? 'M',
                   );
                 }
-                return const Icon(
+                return Icon(
                   Icons.person_outline_rounded,
-                  color: AppTheme.textPrimary,
+                  color: c.textPrimary,
                   size: 23,
                 );
               },
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: AppSpacing.md),
         ],
-        bottom: const PreferredSize(
-          preferredSize: Size.fromHeight(1),
-          child: Divider(height: 1, thickness: 1, color: AppTheme.border),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(57),
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.lg,
+                  0,
+                  AppSpacing.lg,
+                  AppSpacing.md,
+                ),
+                child: _ONhanTimKiem(
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const SearchPage()),
+                  ),
+                ),
+              ),
+              Divider(height: 1, thickness: 1, color: c.border),
+            ],
+          ),
         ),
       ),
       body: RefreshIndicator(
-        onRefresh: () => productProv.init(),
+        onRefresh: () async {
+          productProv.clearSearchQuery();
+          await productProv.init();
+        },
         child: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -198,14 +228,19 @@ class _HomePageState extends State<HomePage> {
 
               // 3. DANH MUC CUON NGANG (Category Pills)
               Padding(
-                padding: const EdgeInsets.only(top: 4, bottom: 8),
+                padding: const EdgeInsets.only(
+                  top: AppSpacing.sm,
+                  bottom: AppSpacing.md,
+                ),
                 child: SizedBox(
-                  height: 38,
+                  height: 40,
                   child: ListView.separated(
                     scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
                     itemCount: productProv.categories.length,
-                    separatorBuilder: (_, __) => const SizedBox(width: 20),
+                    separatorBuilder: (_, __) =>
+                        const SizedBox(width: AppSpacing.sm),
                     itemBuilder: (ctx, i) {
                       final cat = productProv.categories[i];
                       final isSelected = currentCategory == cat;
@@ -221,53 +256,32 @@ class _HomePageState extends State<HomePage> {
 
               // 4. HEADER DIEU HUONG TOAN BO SAN PHAM & BO LOC TAB HANG NGANG O BEN DUOI
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 6),
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.lg,
+                  AppSpacing.sm,
+                  AppSpacing.lg,
+                  AppSpacing.md,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Text(
-                          (currentCategory == 'Tất cả'
-                                  ? 'Tất cả sản phẩm'
-                                  : currentCategory)
-                              .toUpperCase(),
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 10.5,
-                            color: AppTheme.textSecondary,
-                            letterSpacing: 2,
-                          ),
-                        ),
-                        InkWell(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (_) => const ProductListPage()),
-                            );
-                          },
-                          borderRadius: BorderRadius.circular(6),
-                          child: const Padding(
-                            padding: EdgeInsets.symmetric(
-                                horizontal: 4, vertical: 4),
-                            child: Text(
-                              'Xem tất cả',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                                color: AppTheme.textPrimary,
-                                decoration: TextDecoration.underline,
-                                decorationColor: AppTheme.border,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
+                    // Tieu de khoi dung chung: chu dam ben trai, "Xem tat ca"
+                    // nho ben phai.
+                    SectionHeader(
+                      title: (currentCategory == 'Tất cả'
+                              ? 'Tất cả sản phẩm'
+                              : currentCategory)
+                          .toUpperCase(),
+                      actionLabel: 'Xem tất cả',
+                      onAction: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => const ProductListPage()),
+                        );
+                      },
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: AppSpacing.md),
                     // Bo loc tab hang ngang o ben duoi: Chi giu san pham moi va ban chay
                     Row(
                       children: [
@@ -277,7 +291,7 @@ class _HomePageState extends State<HomePage> {
                           onTap: () => setState(
                               () => _tabFilter = _HomeTabFilter.newest),
                         ),
-                        const SizedBox(width: 20),
+                        const SizedBox(width: AppSpacing.sm),
                         HomeFilterTab(
                           label: 'Bán chạy',
                           active: _tabFilter == _HomeTabFilter.bestSeller,
@@ -303,7 +317,7 @@ class _HomePageState extends State<HomePage> {
               const HomeInfoFooter(),
 
               // Khoang tho cuoi trang
-              const SizedBox(height: 24),
+              const SizedBox(height: AppSpacing.xxl),
             ],
           ),
         ),
@@ -314,40 +328,28 @@ class _HomePageState extends State<HomePage> {
   Widget _buildProductGrid(
       List<ProductModel> items, WishlistProvider wishlistProv) {
     if (items.isEmpty) {
-      return Container(
-        padding: const EdgeInsets.all(32),
-        alignment: Alignment.center,
-        child: Column(
-          children: [
-            const Text(
-              'Không tìm thấy sản phẩm trong danh mục này',
-              style: TextStyle(
-                  color: AppTheme.textSecondary,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500),
-            ),
-            const SizedBox(height: 8),
-            TextButton(
-              onPressed: () =>
-                  context.read<ProductProvider>().setCategory('Tất cả'),
-              child: const Text('Xem tất cả sản phẩm',
-                  style: TextStyle(fontWeight: FontWeight.bold)),
-            ),
-          ],
-        ),
+      return StatusView(
+        icon: Icons.search_off_rounded,
+        title: 'Không tìm thấy sản phẩm trong danh mục này',
+        actionLabel: 'Xem tất cả sản phẩm',
+        onAction: () => context.read<ProductProvider>().setCategory('Tất cả'),
       );
     }
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.md,
+      ),
       child: GridView.builder(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
+        // Nhieu khoang trang giua cac the de luoi san pham tho hon.
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2,
           childAspectRatio: 0.5,
-          crossAxisSpacing: 12,
-          mainAxisSpacing: 12,
+          crossAxisSpacing: AppSpacing.lg,
+          mainAxisSpacing: AppSpacing.xl,
         ),
         itemCount: items.length,
         itemBuilder: (ctx, i) {
@@ -392,6 +394,48 @@ class _HomePageState extends State<HomePage> {
             },
           );
         },
+      ),
+    );
+  }
+}
+
+/// O tim kiem gia tren trang chu: bam vao la mo man tim kiem that.
+///
+/// De la o chu khong phai icon vi tim kiem la viec nguoi mua lam nhieu nhat;
+/// o co san chu goi y con cho biet shop ban nhung gi.
+class _ONhanTimKiem extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _ONhanTimKiem({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+    return Pressable(
+      onTap: onTap,
+      scale: 0.99,
+      borderRadius: BorderRadius.circular(AppTheme.radiusPill),
+      child: Container(
+        height: 44,
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+        decoration: BoxDecoration(
+          color: c.surfaceVariant,
+          borderRadius: BorderRadius.circular(AppTheme.radiusPill),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.search_rounded, size: 20, color: c.textMuted),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Text(
+                'Tìm áo sơ mi, polo, jeans...',
+                style: TextStyle(color: c.textMuted, fontSize: 13.5),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

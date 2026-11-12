@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/app_buttons.dart';
+import '../../../../core/widgets/state_views.dart';
 import '../../../voucher/data/models/voucher_model.dart';
 import '../../../voucher/presentation/pages/voucher_list_page.dart';
 import '../../../voucher/presentation/providers/voucher_provider.dart';
@@ -28,6 +32,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     final notifProv = context.watch<NotificationProvider>();
     final voucherProv = context.watch<VoucherProvider>();
     final filteredItems = notifProv.filteredNotifications;
@@ -39,7 +44,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
         vouchers.isNotEmpty;
 
     return Scaffold(
-      backgroundColor: AppTheme.scaffoldBackground,
+      backgroundColor: c.background,
       appBar: AppBar(
         title: Text(
           notifProv.unreadCount > 0
@@ -52,10 +57,10 @@ class _NotificationsPageState extends State<NotificationsPage> {
           if (notifProv.unreadCount > 0)
             TextButton(
               onPressed: () => notifProv.markAllRead(),
-              child: const Text(
+              child: Text(
                 'Đã đọc tất cả',
                 style: TextStyle(
-                  color: AppTheme.primaryAccent,
+                  color: c.primary,
                   fontWeight: FontWeight.bold,
                   fontSize: 13,
                 ),
@@ -63,7 +68,9 @@ class _NotificationsPageState extends State<NotificationsPage> {
             ),
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert_rounded),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+            ),
             onSelected: (val) {
               if (val == 'mark_all_read') {
                 notifProv.markAllRead();
@@ -83,7 +90,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                 child: Row(
                   children: [
                     Icon(Icons.done_all_rounded, size: 18),
-                    SizedBox(width: 10),
+                    SizedBox(width: AppSpacing.sm),
                     Text('Đánh dấu tất cả đã đọc'),
                   ],
                 ),
@@ -93,7 +100,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                 child: Row(
                   children: [
                     Icon(Icons.cleaning_services_outlined, size: 18),
-                    SizedBox(width: 10),
+                    SizedBox(width: AppSpacing.sm),
                     Text('Xóa thông báo đã đọc'),
                   ],
                 ),
@@ -103,7 +110,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                 child: Row(
                   children: [
                     Icon(Icons.refresh_rounded, size: 18),
-                    SizedBox(width: 10),
+                    SizedBox(width: AppSpacing.sm),
                     Text('Làm mới danh sách'),
                   ],
                 ),
@@ -131,14 +138,17 @@ class _NotificationsPageState extends State<NotificationsPage> {
                 ]);
               },
               child: notifProv.isLoading && notifProv.notifications.isEmpty
-                  ? const Center(child: CircularProgressIndicator())
+                  ? const LoadingView()
                   : ListView(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.lg,
+                        vertical: AppSpacing.sm,
+                      ),
                       children: [
                         // Banner Ưu đãi voucher (khi xem Tất cả hoặc Khuyến mãi)
                         if (showVoucherBanner) ...[
                           _VoucherPromoBanner(vouchers: vouchers),
-                          const SizedBox(height: 14),
+                          const SizedBox(height: AppSpacing.lg),
                         ],
 
                         // Danh sách thông báo
@@ -149,32 +159,36 @@ class _NotificationsPageState extends State<NotificationsPage> {
                             children: [
                               Text(
                                 _getFilterSectionTitle(currentFilter),
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 15,
-                                  color: AppTheme.textPrimary,
+                                  color: c.textPrimary,
                                 ),
                               ),
-                              const SizedBox(width: 8),
+                              const SizedBox(width: AppSpacing.sm),
                               Container(
                                 padding: const EdgeInsets.symmetric(
-                                    horizontal: 8, vertical: 2),
+                                  horizontal: AppSpacing.sm,
+                                  vertical: 2,
+                                ),
                                 decoration: BoxDecoration(
-                                  color: Colors.grey.shade200,
-                                  borderRadius: BorderRadius.circular(10),
+                                  color: c.surfaceVariant,
+                                  borderRadius: BorderRadius.circular(
+                                    AppTheme.radiusSm,
+                                  ),
                                 ),
                                 child: Text(
                                   '${filteredItems.length}',
                                   style: TextStyle(
                                     fontSize: 11,
                                     fontWeight: FontWeight.bold,
-                                    color: Colors.grey.shade700,
+                                    color: c.textSecondary,
                                   ),
                                 ),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 12),
+                          const SizedBox(height: AppSpacing.md),
                           ...filteredItems.map(
                             (item) => NotificationItemCard(
                               item: item,
@@ -202,7 +216,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                             ),
                           ),
                         ],
-                        const SizedBox(height: 24),
+                        const SizedBox(height: AppSpacing.xxl),
                       ],
                     ),
             ),
@@ -237,78 +251,68 @@ class _VoucherPromoBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFFFF7A1A), Color(0xFFFFB15C)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFFFF7A1A).withValues(alpha: 0.3),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        color: c.inkCard,
+        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
       ),
-      child: Row(
+      // Nut nam o dong rieng ben duoi chu khong chen cung hang voi chu: de
+      // cung hang thi hai dong chu deu bi bop xuong hai dong.
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.2),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.local_offer_rounded,
-              color: Colors.white,
-              size: 26,
-            ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Ưu đãi dành riêng cho bạn',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w800,
-                  ),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                decoration: BoxDecoration(
+                  color: c.onInk.withValues(alpha: 0.14),
+                  shape: BoxShape.circle,
                 ),
-                const SizedBox(height: 3),
-                Text(
-                  '${vouchers.length} voucher đang sẵn sàng áp dụng',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 12.5,
-                  ),
+                child: Icon(
+                  Icons.local_offer_rounded,
+                  color: c.onInk,
+                  size: 26,
                 ),
-              ],
-            ),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.white,
-              foregroundColor: AppTheme.primaryAccent,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
               ),
-              elevation: 0,
-            ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Ưu đãi dành riêng cho bạn',
+                      style: TextStyle(
+                        color: c.onInk,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(
+                      '${vouchers.length} voucher đang sẵn sàng áp dụng',
+                      style: TextStyle(
+                        color: c.onInk.withValues(alpha: 0.75),
+                        fontSize: 12.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          PrimaryButton(
+            label: 'Xem ngay',
+            expanded: false,
+            height: 40,
+            background: c.onInk,
+            foreground: c.inkCard,
             onPressed: () => Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const VoucherListPage()),
-            ),
-            child: const Text(
-              'Xem ngay',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
             ),
           ),
         ],
@@ -359,40 +363,8 @@ class _EmptyFilteredView extends StatelessWidget {
     }
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 56),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              color: Colors.grey.shade100,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, size: 48, color: Colors.grey.shade500),
-          ),
-          const SizedBox(height: 18),
-          Text(
-            title,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: AppTheme.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            subtitle,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 13,
-              color: Colors.grey.shade600,
-              height: 1.4,
-            ),
-          ),
-        ],
-      ),
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxxl),
+      child: StatusView(icon: icon, title: title, message: subtitle),
     );
   }
 }

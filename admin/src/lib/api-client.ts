@@ -33,9 +33,50 @@ export async function adminFetch<T>(
   headers.set('Accept', 'application/json');
   headers.set('Authorization', `Bearer ${getAdminToken()}`);
 
-  if (options.body && !headers.has('Content-Type')) {
+  // FormData phai de trinh duyet tu dat Content-Type kem boundary; dat tay
+  // thanh application/json se lam may chu khong doc duoc file dinh kem.
+  const laFormData =
+    typeof FormData !== 'undefined' && options.body instanceof FormData;
+  if (options.body && !laFormData && !headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json');
   }
+
+/** Gop cac loi theo tung truong thanh mot cau doc duoc. */
+function describeFieldErrors(details: unknown): string | null {
+  if (!details || typeof details !== 'object') return null;
+  const parts: string[] = [];
+  for (const [field, messages] of Object.entries(details as Record<string, unknown>)) {
+    const text = Array.isArray(messages) ? messages.join(', ') : String(messages);
+    if (text) parts.push(`${field}: ${text}`);
+  }
+  return parts.length ? parts.join(' | ') : null;
+}
+
+/**
+ * Doc thong bao loi that su tu backend.
+ *
+ * Backend tra ve dang { error: 'Thong tin khong hop le', details: { truong: [...] } }.
+ * Truoc day cho nay doc data.error.message, nhung error la mot CHUOI nen
+ * .message luon undefined, khien moi loi deu hien thanh "Backend tra ve HTTP 400"
+ * va nguoi dung khong biet minh thieu truong nao.
+ */
+function describeError(data: unknown, status: number): string {
+  const body = (data ?? {}) as Record<string, unknown>;
+  const rawError = body.error;
+  const base =
+    typeof rawError === 'string'
+      ? rawError
+      : typeof (rawError as { message?: unknown } | undefined)?.message === 'string'
+        ? ((rawError as { message: string }).message)
+        : typeof body.message === 'string'
+          ? body.message
+          : `Backend trả về HTTP ${status}`;
+
+  const fields = describeFieldErrors(body.details);
+  return fields ? `${base} — ${fields}` : base;
+}
+
+
 
   let response: Response;
   try {
@@ -55,9 +96,7 @@ export async function adminFetch<T>(
         window.location.assign('/login');
       }
     }
-    const message =
-      data?.error?.message || data?.message || `Backend trả về HTTP ${response.status}`;
-    throw new Error(message);
+    throw new Error(describeError(data, response.status));
   }
 
   return data as T;

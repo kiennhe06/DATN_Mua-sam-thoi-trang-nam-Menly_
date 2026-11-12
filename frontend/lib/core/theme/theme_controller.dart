@@ -9,10 +9,14 @@ import 'app_theme.dart';
 /// in-app "display" settings button.
 class ThemeController extends ChangeNotifier {
   static const _kModeKey = 'display_theme_mode';
-  static const _kAccentKey = 'display_theme_accent';
+
+  // Doi ten khoa mot lan khi bang mau thay doi han (nen be -> nen trang, bo
+  // mau nhan). Tong da luu tu bang mau cu khong con hop nen bo qua, may nao
+  // cung bat dau lai o tong mac dinh; nguoi dung van chon lai duoc.
+  static const _kAccentKey = 'display_theme_accent_v2';
 
   ThemeMode _mode = ThemeMode.light;
-  AppAccent _accent = AppAccent.camel;
+  AppAccent _accent = AppAccent.mucDen;
 
   ThemeMode get mode => _mode;
   AppAccent get accent => _accent;
@@ -31,7 +35,7 @@ class ThemeController extends ChangeNotifier {
       if (savedAccent == null) {
         // Stale/removed preference (e.g. old palette) — reset to defaults.
         _mode = ThemeMode.light;
-        _accent = AppAccent.camel;
+        _accent = AppAccent.mucDen;
       } else {
         _accent = savedAccent;
         final modeName = prefs.getString(_kModeKey);

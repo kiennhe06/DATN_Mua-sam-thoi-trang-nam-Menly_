@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../theme/app_colors.dart';
+import '../theme/app_spacing.dart';
+import '../theme/app_theme.dart';
+
 /// Helper tiện ích cho SnackBar trong toàn ứng dụng MenShop.
 /// Giảm thời gian hiển thị mặc định xuống 1500ms (1.5 giây)
 /// và tự động ẩn SnackBar cũ để tránh hiện tượng xếp hàng chờ đợi.
@@ -25,7 +29,9 @@ class AppSnackBar {
       behavior: behavior,
       shape:
           shape ??
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+          ),
       action: action,
     );
   }
@@ -39,6 +45,7 @@ class AppSnackBar {
     IconData? icon,
     SnackBarAction? action,
   }) {
+    final c = AppColors.of(context);
     final messenger = ScaffoldMessenger.of(context);
     messenger.hideCurrentSnackBar();
     messenger.showSnackBar(
@@ -46,8 +53,8 @@ class AppSnackBar {
         content: icon != null
             ? Row(
                 children: [
-                  Icon(icon, color: Colors.white, size: 20),
-                  const SizedBox(width: 8),
+                  Icon(icon, color: c.onInk, size: 20),
+                  const SizedBox(width: AppSpacing.sm),
                   Expanded(child: Text(message)),
                 ],
               )
@@ -55,7 +62,9 @@ class AppSnackBar {
         backgroundColor: backgroundColor,
         duration: duration,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+        ),
         action: action,
       ),
     );

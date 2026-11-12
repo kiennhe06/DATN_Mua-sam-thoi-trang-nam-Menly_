@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/app_snackbar.dart';
 import '../../../../core/widgets/app_buttons.dart';
 import 'package:menly_app/features/order/data/models/order_model.dart';
+import '../../../review/presentation/providers/review_provider.dart';
 import '../../../review/presentation/widgets/order_review_section.dart';
 import '../providers/order_provider.dart';
 import '../widgets/order_timeline_card.dart';
@@ -46,6 +48,14 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
     });
   }
 
+  /// Tai lai du lieu cua man nay khi nguoi dung keo xuong.
+  Future<void> _reloadDetail() async {
+    await Future.wait([
+      context.read<OrderProvider>().loadOrders(),
+      context.read<ReviewProvider>().loadMine(),
+    ]);
+  }
+
   @override
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
@@ -78,34 +88,39 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
         ),
         centerTitle: true,
       ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 40),
-        children: [
+      // Keo xuong de tai lai: cua hang vua tra loi danh gia hay doi trang thai
+      // don thi khong phai mo lai ca ung dung.
+      body: RefreshIndicator(
+        onRefresh: _reloadDetail,
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(
+              AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, AppSpacing.xxxl),
+          physics: const AlwaysScrollableScrollPhysics(),
+          children: [
           // 1. Tien trinh don hang 5 buoc
           OrderTimelineCard(order: o),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.lg),
 
           // 2. Thong tin dia chi nhan hang
           OrderRecipientCard(order: o),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.lg),
 
           // 3. Danh sach san pham
           OrderItemsCard(order: o),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.lg),
 
-          if (o.status != OrderStatus.canceled &&
-              o.status != OrderStatus.expired &&
-              o.status != OrderStatus.pendingPayment) ...[
+          // Khoi danh gia chi hien khi khach da nhan hang, giong quy tac may chu
+          if (o.canReview) ...[
             OrderReviewSection(order: o),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.lg),
           ],
 
           // 4. Bang tong ket thanh toan
           OrderPaymentSummaryCard(order: o),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.lg),
 
           SecondaryButton(
-            label: 'Xem / In hóa đơn',
+            label: 'Xem hóa đơn',
             icon: Icons.receipt_long_outlined,
             onPressed: () {
               Navigator.push(
@@ -114,7 +129,7 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
               );
             },
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: AppSpacing.xxl),
 
           // 5. Nut thao tac thanh toan VNPay hoac Huy don
           if (isPendingVnpay) ...[
@@ -129,12 +144,12 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
                 );
               },
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.md),
           ],
 
           if (o.canReturn) ...[
             _buildReturnAction(context, c, orderProv, o),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.md),
           ],
 
           if (o.canCancel)
@@ -149,7 +164,8 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
                 );
               },
             ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -164,16 +180,23 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
     if (existing != null && existing.isOpen) {
       return Container(
         width: double.infinity,
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(AppSpacing.xl),
         decoration: BoxDecoration(
           color: c.surface,
-          borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+          borderRadius: BorderRadius.circular(AppTheme.radiusXl),
           border: Border.all(color: c.border.withValues(alpha: 0.6)),
+          boxShadow: [
+            BoxShadow(
+              color: c.shadow,
+              blurRadius: 16,
+              offset: const Offset(0, 6),
+            ),
+          ],
         ),
         child: Row(
           children: [
             Icon(Icons.assignment_return_rounded, color: c.primary),
-            const SizedBox(width: 10),
+            const SizedBox(width: AppSpacing.md),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -186,7 +209,7 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
                       fontSize: 14,
                     ),
                   ),
-                  const SizedBox(height: 2),
+                  const SizedBox(height: AppSpacing.xs),
                   Text(
                     existing.statusLabel,
                     style: TextStyle(
@@ -196,7 +219,7 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
                     ),
                   ),
                   if (existing.reason.trim().isNotEmpty) ...[
-                    const SizedBox(height: 2),
+                    const SizedBox(height: AppSpacing.xs),
                     Text(
                       existing.reason,
                       maxLines: 2,

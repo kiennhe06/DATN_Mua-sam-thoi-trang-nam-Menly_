@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:provider/provider.dart';
 import 'package:menly_app/core/network/api_client.dart';
+import 'package:menly_app/core/theme/app_colors.dart';
+import 'package:menly_app/core/theme/app_spacing.dart';
+import 'package:menly_app/core/widgets/state_views.dart';
 import 'package:menly_app/core/utils/format.dart';
 import 'package:menly_app/features/order/data/models/order_model.dart';
 import 'package:menly_app/features/order/presentation/providers/order_provider.dart';
@@ -212,6 +215,8 @@ class _VNPayPaymentPageState extends State<VNPayPaymentPage> {
     await orderProv.refreshOrderAfterPayment(widget.order.id);
     if (!mounted) return;
 
+    final c = AppColors.of(context);
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -224,13 +229,13 @@ class _VNPayPaymentPageState extends State<VNPayPaymentPage> {
             Center(
               child: Text(
                 formatPrice(widget.order.total),
-                style: const TextStyle(
+                style: TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF005BAA)),
+                    color: c.success),
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.md),
             Text('• Mã đơn hàng: ${widget.order.code}',
                 style: const TextStyle(fontSize: 13)),
             if (txnRef != null && txnRef.isNotEmpty)
@@ -242,17 +247,18 @@ class _VNPayPaymentPageState extends State<VNPayPaymentPage> {
             if (transactionNo != null && transactionNo.isNotEmpty)
               Text('• Số GD VNPay: $transactionNo',
                   style: const TextStyle(fontSize: 13)),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.sm),
             Text(
                 'Đơn hàng đã được xác nhận thanh toán thành công và đồng bộ tới hệ thống.',
-                style: TextStyle(fontSize: 12, color: Colors.grey.shade700)),
+                style: TextStyle(fontSize: 12, color: c.textSecondary)),
           ],
         ),
         actions: [
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF005BAA),
-              foregroundColor: Colors.white,
+              backgroundColor: c.primary,
+              foregroundColor: c.onPrimary,
+              elevation: 0,
             ),
             onPressed: () {
               Navigator.pop(ctx);
@@ -269,6 +275,7 @@ class _VNPayPaymentPageState extends State<VNPayPaymentPage> {
     final msg = customMessage ??
         _vnpayMessages[code] ??
         'Giao dịch thanh toán qua VNPay không thành công.';
+    final c = AppColors.of(context);
 
     showDialog(
       context: context,
@@ -282,9 +289,9 @@ class _VNPayPaymentPageState extends State<VNPayPaymentPage> {
                 textAlign: TextAlign.center,
                 style: const TextStyle(fontSize: 14)),
             if (code != null && code.isNotEmpty) ...[
-              const SizedBox(height: 6),
+              const SizedBox(height: AppSpacing.sm),
               Text('(Mã phản hồi VNPay: $code)',
-                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                  style: TextStyle(fontSize: 12, color: c.textSecondary)),
             ],
           ],
         ),
@@ -298,8 +305,9 @@ class _VNPayPaymentPageState extends State<VNPayPaymentPage> {
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.grey.shade300,
-              foregroundColor: Colors.black87,
+              backgroundColor: c.surfaceVariant,
+              foregroundColor: c.textPrimary,
+              elevation: 0,
             ),
             onPressed: () {
               Navigator.pop(ctx);
@@ -320,6 +328,7 @@ class _VNPayPaymentPageState extends State<VNPayPaymentPage> {
     }
     if (!mounted) return false;
 
+    final c = AppColors.of(context);
     final shouldLeave = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -332,7 +341,9 @@ class _VNPayPaymentPageState extends State<VNPayPaymentPage> {
               child: const Text('Ở lại')),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red, foregroundColor: Colors.white),
+                backgroundColor: c.danger,
+                foregroundColor: c.onInk,
+                elevation: 0),
             onPressed: () => Navigator.pop(ctx, true),
             child: const Text('Thoát'),
           ),
@@ -344,56 +355,28 @@ class _VNPayPaymentPageState extends State<VNPayPaymentPage> {
 
   /// Giao dien thong bao loi khi khong tao duoc URL thanh toan VNPay
   Widget _buildErrorView() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.red.shade50,
-                shape: BoxShape.circle,
-              ),
-              child: Text(
-                '!',
-                style: TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.red.shade600,
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              _error ?? 'Không khởi tạo được cổng thanh toán VNPay.',
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF005BAA),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              ),
-              onPressed: _fetchPaymentUrl,
-              child: const Text('Thử lại'),
-            ),
-            const SizedBox(height: 10),
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Quay lại'),
-            ),
-          ],
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        StatusView(
+          icon: Icons.error_outline,
+          danger: true,
+          title: _error ?? 'Không khởi tạo được cổng thanh toán VNPay.',
+          actionLabel: 'Thử lại',
+          onAction: _fetchPaymentUrl,
         ),
-      ),
+        TextButton(
+          onPressed: () => Navigator.pop(context, false),
+          child: const Text('Quay lại'),
+        ),
+      ],
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) async {
@@ -405,31 +388,31 @@ class _VNPayPaymentPageState extends State<VNPayPaymentPage> {
       },
       child: Scaffold(
         appBar: AppBar(
-          backgroundColor: const Color(0xFF005BAA),
-          foregroundColor: Colors.white,
           title: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Cổng Thanh Toán VNPAY',
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+              Text('Cổng Thanh Toán VNPAY',
+                  style: TextStyle(
+                      color: c.textPrimary,
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold)),
               Text(
                 '${widget.order.code} • ${formatPrice(widget.order.total)}',
-                style: const TextStyle(fontSize: 12, color: Colors.white70),
+                style: TextStyle(fontSize: 12, color: c.textSecondary),
               ),
             ],
           ),
           actions: [
             TextButton(
               onPressed: () => _webViewController?.reload(),
-              child: const Text('Tải lại',
+              child: Text('Tải lại',
                   style: TextStyle(
-                      color: Colors.white, fontWeight: FontWeight.bold)),
+                      color: c.primary, fontWeight: FontWeight.bold)),
             ),
           ],
         ),
         body: _isLoading && !_isVerifying
-            ? const Center(
-                child: CircularProgressIndicator(color: Color(0xFF005BAA)))
+            ? const LoadingView()
             : _paymentUrl == null
                 ? _buildErrorView()
                 : Stack(
@@ -466,33 +449,24 @@ class _VNPayPaymentPageState extends State<VNPayPaymentPage> {
                         LinearProgressIndicator(
                           value: _progress,
                           backgroundColor: Colors.transparent,
-                          color: Colors.amber,
+                          color: c.primary,
                           minHeight: 3,
                         ),
                       if (_isVerifying)
                         Container(
-                          color: Colors.white.withValues(alpha: 0.92),
-                          child: const Center(
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                CircularProgressIndicator(
-                                    color: Color(0xFF005BAA)),
-                                SizedBox(height: 16),
-                                Text(
-                                  'Đang xác thực kết quả thanh toán...',
-                                  style: TextStyle(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.bold),
-                                ),
-                                SizedBox(height: 6),
-                                Text(
-                                  'Vui lòng không đóng ứng dụng trong giây lát',
-                                  style: TextStyle(
-                                      fontSize: 12, color: Colors.grey),
-                                ),
-                              ],
-                            ),
+                          color: c.surface.withValues(alpha: 0.92),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const LoadingView(
+                                message: 'Đang xác thực kết quả thanh toán...',
+                              ),
+                              Text(
+                                'Vui lòng không đóng ứng dụng trong giây lát',
+                                style: TextStyle(
+                                    fontSize: 12, color: c.textMuted),
+                              ),
+                            ],
                           ),
                         ),
                     ],

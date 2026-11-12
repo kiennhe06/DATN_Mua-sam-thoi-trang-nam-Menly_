@@ -7,7 +7,7 @@ import { CreateProductModal } from '../../components/CreateProductModal';
 import { EditProductModal } from '../../components/EditProductModal';
 import { DeleteProductModal } from '../../components/DeleteProductModal';
 import { CompactVariantDisplay } from '../../components/CompactVariantDisplay';
-import { fetchAdminProducts, fetchCategories, fetchProductDetail, updateProduct } from '../../lib/api';
+import { approveProduct, fetchAdminProducts, fetchCategories, fetchProductDetail, updateProduct } from '../../lib/api';
 import { Product, Category } from '../../lib/types';
 import {
   Search,
@@ -20,6 +20,7 @@ import {
   FolderOpen,
   Plus,
   Pencil,
+  BadgeCheck,
   RotateCcw,
   Trash2,
   AlertCircle,
@@ -42,7 +43,11 @@ export default function ProductsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('category');
   const [viewMode, setViewMode] = useState<'grouped' | 'table'>('grouped');
-  const [statusFilter, setStatusFilter] = useState<'active' | 'inactive' | 'all'>('active');
+  // Mac dinh hien TAT CA. Truoc day mac dinh la 'active', ma san pham vua tao
+  // luon o trang thai tat + cho duyet, nen vua them xong la bi chinh bo loc giau
+  // di, khong ai tim thay de bam duyet.
+  const [statusFilter, setStatusFilter] =
+    useState<'active' | 'pending' | 'inactive' | 'all'>('all');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
@@ -170,8 +175,48 @@ export default function ProductsPage() {
     setTimeout(() => setNotification(null), 3500);
   };
 
+  /**
+   * Duyet san pham de ung dung nhin thay no.
+   *
+   * San pham moi tao luon o trang thai cho duyet. Truoc day trang quan tri
+   * khong co cho nao duyet, nen san pham them tu day khong bao gio hien trong
+   * ung dung va khong ai biet tai sao.
+   */
+  const handleApproveProduct = async (product: Product) => {
+    try {
+      await approveProduct(product.id);
+      setProducts((current) =>
+        current.map((item) =>
+          item.id === product.id
+            ? { ...item, approvalStatus: 'approved', isActive: true }
+            : item,
+        ),
+      );
+      setNotification({
+        message: `Đã duyệt “${product.name}”. Sản phẩm sẽ hiện trong ứng dụng.`,
+        type: 'success',
+      });
+    } catch (error) {
+      setNotification({
+        message: error instanceof Error ? error.message : 'Không duyệt được sản phẩm.',
+        type: 'error',
+      });
+    }
+    setTimeout(() => setNotification(null), 3500);
+  };
+
   const renderProductActions = (product: Product) => (
     <div className="flex items-center justify-center gap-1.5">
+      {product.approvalStatus === 'pending' && (
+        <button
+          type="button"
+          onClick={() => handleApproveProduct(product)}
+          title="Duyệt sản phẩm để hiển thị trong ứng dụng"
+          className="rounded-lg bg-ok-bg p-1.5 text-ok transition-colors hover:opacity-80"
+        >
+          <BadgeCheck className="h-3.5 w-3.5" />
+        </button>
+      )}
       <button
         type="button"
         onClick={async () => {
@@ -226,6 +271,35 @@ export default function ProductsPage() {
   };
 
   // Filter products by selected category and search query
+  /// Bon nhom tach bach, khong chong len nhau.
+  ///
+  /// 'active' la dang ban that su tren ung dung: vua bat vua da duyet. San pham
+  /// cho duyet du co bat cung chua len app nen khong tinh vao nhom nay.
+  const matchesStatus = useCallback(
+    (p: Product) => {
+      const isPending = p.approvalStatus === 'pending';
+      switch (statusFilter) {
+        case 'all':
+          return true;
+        case 'pending':
+          return isPending;
+        case 'inactive':
+          return !isPending && p.isActive === false;
+        case 'active':
+        default:
+          return !isPending && p.isActive !== false;
+      }
+    },
+    [statusFilter],
+  );
+
+  // Dung cho cac chip danh muc, de con so tren chip khop voi so san pham that
+  // su hien ra ben duoi.
+  const productsInStatus = useMemo(
+    () => products.filter(matchesStatus),
+    [products, matchesStatus],
+  );
+
   const filteredProducts = useMemo(() => {
     return products.filter((p) => {
       const pCat = getProductCategory(p);
@@ -238,11 +312,9 @@ export default function ProductsPage() {
         p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         p.slug.toLowerCase().includes(searchQuery.toLowerCase()) ||
         p.id.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchStatus = statusFilter === 'all' ||
-        (statusFilter === 'active' ? p.isActive !== false : p.isActive === false);
-      return matchCat && matchSearch && matchStatus;
+      return matchCat && matchSearch && matchesStatus(p);
     });
-  }, [products, selectedCategory, searchQuery, getProductCategory, statusFilter]);
+  }, [products, selectedCategory, searchQuery, getProductCategory, matchesStatus]);
 
   // Sort products based on selected sort option
   const sortedProducts = useMemo(() => {
@@ -298,7 +370,7 @@ export default function ProductsPage() {
     <div className="flex-1 flex flex-col">
       <Header
         title="Quản lý Sản phẩm & Danh mục Phân loại"
-        subtitle="Hiển thị và sắp xếp 125 sản phẩm vào từng danh mục (25 sản phẩm / danh mục) chuẩn mực"
+        subtitle={`Hiển thị và sắp xếp ${sortedProducts.length} sản phẩm vào ${categories.length} danh mục`}
         onRefresh={loadData}
       />
 
@@ -373,12 +445,12 @@ export default function ProductsPage() {
                     : 'bg-panel text-ink-muted'
                 }`}
               >
-                {products.length}
+                {productsInStatus.length}
               </span>
             </button>
 
             {categories.map((c) => {
-              const count = products.filter((p) => {
+              const count = productsInStatus.filter((p) => {
                 const cat = getProductCategory(p);
                 return p.categoryId === c.id || cat.id === c.id;
               }).length;
@@ -427,12 +499,15 @@ export default function ProductsPage() {
             <select
               aria-label="Lọc trạng thái sản phẩm"
               value={statusFilter}
-              onChange={(event) => setStatusFilter(event.target.value as 'active' | 'inactive' | 'all')}
+              onChange={(event) => setStatusFilter(
+                  event.target.value as 'active' | 'pending' | 'inactive' | 'all',
+                )}
               className="rounded-xl border border-line bg-panel px-3 py-2 text-xs font-medium text-ink-mid focus:border-camel focus:outline-none shadow-panel"
             >
+              <option value="all">Tất cả trạng thái</option>
+              <option value="pending">Chờ duyệt</option>
               <option value="active">Đang hiển thị</option>
               <option value="inactive">Đã ẩn</option>
-              <option value="all">Tất cả trạng thái</option>
             </select>
             {/* Sort Dropdown */}
             <div className="flex items-center gap-2 bg-panel px-3 py-1.5 rounded-xl border border-line shadow-panel">
@@ -559,6 +634,7 @@ export default function ProductsPage() {
                               <div className="flex items-center gap-2">
                                 <p className="font-semibold text-ink line-clamp-1">{p.name}</p>
                                 {p.isActive === false && <span className="shrink-0 rounded-md bg-tint-strong px-1.5 py-0.5 text-[9px] font-semibold text-ink-mid">Đã ẩn</span>}
+                                {p.approvalStatus === 'pending' && <span className="shrink-0 rounded-md bg-warn-bg px-1.5 py-0.5 text-[9px] font-semibold text-warn">Chờ duyệt</span>}
                               </div>
                               <p className="text-[11px] font-mono text-ink-muted line-clamp-1">
                                 {p.slug}
@@ -639,6 +715,7 @@ export default function ProductsPage() {
                           <div className="flex items-center gap-2">
                             <p className="font-semibold text-ink line-clamp-1">{p.name}</p>
                             {p.isActive === false && <span className="shrink-0 rounded-md bg-tint-strong px-1.5 py-0.5 text-[9px] font-semibold text-ink-mid">Đã ẩn</span>}
+                            {p.approvalStatus === 'pending' && <span className="shrink-0 rounded-md bg-warn-bg px-1.5 py-0.5 text-[9px] font-semibold text-warn">Chờ duyệt</span>}
                           </div>
                           <p className="text-xs font-mono text-ink-muted line-clamp-1">{p.slug}</p>
                         </td>

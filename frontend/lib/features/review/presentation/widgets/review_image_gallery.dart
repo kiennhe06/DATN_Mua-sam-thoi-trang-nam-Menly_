@@ -1,31 +1,34 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_theme.dart';
+import 'package:menly_app/core/widgets/app_image.dart';
 
 void showReviewImagePreview(BuildContext context, String url) {
+  final c = AppColors.of(context);
   showDialog<void>(
     context: context,
     builder: (dialogContext) => Dialog(
       backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.all(12),
+      insetPadding: const EdgeInsets.all(AppSpacing.md),
       child: GestureDetector(
         onTap: () => Navigator.of(dialogContext).pop(),
         child: InteractiveViewer(
           minScale: 0.8,
           maxScale: 4,
-          child: Image.network(
-            url,
+          child: AppImage(
+            url: url,
             fit: BoxFit.contain,
-            errorBuilder: (_, __, ___) => Container(
-              padding: const EdgeInsets.all(24),
+            errorWidget: (_) => Container(
+              padding: const EdgeInsets.all(AppSpacing.xxl),
               decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.85),
+                color: c.inkCard,
                 borderRadius: BorderRadius.circular(AppTheme.radiusMd),
               ),
-              child: const Text(
+              child: Text(
                 'Không tải được ảnh',
-                style: TextStyle(color: Colors.white),
+                style: TextStyle(color: c.onInk),
               ),
             ),
           ),
@@ -44,7 +47,7 @@ class ReviewImageGallery extends StatelessWidget {
     super.key,
     required this.images,
     this.size = 72,
-    this.spacing = 8,
+    this.spacing = AppSpacing.sm,
   });
 
   @override
@@ -61,12 +64,17 @@ class ReviewImageGallery extends StatelessWidget {
             onTap: () => showReviewImagePreview(context, url),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(AppTheme.radiusSm),
-              child: Image.network(
-                url,
+              child: AppImage(
+                url: url,
                 width: size,
                 height: size,
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(
+                placeholder: (_) => Container(
+                  width: size,
+                  height: size,
+                  color: c.surfaceVariant,
+                ),
+                errorWidget: (_) => Container(
                   width: size,
                   height: size,
                   color: c.surfaceVariant,

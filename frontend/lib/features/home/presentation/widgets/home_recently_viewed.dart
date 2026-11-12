@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../product/data/models/product_model.dart';
 import '../../../product/presentation/pages/product_detail_page.dart';
+import 'package:menly_app/core/widgets/app_image.dart';
+import 'package:menly_app/core/widgets/section_header.dart';
 
 class HomeRecentlyViewed extends StatelessWidget {
   final List<ProductModel> items;
@@ -17,46 +21,38 @@ class HomeRecentlyViewed extends StatelessWidget {
   Widget build(BuildContext context) {
     if (items.isEmpty) return const SizedBox.shrink();
 
+    final c = AppColors.of(context);
+    const tileWidth = 104.0;
+    const imageHeight = 86.0;
+    final tileRadius = BorderRadius.circular(AppTheme.radiusXl);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Đã xem gần đây',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 15,
-                  color: AppTheme.textPrimary,
-                ),
-              ),
-              TextButton(
-                style: TextButton.styleFrom(
-                  padding: EdgeInsets.zero,
-                  visualDensity: VisualDensity.compact,
-                ),
-                onPressed: onClear,
-                child: const Text(
-                  'Xóa',
-                  style: TextStyle(color: AppTheme.accentRed, fontSize: 12),
-                ),
-              ),
-            ],
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.lg,
+            AppSpacing.xl,
+            AppSpacing.lg,
+            AppSpacing.md,
+          ),
+          child: SectionHeader(
+            title: 'Đã xem gần đây',
+            actionLabel: 'Xóa',
+            onAction: onClear,
           ),
         ),
         SizedBox(
-          height: 100,
+          height: 134,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
             itemCount: items.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 10),
+            separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.md),
             itemBuilder: (ctx, i) {
               final item = items[i];
               return InkWell(
+                borderRadius: tileRadius,
                 onTap: () => Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -64,38 +60,58 @@ class HomeRecentlyViewed extends StatelessWidget {
                   ),
                 ),
                 child: Container(
-                  width: 80,
+                  width: tileWidth,
                   decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: AppTheme.border),
+                    color: c.surface,
+                    borderRadius: tileRadius,
+                    border: Border.all(color: c.border),
+                    // Bong rat nhe, chi du tach the khoi nen be.
+                    boxShadow: [
+                      BoxShadow(
+                        color: c.shadow,
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
                   ),
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      // Anh bo cung ban kinh the o hai goc tren.
                       ClipRRect(
                         borderRadius: const BorderRadius.vertical(
-                          top: Radius.circular(10),
+                          top: Radius.circular(AppTheme.radiusXl),
                         ),
-                        child: Image.network(
-                          item.thumbnailUrl,
-                          width: 80,
-                          height: 60,
+                        child: AppImage(
+                          url: item.thumbnailUrl,
+                          width: tileWidth,
+                          height: imageHeight,
                           fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => Container(
-                            width: 80,
-                            height: 60,
-                            color: Colors.grey.shade100,
+                          placeholder: (_) => Container(
+                            width: tileWidth,
+                            height: imageHeight,
+                            color: c.surfaceVariant,
+                          ),
+                          errorWidget: (_) => Container(
+                            width: tileWidth,
+                            height: imageHeight,
+                            color: c.surfaceVariant,
                           ),
                         ),
                       ),
                       Padding(
-                        padding: const EdgeInsets.all(4),
+                        padding: const EdgeInsets.fromLTRB(
+                          AppSpacing.sm,
+                          AppSpacing.sm,
+                          AppSpacing.sm,
+                          AppSpacing.md,
+                        ),
                         child: Text(
                           item.name,
-                          style: const TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: c.textPrimary,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -108,9 +124,8 @@ class HomeRecentlyViewed extends StatelessWidget {
             },
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: AppSpacing.lg),
       ],
     );
   }
 }
-

@@ -2,6 +2,12 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
+import {
+  docNguoiDangNhap,
+  docToken,
+  duocVaoTrang,
+  trangMacDinh,
+} from '../lib/admin-session';
 
 export function AdminAuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -14,30 +20,27 @@ export function AdminAuthGuard({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    if (typeof window !== 'undefined') {
-      const token = localStorage.getItem('menshop_admin_token');
-      const userStr = localStorage.getItem('menshop_admin_user');
+    if (typeof window === 'undefined') return;
 
-      if (!token) {
-        // If not logged in, redirect to login
-        router.replace('/login');
-        return;
-      }
-
-      if (userStr) {
-        try {
-          const user = JSON.parse(userStr);
-          if (user.role && user.role !== 'admin') {
-            router.replace('/login');
-            return;
-          }
-        } catch {
-          // ignore parse error
-        }
-      }
-
-      setAuthorized(true);
+    if (!docToken()) {
+      router.replace('/login');
+      return;
     }
+
+    const nguoiDung = docNguoiDangNhap();
+    if (!nguoiDung) {
+      router.replace('/login');
+      return;
+    }
+
+    // Go dia chi mot trang khong thuoc quyen thi dua ve trang dau cua vai tro,
+    // khong da ve man dang nhap vi ho van dang dang nhap hop le.
+    if (!duocVaoTrang(nguoiDung.role, pathname)) {
+      router.replace(trangMacDinh(nguoiDung.role));
+      return;
+    }
+
+    setAuthorized(true);
   }, [pathname, router]);
 
   if (!authorized && pathname !== '/login') {

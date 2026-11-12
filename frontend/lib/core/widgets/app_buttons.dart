@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_spacing.dart';
 import '../theme/app_theme.dart';
 
 /// Base rounded button with ripple and a subtle press scale — the single
@@ -36,7 +37,7 @@ class _SoftButtonState extends State<_SoftButton> {
   @override
   Widget build(BuildContext context) {
     final enabled = widget.onPressed != null;
-    final radius = BorderRadius.circular(AppTheme.radiusCard);
+    final radius = BorderRadius.circular(AppTheme.radiusXl);
 
     Widget content = AnimatedScale(
       scale: _down ? 0.97 : 1.0,
@@ -61,6 +62,9 @@ class _SoftButtonState extends State<_SoftButton> {
               child: Container(
                 height: widget.height,
                 alignment: Alignment.center,
+                // Dem ngang de nut khong gian het hang (expanded: false) khong
+                // bi chu dinh sat mep. Nut gian het hang thi khong doi gi.
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
                 decoration: BoxDecoration(
                   borderRadius: radius,
                   border: widget.side != null
@@ -141,7 +145,7 @@ class PrimaryButton extends StatelessWidget {
               children: [
                 if (icon != null) ...[
                   Icon(icon, size: 20),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: AppSpacing.sm),
                 ],
                 Flexible(
                   child: Text(label,
@@ -178,15 +182,16 @@ class SecondaryButton extends StatelessWidget {
     final fg = foreground ?? c.textPrimary;
     return _SoftButton(
       onPressed: onPressed,
-      background: foreground != null
-          ? foreground!.withValues(alpha: 0.08)
-          : c.surface,
+      // Luon de nen the trang, ke ca nut canh bao. To nen hong nhat 8% lam
+      // nut trong nhu mot khung canh bao bi mo chu khong ra nut bam; mau chu
+      // va vien da du de biet day la hanh dong can can nhac.
+      background: c.surface,
       foreground: fg,
       side: BorderSide(
         color: foreground != null
-            ? foreground!.withValues(alpha: 0.4)
+            ? foreground!.withValues(alpha: 0.45)
             : c.border,
-        width: 1.4,
+        width: 1.2,
       ),
       expanded: expanded,
       height: height,
@@ -196,7 +201,7 @@ class SecondaryButton extends StatelessWidget {
         children: [
           if (icon != null) ...[
             Icon(icon, size: 20),
-            const SizedBox(width: 8),
+            const SizedBox(width: AppSpacing.sm),
           ],
           Flexible(
             child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
@@ -285,7 +290,8 @@ class DestructiveButton extends StatelessWidget {
     final c = AppColors.of(context);
     return _SoftButton(
       background: c.danger,
-      foreground: Colors.white,
+      // onInk sang o ca hai che do nen luon doc duoc tren nen do canh bao
+      foreground: c.onInk,
       expanded: expanded,
       height: height,
       onPressed: onPressed,

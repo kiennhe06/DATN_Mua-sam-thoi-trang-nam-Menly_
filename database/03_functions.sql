@@ -27,7 +27,9 @@ create or replace function public.create_order(
   p_items jsonb,
   p_voucher_code text default null,
   p_idempotency_key text default null,
-  p_shipping_fee int default 0
+  p_shipping_fee int default 0,
+  p_wallet_amount int default 0,
+  p_coin_amount int default 0
 ) returns public.orders
 language plpgsql
 as $$
@@ -43,6 +45,8 @@ declare
   v_product public.products;
   v_qty int;
   v_voucher public.vouchers;
+  v_vi int := 0;
+  v_xu int := 0;
 begin
   if auth.uid() is not null and auth.uid() <> p_user_id then
     raise exception 'Không thể tạo đơn hàng cho tài khoản khác';
@@ -117,14 +121,52 @@ begin
   v_total := v_subtotal + v_shipping - v_discount;
   if v_total < 0 then v_total := 0; end if;
 
+  -- Tru xu truoc, roi moi tru vi.
+  --
+  -- Xu la qua tang nen khong duoc tra phi ship va khong duoc qua 20% tien hang.
+  -- Vi la tien that nen tra duoc het phan con lai, ke ca phi ship.
+  --
+  -- Hai ham duoi day tu khoa dong va tu ghi so. Khach khong du so du thi ham
+  -- bao loi, ca giao dich nay quay ve nhu chua xay ra: don khong duoc tao, kho
+  -- khong bi tru. Dung cai muon nhat la tao duoc don ma quen tru tien.
+  v_xu := greatest(0, coalesce(p_coin_amount, 0));
+  if v_xu > 0 then
+    v_xu := least(v_xu, (v_subtotal * 20) / 100);
+    v_xu := least(v_xu, greatest(0, v_total - v_shipping));
+  end if;
+  if v_xu > 0 then
+    perform public.coin_change(
+      p_user_id, -v_xu, 'spend', v_order.id, null,
+      'Dùng xu trừ vào đơn ' || v_code);
+    v_total := v_total - v_xu;
+  end if;
+
+  v_vi := greatest(0, coalesce(p_wallet_amount, 0));
+  if v_vi > 0 then
+    v_vi := least(v_vi, v_total);
+  end if;
+  if v_vi > 0 then
+    perform public.wallet_change(
+      p_user_id, -v_vi, 'order_payment', v_order.id, null,
+      'Trừ ví cho đơn ' || v_code);
+    v_total := v_total - v_vi;
+  end if;
+
   update public.orders
-    set subtotal = v_subtotal, shipping_fee = v_shipping, total = v_total
+    set subtotal = v_subtotal, shipping_fee = v_shipping, total = v_total,
+        wallet_amount = v_vi, coin_amount = v_xu
     where id = v_order.id
     returning * into v_order;
 
   return v_order;
 end;
 $$;
+
+-- CHU Y CHO NGUOI LAM TIEP:
+-- Don VNPay bi huy hoac qua han ma da tru vi/xu thi PHAI tra lai cho khach.
+-- Cho sua la ham cancel_order ben duoi va ham huy don qua han ben Node.
+-- Goi wallet_change voi reason 'order_refund_cancel' va coin_change voi
+-- reason 'refund_return', so tien lay tu orders.wallet_amount va orders.coin_amount.
 
 create or replace function public.cancel_order(
   p_order_id uuid,

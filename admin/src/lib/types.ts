@@ -4,8 +4,12 @@ export type OrderStatus =
   | 'paid'
   | 'processing'
   | 'shipping'
+  // Database co 8 trang thai; thieu 'delivered' va 'expired' o day thi moi
+  // don giao xong deu roi xuong nhanh du phong va hien nham "Cho thanh toan".
+  | 'delivered'
   | 'completed'
-  | 'cancelled';
+  | 'cancelled'
+  | 'expired';
 
 export interface OrderItem {
   id: string;
@@ -42,6 +46,13 @@ export interface Order {
   shippingAddress: ShippingAddress;
   createdAt: string;
   items: OrderItem[];
+  /**
+   * Don da duoc hoan tien qua yeu cau tra hang chua.
+   *
+   * Bang orders khong co trang thai "da hoan tien" nen phai mang rieng co nay,
+   * khong thi don da hoan tien van hien la "Da giao hang".
+   */
+  refunded?: boolean;
 }
 
 // ========== PRODUCT TYPES ==========
@@ -70,6 +81,8 @@ export interface Product {
   price: number;
   thumbnailUrl: string | null;
   isActive?: boolean;
+  /** 'pending' | 'approved' | 'rejected'. Chua duyet thi ung dung khong thay. */
+  approvalStatus?: string;
   createdAt: string;
   variants?: ProductVariant[];
   images?: ProductImage[];

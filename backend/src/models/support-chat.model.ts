@@ -74,6 +74,22 @@ export class SupportChatModel {
     return concurrent as SupportConversation;
   }
 
+  /**
+   * Dong mot hoi thoai.
+   *
+   * Khong xoa tin nhan: lich su van con de tra cuu sau nay, chi la hoi thoai
+   * khong con nam trong danh sach dang mo. Khach nhan tiep thi
+   * getOrCreateOpenConversation se tu mo mot hoi thoai moi.
+   */
+  async closeConversation(conversationId: string): Promise<void> {
+    const { error } = await this.db
+      .from('support_conversations')
+      .update({ status: 'closed' })
+      .eq('id', conversationId);
+
+    if (error) throw new Error(error.message);
+  }
+
   async listOpenConversations(): Promise<SupportConversation[]> {
     const { data, error } = await this.db
       .from('support_conversations')
@@ -124,16 +140,51 @@ export class SupportChatModel {
     return conversation;
   }
 
-  async listMessages(conversationId: string): Promise<SupportMessage[]> {
-    const { data, error } = await this.db
+  /**
+   * Lay tin nhan theo tung doan thay vi ca hoi thoai.
+   *
+   * Man chat tu lam moi 2 giay mot lan. Neu lan nao cung keo ve toan bo doan
+   * chat thi hoi thoai cang dai, moi vong lam moi cang nang - 500 tin nhan moi
+   * 2 giay la vo ly. Gio:
+   *   - khong co moc    -> lay 'limit' tin moi nhat (man vua mo)
+   *   - co 'tuMoc'      -> chi lay tin tu moc do tro di (vong lam moi)
+   *   - co 'truocMoc'   -> lay tin cu hon moc do (bam "xem tin cu hon")
+   *
+   * Dung >= va <= chu khong phai > va < de khong bo sot tin trung dung mot
+   * moc thoi gian; phia goi tu loai trung theo id.
+   */
+  async listMessages(
+    conversationId: string,
+    tuyChon: { tuMoc?: string; truocMoc?: string; limit?: number } = {},
+  ): Promise<SupportMessage[]> {
+    const limit = Math.min(Math.max(tuyChon.limit ?? 50, 1), 200);
+    let truyVan = this.db
       .from('support_messages')
       .select('*')
-      .eq('conversation_id', conversationId)
-      .order('created_at', { ascending: true })
-      .limit(500);
+      .eq('conversation_id', conversationId);
+
+    if (tuyChon.tuMoc) {
+      // Tin moi: lay xuoi tu moc tro di.
+      truyVan = truyVan
+        .gte('created_at', tuyChon.tuMoc)
+        .order('created_at', { ascending: true })
+        .limit(limit);
+      const { data, error } = await truyVan;
+      if (error) throw new Error(error.message);
+      return (data ?? []) as SupportMessage[];
+    }
+
+    // Tin cu: lay nguoc tu moc lui ve, hoac lay nhung tin moi nhat khi chua co
+    // moc nao. Ca hai deu phai dao lai cho dung thu tu thoi gian.
+    if (tuyChon.truocMoc) {
+      truyVan = truyVan.lte('created_at', tuyChon.truocMoc);
+    }
+    const { data, error } = await truyVan
+      .order('created_at', { ascending: false })
+      .limit(limit);
 
     if (error) throw new Error(error.message);
-    return (data ?? []) as SupportMessage[];
+    return ((data ?? []) as SupportMessage[]).reverse();
   }
 
   async sendMessage(
@@ -155,6 +206,23 @@ export class SupportChatModel {
 
     if (error) throw new Error(error.message);
     return data as SupportMessage;
+  }
+
+  /**
+   * Danh dau da doc nhung chi khi that su con tin chua doc. Man chat tu tai lai
+   * moi 5 giay, neu lan nao cung chay hai cau UPDATE thi phan lon la chay khong.
+   * Tra ve true khi co ghi xuong database.
+   */
+  async markReadIfNeeded(
+    conversation: SupportConversation,
+    userId: string,
+    role: string
+  ): Promise<boolean> {
+    const isStaff = role === 'staff' || role === 'admin';
+    const chuaDoc = isStaff ? conversation.unread_staff_count : conversation.unread_user_count;
+    if (!chuaDoc || chuaDoc <= 0) return false;
+    await this.markRead(conversation.id, userId, role);
+    return true;
   }
 
   async markRead(conversationId: string, userId: string, role: string): Promise<void> {

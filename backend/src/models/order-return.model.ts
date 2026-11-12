@@ -12,6 +12,8 @@ export interface OrderReturnRow {
   refund_amount: number;
   rejection_reason?: string | null;
   admin_resolution_note?: string | null;
+  /** true: hang con ban duoc va da nhap lai kho; false: hang loi. */
+  restocked?: boolean | null;
   created_at: string;
   resolved_at?: string | null;
 }
@@ -54,6 +56,20 @@ export class OrderReturnModel {
     const openReturn = await this.findOpenByOrder(input.orderId, input.userId);
     if (openReturn) {
       throw new Error('Đơn hàng này đã có yêu cầu trả hàng đang xử lý');
+    }
+
+    // Don da hoan tien mot lan roi thi khong nhan yeu cau thu hai: trang thai
+    // don van la 'delivered' nen khong co gi chan, ma duyet lan nua se hoan
+    // tien lan hai va cong kho lan hai cho cung mot lo hang.
+    const { data: daHoanTien, error: loiKiemTra } = await this.db
+      .from('order_returns')
+      .select('id')
+      .eq('order_id', input.orderId)
+      .eq('status', 'refunded')
+      .limit(1);
+    if (loiKiemTra) throw new Error(loiKiemTra.message);
+    if ((daHoanTien ?? []).length > 0) {
+      throw new Error('Đơn hàng này đã được hoàn tiền trả hàng trước đó');
     }
 
     const uploaded = await this.uploadImages(input.userId, input.files ?? []);
@@ -135,27 +151,147 @@ export class OrderReturnModel {
     return (data ?? []).map((row) => this.normalize(row));
   }
 
+  /**
+   * Cong lai kho cho tung mon trong don tra hang.
+   *
+   * Chi goi khi nguoi duyet xac nhan hang con ban duoc. Hang loi thi khong
+   * goi ham nay: so hang do da bi tru luc khach dat va khong quay lai kho.
+   */
+  private async nhapLaiKho(orderId: string, actorId?: string): Promise<void> {
+    // Nhat ky kho la bang chung don nay da duoc nhap lai hay chua. Nho no ma
+    // bam duyet lai, hoac luu trang thai that bai roi thu lai, deu khong cong
+    // kho them lan nua.
+    const { data: daNhap, error: loiKiemTra } = await this.db
+      .from('inventory_movements')
+      .select('id')
+      .eq('order_id', orderId)
+      .eq('reason', 'return')
+      .limit(1);
+    if (loiKiemTra) throw new Error(loiKiemTra.message);
+    if ((daNhap ?? []).length > 0) return;
+
+    const { data: items, error } = await this.db
+      .from('order_items')
+      .select('variant_id, quantity')
+      .eq('order_id', orderId);
+    if (error) throw new Error(error.message);
+
+    for (const item of items ?? []) {
+      // Bien the co the da bi xoa khoi danh muc, luc do variant_id la null va
+      // khong con cho nao de cong vao.
+      if (!item.variant_id) continue;
+      await this.congTonKho(item.variant_id, item.quantity, orderId, actorId);
+    }
+  }
+
+  /**
+   * Cong them mot so luong vao ton kho cua mot bien the.
+   *
+   * Doc roi ghi de thang se nuot mat don hang dat xen vao giua, nen lenh ghi
+   * phai kem dieu kien "ton kho van dung bang so vua doc". Khong khop thi doc
+   * lai va thu lai, giong cach man Kho dang lam.
+   */
+  private async congTonKho(
+    variantId: string,
+    soLuong: number,
+    orderId: string,
+    actorId?: string,
+  ): Promise<void> {
+    for (let lan = 0; lan < 3; lan += 1) {
+      const { data: bienThe, error: loiDoc } = await this.db
+        .from('product_variants')
+        .select('stock')
+        .eq('id', variantId)
+        .maybeSingle();
+      if (loiDoc) throw new Error(loiDoc.message);
+      if (!bienThe) return;
+
+      const { data: daGhi, error: loiCong } = await this.db
+        .from('product_variants')
+        .update({ stock: bienThe.stock + soLuong })
+        .eq('id', variantId)
+        .eq('stock', bienThe.stock)
+        .select('id')
+        .maybeSingle();
+      if (loiCong) throw new Error(loiCong.message);
+      if (!daGhi) continue; // Co thao tac khac vua doi ton kho, doc lai roi thu lai.
+
+      const { error: loiNhatKy } = await this.db.from('inventory_movements').insert({
+        variant_id: variantId,
+        change: soLuong,
+        reason: 'return' as const,
+        order_id: orderId,
+        created_by: actorId || null,
+        note: 'Hàng trả còn bán được, nhập lại kho',
+      });
+      if (loiNhatKy) throw new Error(loiNhatKy.message);
+      return;
+    }
+
+    throw new Error('Tồn kho đang được thao tác bởi người khác, vui lòng thử lại');
+  }
+
   async updateStatus(
     id: string,
     payload: {
       status: string;
       rejectionReason?: string | null;
       adminResolutionNote?: string | null;
+      /** Hang tra con ban duoc khong. Chi co nghia khi chuyen sang 'refunded'. */
+      restock?: boolean;
+      actorId?: string;
     }
   ): Promise<OrderReturnRow | null> {
+    const { data: hienTai, error: loiDoc } = await this.db
+      .from('order_returns')
+      .select('id, order_id, status')
+      .eq('id', id)
+      .maybeSingle();
+    if (loiDoc) throw new Error(loiDoc.message);
+    if (!hienTai) return null;
+
+    // Chi nhap lai kho dung mot lan, ngay khi don chuyen sang da hoan tien.
+    // Bam duyet lai lan nua se khong cong them nua.
+    const laLanHoanTienDauTien =
+      payload.status === 'refunded' && hienTai.status !== 'refunded';
+    if (laLanHoanTienDauTien && payload.restock === true) {
+      await this.nhapLaiKho(hienTai.order_id, payload.actorId);
+    }
+
+    const thayDoi: Record<string, string | boolean | null> = {
+      status: payload.status,
+      rejection_reason: payload.rejectionReason ?? null,
+      admin_resolution_note: payload.adminResolutionNote ?? null,
+      resolved_at: ['refunded', 'rejected'].includes(payload.status) ? new Date().toISOString() : null,
+    };
+    if (payload.status === 'refunded' && payload.restock !== undefined) {
+      thayDoi.restocked = payload.restock;
+    }
+
     const { data, error } = await this.db
       .from('order_returns')
-      .update({
-        status: payload.status,
-        rejection_reason: payload.rejectionReason ?? null,
-        admin_resolution_note: payload.adminResolutionNote ?? null,
-        resolved_at: ['refunded', 'rejected'].includes(payload.status) ? new Date().toISOString() : null,
-      })
+      .update(thayDoi)
       .eq('id', id)
       .select()
       .single();
 
-    if (error) throw new Error(error.message);
+    if (error) {
+      // Co so du lieu chua chay 09_tra_hang_nhap_kho.sql thi chua co cot
+      // restocked. Van luu duoc trang thai, chi thieu ghi chu con ban duoc.
+      const thieuCot = error.message.toLowerCase().includes('restocked');
+      if (!thieuCot) throw new Error(error.message);
+
+      delete thayDoi.restocked;
+      const { data: lanHai, error: loiLanHai } = await this.db
+        .from('order_returns')
+        .update(thayDoi)
+        .eq('id', id)
+        .select()
+        .single();
+      if (loiLanHai) throw new Error(loiLanHai.message);
+      return lanHai ? this.normalize(lanHai) : null;
+    }
+
     return data ? this.normalize(data) : null;
   }
 

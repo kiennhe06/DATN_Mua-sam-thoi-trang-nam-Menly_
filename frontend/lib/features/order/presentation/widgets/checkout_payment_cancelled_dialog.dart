@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../data/models/order_model.dart';
 import '../pages/my_orders_page.dart';
 
@@ -32,6 +35,8 @@ class CheckoutPaymentCancelledDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+
     return AlertDialog(
       title: const Text('Chưa hoàn tất thanh toán'),
       content: Column(
@@ -42,19 +47,19 @@ class CheckoutPaymentCancelledDialog extends StatelessWidget {
             'Giao dịch thanh toán qua VNPay cho đơn hàng ${order.code} chưa hoàn tất hoặc đã bị hủy.',
             style: const TextStyle(fontSize: 14),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.md),
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(AppSpacing.md),
             decoration: BoxDecoration(
-              color: Colors.amber.shade50,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: Colors.amber.shade300),
+              color: c.secondary.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+              border: Border.all(color: c.secondary.withValues(alpha: 0.35)),
             ),
             child: Text(
               'Đơn hàng của bạn đã được tạo ở trạng thái "Chờ thanh toán". Bạn có thể thực hiện thanh toán lại hoặc theo dõi tại mục Đơn hàng của tôi.',
               style: TextStyle(
                 fontSize: 12.5,
-                color: Colors.brown.shade800,
+                color: c.textSecondary,
                 height: 1.4,
               ),
             ),
@@ -64,15 +69,19 @@ class CheckoutPaymentCancelledDialog extends StatelessWidget {
       actions: [
         TextButton(
           onPressed: onRetry,
-          child: const Text(
+          child: Text(
             'Thanh toán lại',
-            style: TextStyle(fontWeight: FontWeight.bold),
+            style: TextStyle(
+              color: c.textSecondary,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ),
         ElevatedButton(
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.black87,
-            foregroundColor: Colors.white,
+            backgroundColor: c.primary,
+            foregroundColor: c.onPrimary,
+            elevation: 0,
           ),
           onPressed: () {
             Navigator.pop(context);

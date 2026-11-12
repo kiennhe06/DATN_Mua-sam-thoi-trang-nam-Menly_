@@ -84,10 +84,21 @@ router.patch('/:id', requireStaffOrAdmin, async (req, res) => {
       return res.status(400).json({ error: 'Vui lòng chọn trạng thái mới cho yêu cầu trả hàng' });
     }
 
+    // Hang tra con ban duoc hay khong. Bat buoc khai bao khi hoan tien, vi
+    // doan bua se hoac lam hut kho, hoac nhap nham hang loi vao kho.
+    const restock = req.body?.restock;
+    if (status === 'refunded' && typeof restock !== 'boolean') {
+      return res.status(400).json({
+        error: 'Vui lòng cho biết hàng trả có còn bán lại được không (restock: true hoặc false)',
+      });
+    }
+
     const data = await vm.updateStatus(req.params.id, {
       status,
       rejectionReason: req.body?.rejectionReason ?? req.body?.rejection_reason ?? null,
       adminResolutionNote: req.body?.adminResolutionNote ?? req.body?.admin_resolution_note ?? null,
+      restock: typeof restock === 'boolean' ? restock : undefined,
+      actorId: req.user?.id,
     });
 
     if (!data) {

@@ -472,4 +472,15 @@ class OrderProvider extends ChangeNotifier {
       'deliveredCount': deliveredCount,
     };
   }
+
+  /// Xoa du lieu cua nguoi dung truoc khi doi tai khoan.
+  void clearUserData() {
+    _orders = [];
+    _returns = [];
+    _errorMessage = null;
+    _isUnauthorized = false;
+    _isLoading = false;
+    notifyListeners();
+  }
+
 }

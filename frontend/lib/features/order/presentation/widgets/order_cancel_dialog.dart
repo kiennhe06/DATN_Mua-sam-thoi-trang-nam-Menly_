@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/app_buttons.dart';
 import 'package:menly_app/features/order/data/models/order_model.dart';
 import '../providers/order_provider.dart';
@@ -30,17 +32,18 @@ class OrderCancelDialog {
       isScrollControlled: true,
       backgroundColor: c.surface,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius:
+            BorderRadius.vertical(top: Radius.circular(AppTheme.radiusXl)),
       ),
       builder: (ctx) {
         return StatefulBuilder(
           builder: (context, setState) {
             return Padding(
               padding: EdgeInsets.fromLTRB(
-                24,
-                16,
-                24,
-                MediaQuery.of(context).padding.bottom + 24,
+                AppSpacing.xxl,
+                AppSpacing.lg,
+                AppSpacing.xxl,
+                MediaQuery.of(context).padding.bottom + AppSpacing.xxl,
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -52,11 +55,12 @@ class OrderCancelDialog {
                       height: 4,
                       decoration: BoxDecoration(
                         color: c.border,
-                        borderRadius: BorderRadius.circular(999),
+                        borderRadius:
+                            BorderRadius.circular(AppTheme.radiusPill),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 18),
+                  const SizedBox(height: AppSpacing.xl),
                   Text(
                     'Hủy đơn hàng ${order.code}',
                     style: TextStyle(
@@ -65,18 +69,18 @@ class OrderCancelDialog {
                       fontWeight: FontWeight.w800,
                     ),
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: AppSpacing.sm),
                   Text(
                     'Vui lòng chọn lý do để Menly cải thiện dịch vụ tốt hơn:',
                     style: TextStyle(color: c.textSecondary, fontSize: 13),
                   ),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: AppSpacing.lg),
                   for (final r in reasons)
                     GestureDetector(
                       onTap: () => setState(() => selectedReason = r),
                       behavior: HitTestBehavior.opaque,
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
                         child: Row(
                           children: [
                             Container(
@@ -102,7 +106,7 @@ class OrderCancelDialog {
                                     )
                                   : null,
                             ),
-                            const SizedBox(width: 10),
+                            const SizedBox(width: AppSpacing.md),
                             Text(
                               r,
                               style: TextStyle(
@@ -115,7 +119,7 @@ class OrderCancelDialog {
                         ),
                       ),
                     ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: AppSpacing.xl),
                   DestructiveButton(
                     label: 'Xác nhận hủy đơn',
                     onPressed: () async {
@@ -142,7 +146,7 @@ class OrderCancelDialog {
                       }
                     },
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: AppSpacing.md),
                   SecondaryButton(
                     label: 'Đóng',
                     onPressed: () => Navigator.pop(ctx),

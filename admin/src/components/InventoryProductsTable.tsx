@@ -3,7 +3,8 @@
 import React, { useState } from 'react';
 import { Product, Category, ProductVariant } from '../lib/types';
 import { CompactVariantDisplay } from './CompactVariantDisplay';
-import { Search, Boxes, Shirt, Edit3 } from 'lucide-react';
+import { Search, Boxes, Shirt, Edit3, AlertTriangle } from 'lucide-react';
+import { NGUONG_SAP_HET, mucTonKho, nhanTonKho } from '../lib/inventory-alert';
 
 interface InventoryProductsTableProps {
   products: Product[];
@@ -20,19 +21,12 @@ export function InventoryProductsTable({
 }: InventoryProductsTableProps) {
   const [search, setSearch] = useState('');
   const [selectedCat, setSelectedCat] = useState('all');
+  const [chiXemSapHet, setChiXemSapHet] = useState(false);
 
-  const getVariants = (p: Product): ProductVariant[] => {
-    if (p.variants && p.variants.length > 0) return p.variants;
-    const seed = p.id.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
-    return [
-      { id: `${p.id}-w-m`, productId: p.id, size: 'M', color: 'Trắng', sku: `SKU-${p.id.slice(0, 4).toUpperCase()}-W-M`, stock: 35 + (seed % 20) },
-      { id: `${p.id}-b-m`, productId: p.id, size: 'M', color: 'Đen', sku: `SKU-${p.id.slice(0, 4).toUpperCase()}-B-M`, stock: 30 + (seed % 15) },
-      { id: `${p.id}-w-l`, productId: p.id, size: 'L', color: 'Trắng', sku: `SKU-${p.id.slice(0, 4).toUpperCase()}-W-L`, stock: 40 + (seed % 25) },
-      { id: `${p.id}-b-l`, productId: p.id, size: 'L', color: 'Đen', sku: `SKU-${p.id.slice(0, 4).toUpperCase()}-B-L`, stock: 45 + (seed % 20) },
-      { id: `${p.id}-w-xl`, productId: p.id, size: 'XL', color: 'Trắng', sku: `SKU-${p.id.slice(0, 4).toUpperCase()}-W-XL`, stock: 25 + (seed % 10) },
-      { id: `${p.id}-b-xl`, productId: p.id, size: 'XL', color: 'Đen', sku: `SKU-${p.id.slice(0, 4).toUpperCase()}-B-XL`, stock: 20 + (seed % 10) },
-    ];
-  };
+  // Chi lay bien the that cua san pham. Truoc day cho nay bia ra 6 bien the
+  // voi ton kho 20-60 cai khi san pham chua co bien the nao, nen thu kho nhin
+  // bang thay hang day du trong khi kho that su trong.
+  const getVariants = (p: Product): ProductVariant[] => p.variants ?? [];
 
   const getProductCategory = (p: Product): Category | undefined => {
     if (p.categoryId) {
@@ -59,13 +53,22 @@ export function InventoryProductsTable({
     return categories[0];
   };
 
+  /** Tong ton kho that cua mot san pham. */
+  const tongTon = (p: Product) => getVariants(p).reduce((sum, v) => sum + v.stock, 0);
+
+  /** San pham can de y: het sach hoac con it hon nguong canh bao. */
+  const canChuY = (p: Product) => mucTonKho(tongTon(p)) !== 'du';
+
+  const soSanPhamCanChuY = products.filter(canChuY).length;
+
   const filteredProducts = products.filter((p) => {
     const matchesSearch =
       p.name.toLowerCase().includes(search.toLowerCase()) ||
       p.slug.toLowerCase().includes(search.toLowerCase());
     const pCat = getProductCategory(p);
     const matchesCat = selectedCat === 'all' || p.categoryId === selectedCat || pCat?.id === selectedCat;
-    return matchesSearch && matchesCat;
+    const matchesAlert = !chiXemSapHet || canChuY(p);
+    return matchesSearch && matchesCat && matchesAlert;
   });
 
   const getCategoryName = (p: Product) => {
@@ -84,6 +87,23 @@ export function InventoryProductsTable({
           <p className="text-xs text-ink-muted mt-0.5">
             Tổng hợp {products.length} sản phẩm và chi tiết số lượng tồn kho theo từng kích cỡ
           </p>
+          {soSanPhamCanChuY > 0 && (
+            <button
+              type="button"
+              onClick={() => setChiXemSapHet((truoc) => !truoc)}
+              className={`mt-2 inline-flex cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-semibold transition-colors ${
+                chiXemSapHet
+                  ? 'bg-danger text-white border-danger'
+                  : 'bg-danger-bg text-danger border-danger-line hover:bg-danger/10'
+              }`}
+            >
+              <AlertTriangle className="h-3.5 w-3.5" />
+              {soSanPhamCanChuY} sản phẩm còn từ {NGUONG_SAP_HET} cái trở xuống
+              <span className="font-normal opacity-80">
+                {chiXemSapHet ? '· đang lọc, bấm để xem tất cả' : '· bấm để lọc'}
+              </span>
+            </button>
+          )}
         </div>
 
         <div className="flex items-center gap-2 w-full sm:w-auto">
@@ -134,9 +154,15 @@ export function InventoryProductsTable({
               {filteredProducts.map((p) => {
                 const variants = getVariants(p);
                 const totalStock = variants.reduce((sum, v) => sum + v.stock, 0);
+                const muc = mucTonKho(totalStock);
 
                 return (
-                  <tr key={p.id} className="hover:bg-tint transition-colors">
+                  <tr
+                    key={p.id}
+                    className={`transition-colors hover:bg-tint ${
+                      muc === 'du' ? '' : 'bg-danger-bg/40'
+                    }`}
+                  >
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl bg-tint border border-line-strong flex items-center justify-center shrink-0">
@@ -162,19 +188,22 @@ export function InventoryProductsTable({
                     <td className="py-3 px-4">
                       <span
                         className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full font-mono font-bold text-xs border ${
-                          totalStock >= 50
+                          muc === 'du'
                             ? 'bg-ok-bg text-ok border-ok-line'
-                            : totalStock > 0
-                            ? 'bg-camel/15 text-camel-dark border-camel/30'
                             : 'bg-danger-bg text-danger border-danger-line'
                         }`}
                       >
                         <span
                           className={`w-1.5 h-1.5 rounded-full ${
-                            totalStock >= 50 ? 'bg-ok' : totalStock > 0 ? 'bg-camel' : 'bg-danger'
+                            muc === 'du' ? 'bg-ok' : 'bg-danger'
                           }`}
                         />
                         {totalStock} cái
+                        {muc !== 'du' && (
+                          <span className="font-sans text-[10px] font-semibold">
+                            · {nhanTonKho(muc)}
+                          </span>
+                        )}
                       </span>
                     </td>
 
@@ -185,7 +214,13 @@ export function InventoryProductsTable({
                     <td className="py-3 px-4 text-right">
                       {variants.length > 0 && (
                         <button
-                          onClick={() => onSelectVariantToAdjust(variants[0].id)}
+                          onClick={() => {
+                            // Chon san bien the it hang nhat, vi do moi la cai
+                            // thu kho dinh nhap. Truoc day luon chon bien the
+                            // dau tien nen bam xong con phai doi lai size.
+                            const canNhap = [...variants].sort((a, b) => a.stock - b.stock)[0];
+                            onSelectVariantToAdjust(canNhap.id);
+                          }}
                           className="px-2.5 py-1 rounded-lg bg-tint hover:bg-tint-strong text-camel-dark border border-line-strong text-[11px] font-semibold transition-all inline-flex items-center gap-1 cursor-pointer"
                         >
                           <Edit3 className="w-3 h-3" />

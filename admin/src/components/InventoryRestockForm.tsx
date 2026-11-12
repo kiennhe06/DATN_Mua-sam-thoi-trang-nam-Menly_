@@ -106,6 +106,11 @@ export function InventoryRestockForm({
               <option value="admin_restock">Nhập kho mới</option>
               <option value="admin_correction">Hiệu chỉnh kiểm kê</option>
             </select>
+            <p className="mt-1 text-[11px] leading-4 text-ink-muted">
+              {reason === 'admin_restock'
+                ? 'Hàng mới nhập về từ nhà cung cấp.'
+                : 'Sửa cho khớp số đếm thực tế (hỏng, mất, đếm sai).'}
+            </p>
           </div>
         </div>
 

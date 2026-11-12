@@ -1,10 +1,14 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:menly_app/core/utils/format.dart';
+import 'package:menly_app/core/theme/app_colors.dart';
+import 'package:menly_app/core/theme/app_spacing.dart';
 import 'package:menly_app/core/theme/app_theme.dart';
+import 'package:menly_app/core/widgets/app_buttons.dart';
+import 'package:menly_app/core/widgets/section_header.dart';
 import 'package:menly_app/features/cart/data/models/cart_item_model.dart';
 import 'package:menly_app/features/product/data/models/product_model.dart';
+import 'package:menly_app/features/cart/presentation/pages/cart_page.dart';
 import 'package:menly_app/features/cart/presentation/providers/cart_provider.dart';
 import 'package:menly_app/features/order/presentation/pages/checkout_page.dart';
 import 'package:menly_app/features/wishlist/presentation/providers/wishlist_provider.dart';
@@ -12,6 +16,7 @@ import 'package:menly_app/features/product/presentation/providers/product_provid
 import 'package:menly_app/features/review/presentation/widgets/product_reviews_section.dart';
 import '../widgets/product_perk_item.dart';
 import '../widgets/product_related_grid.dart';
+import 'package:menly_app/core/widgets/app_image.dart';
 
 /// Trang Chi tiet san pham cao cap Menly (Chon Size & Mau theo dang Dropdown tien loi)
 class ProductDetailPage extends StatefulWidget {
@@ -24,6 +29,27 @@ class ProductDetailPage extends StatefulWidget {
 }
 
 class _ProductDetailPageState extends State<ProductDetailPage> {
+  /// Le hai ben cua dai anh lon, de goc bo tron cua anh hien ro tren nen.
+  static const EdgeInsets _galleryPadding =
+      EdgeInsets.fromLTRB(AppSpacing.xl, AppSpacing.sm, AppSpacing.xl, 0);
+
+  // O chon kich co: o vuong bo tron, rong toi thieu 48 va cao 44.
+  /// He so suy ra gia gach ngang lam moc neo tam ly.
+  ///
+  /// Doi mot cho nay la doi toan bo man chi tiet. Thay bang gia goc that ngay
+  /// khi du lieu san pham co cot do.
+  static const double _heSoGiaNeo = 1.25;
+
+  static const double _sizeBoxHeight = 44;
+  static const double _sizeBoxMinWidth = 48;
+
+  // Cham chon mau: vong ring bao ngoai 44, o chua ca ten mau rong 76.
+  static const double _colorSwatchRingSize = 44;
+  static const double _colorSwatchSlotWidth = 76;
+
+  /// Nut thao tac o thanh duoi cung: cao hon mac dinh cho de bam.
+  static const double _actionButtonHeight = 56;
+
   late ProductModel _product;
   String _selectedSize = '';
   String _selectedColor = '';
@@ -198,6 +224,8 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
     }
   }
 
+  /// Doi ten mau sang ma mau that cua san pham (den, trang, navy...).
+  /// Day la mau hang hoa chu khong phai mau giao dien nen khong dung token.
   Color? _getColorForName(String name) {
     final lower = name.toLowerCase().trim();
     if (lower.contains('đen')) return const Color(0xFF1E293B);
@@ -242,14 +270,16 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
   }
 
   void _showSizeGuideModal(BuildContext context) {
+    final c = AppColors.of(context);
     int activeTab = _isPants ? 1 : 0;
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: c.surface,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius:
+            BorderRadius.vertical(top: Radius.circular(AppTheme.radiusXl)),
       ),
       builder: (ctx) {
         return StatefulBuilder(
@@ -280,7 +310,12 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
               builder: (_, scrollController) {
                 return SingleChildScrollView(
                   controller: scrollController,
-                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.xl,
+                    AppSpacing.md,
+                    AppSpacing.xl,
+                    AppSpacing.xxl,
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -289,19 +324,22 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                           width: 40,
                           height: 4,
                           decoration: BoxDecoration(
-                            color: Colors.grey.shade300,
-                            borderRadius: BorderRadius.circular(999),
+                            color: c.border,
+                            borderRadius:
+                                BorderRadius.circular(AppTheme.radiusPill),
                           ),
                         ),
                       ),
-                      const SizedBox(height: 14),
+                      const SizedBox(height: AppSpacing.lg),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text(
+                          Text(
                             'Bảng quy đổi kích cỡ chuẩn Menly',
                             style: TextStyle(
-                                fontSize: 16, fontWeight: FontWeight.bold),
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: c.textPrimary),
                           ),
                           TextButton(
                             style: TextButton.styleFrom(
@@ -309,20 +347,19 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                               padding: EdgeInsets.zero,
                             ),
                             onPressed: () => Navigator.pop(ctx),
-                            child: const Text('Đóng',
+                            child: Text('Đóng',
                                 style: TextStyle(
-                                    color: Colors.grey,
+                                    color: c.textMuted,
                                     fontWeight: FontWeight.bold)),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: AppSpacing.xs),
                       Text(
                         'Chạm vào dòng kích cỡ để áp dụng nhanh cho sản phẩm',
-                        style: TextStyle(
-                            fontSize: 12, color: Colors.grey.shade600),
+                        style: TextStyle(fontSize: 12, color: c.textSecondary),
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: AppSpacing.lg),
 
                       // Tabs Chuyen doi Ao / Quan
                       Row(
@@ -331,13 +368,14 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                             child: GestureDetector(
                               onTap: () => setModalState(() => activeTab = 0),
                               child: Container(
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 10),
+                                padding: const EdgeInsets.symmetric(
+                                    vertical: AppSpacing.md),
                                 decoration: BoxDecoration(
                                   color: isTopsTab
-                                      ? AppTheme.primary
-                                      : Colors.grey.shade100,
-                                  borderRadius: BorderRadius.circular(10),
+                                      ? c.primary
+                                      : c.surfaceVariant,
+                                  borderRadius: BorderRadius.circular(
+                                      AppTheme.radiusPill),
                                 ),
                                 alignment: Alignment.center,
                                 child: Text(
@@ -346,25 +384,26 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                                     fontWeight: FontWeight.bold,
                                     fontSize: 13,
                                     color: isTopsTab
-                                        ? Colors.white
-                                        : AppTheme.textPrimary,
+                                        ? c.onPrimary
+                                        : c.textPrimary,
                                   ),
                                 ),
                               ),
                             ),
                           ),
-                          const SizedBox(width: 10),
+                          const SizedBox(width: AppSpacing.md),
                           Expanded(
                             child: GestureDetector(
                               onTap: () => setModalState(() => activeTab = 1),
                               child: Container(
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 10),
+                                padding: const EdgeInsets.symmetric(
+                                    vertical: AppSpacing.md),
                                 decoration: BoxDecoration(
                                   color: !isTopsTab
-                                      ? AppTheme.primary
-                                      : Colors.grey.shade100,
-                                  borderRadius: BorderRadius.circular(10),
+                                      ? c.primary
+                                      : c.surfaceVariant,
+                                  borderRadius: BorderRadius.circular(
+                                      AppTheme.radiusPill),
                                 ),
                                 alignment: Alignment.center,
                                 child: Text(
@@ -373,8 +412,8 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                                     fontWeight: FontWeight.bold,
                                     fontSize: 13,
                                     color: !isTopsTab
-                                        ? Colors.white
-                                        : AppTheme.textPrimary,
+                                        ? c.onPrimary
+                                        : c.textPrimary,
                                   ),
                                 ),
                               ),
@@ -382,19 +421,20 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: AppSpacing.lg),
 
                       // Bang quy doi
                       Container(
                         decoration: BoxDecoration(
-                          border: Border.all(color: AppTheme.border),
-                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: c.border),
+                          borderRadius:
+                              BorderRadius.circular(AppTheme.radiusSm),
                         ),
                         clipBehavior: Clip.antiAlias,
                         child: Table(
-                          border: const TableBorder.symmetric(
-                              inside: BorderSide(
-                                  color: AppTheme.border, width: 0.5)),
+                          border: TableBorder.symmetric(
+                              inside:
+                                  BorderSide(color: c.border, width: 0.5)),
                           columnWidths: const {
                             0: FlexColumnWidth(1.2),
                             1: FlexColumnWidth(2.0),
@@ -404,32 +444,40 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                           children: [
                             TableRow(
                               decoration:
-                                  const BoxDecoration(color: Color(0xFFF1F5F9)),
+                                  BoxDecoration(color: c.surfaceVariant),
                               children: [
-                                const Padding(
-                                    padding: EdgeInsets.all(10),
+                                Padding(
+                                    padding:
+                                        const EdgeInsets.all(AppSpacing.md),
                                     child: Text('Size',
                                         style: TextStyle(
                                             fontWeight: FontWeight.bold,
-                                            fontSize: 13))),
-                                const Padding(
-                                    padding: EdgeInsets.all(10),
+                                            fontSize: 13,
+                                            color: c.textPrimary))),
+                                Padding(
+                                    padding:
+                                        const EdgeInsets.all(AppSpacing.md),
                                     child: Text('Chiều cao',
                                         style: TextStyle(
                                             fontWeight: FontWeight.bold,
-                                            fontSize: 13))),
-                                const Padding(
-                                    padding: EdgeInsets.all(10),
+                                            fontSize: 13,
+                                            color: c.textPrimary))),
+                                Padding(
+                                    padding:
+                                        const EdgeInsets.all(AppSpacing.md),
                                     child: Text('Cân nặng',
                                         style: TextStyle(
                                             fontWeight: FontWeight.bold,
-                                            fontSize: 13))),
+                                            fontSize: 13,
+                                            color: c.textPrimary))),
                                 Padding(
-                                    padding: const EdgeInsets.all(10),
+                                    padding:
+                                        const EdgeInsets.all(AppSpacing.md),
                                     child: Text(isTopsTab ? 'Ngực' : 'Bụng',
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                             fontWeight: FontWeight.bold,
-                                            fontSize: 13))),
+                                            fontSize: 13,
+                                            color: c.textPrimary))),
                               ],
                             ),
                             ...currentTableSizes.map((row) {
@@ -438,7 +486,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                               return TableRow(
                                 decoration: BoxDecoration(
                                   color: isSelected
-                                      ? AppTheme.primary.withValues(alpha: 0.1)
+                                      ? c.primarySoft
                                       : Colors.transparent,
                                 ),
                                 children: [
@@ -446,14 +494,16 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                                     onTap: () => _applyGuideSize(rowSize, ctx),
                                     child: Padding(
                                       padding: const EdgeInsets.symmetric(
-                                          horizontal: 10, vertical: 12),
+                                        horizontal: AppSpacing.md,
+                                        vertical: AppSpacing.md,
+                                      ),
                                       child: Text(
                                         rowSize,
                                         style: TextStyle(
                                           fontWeight: FontWeight.bold,
                                           color: isSelected
-                                              ? AppTheme.primary
-                                              : AppTheme.textPrimary,
+                                              ? c.primary
+                                              : c.textPrimary,
                                         ),
                                       ),
                                     ),
@@ -462,27 +512,39 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                                     onTap: () => _applyGuideSize(rowSize, ctx),
                                     child: Padding(
                                       padding: const EdgeInsets.symmetric(
-                                          horizontal: 10, vertical: 12),
+                                        horizontal: AppSpacing.md,
+                                        vertical: AppSpacing.md,
+                                      ),
                                       child: Text(row[1],
-                                          style: const TextStyle(fontSize: 12)),
+                                          style: TextStyle(
+                                              fontSize: 12,
+                                              color: c.textSecondary)),
                                     ),
                                   ),
                                   InkWell(
                                     onTap: () => _applyGuideSize(rowSize, ctx),
                                     child: Padding(
                                       padding: const EdgeInsets.symmetric(
-                                          horizontal: 10, vertical: 12),
+                                        horizontal: AppSpacing.md,
+                                        vertical: AppSpacing.md,
+                                      ),
                                       child: Text(row[2],
-                                          style: const TextStyle(fontSize: 12)),
+                                          style: TextStyle(
+                                              fontSize: 12,
+                                              color: c.textSecondary)),
                                     ),
                                   ),
                                   InkWell(
                                     onTap: () => _applyGuideSize(rowSize, ctx),
                                     child: Padding(
                                       padding: const EdgeInsets.symmetric(
-                                          horizontal: 10, vertical: 12),
+                                        horizontal: AppSpacing.md,
+                                        vertical: AppSpacing.md,
+                                      ),
                                       child: Text(row[3],
-                                          style: const TextStyle(fontSize: 12)),
+                                          style: TextStyle(
+                                              fontSize: 12,
+                                              color: c.textSecondary)),
                                     ),
                                   ),
                                 ],
@@ -491,14 +553,15 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                           ],
                         ),
                       ),
-                      const SizedBox(height: 14),
+                      const SizedBox(height: AppSpacing.lg),
 
                       Container(
-                        padding: const EdgeInsets.all(12),
+                        padding: const EdgeInsets.all(AppSpacing.md),
                         decoration: BoxDecoration(
-                          color: Colors.amber.shade50,
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: Colors.amber.shade200),
+                          color: c.primarySoft,
+                          borderRadius:
+                              BorderRadius.circular(AppTheme.radiusSm),
+                          border: Border.all(color: c.border),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -506,15 +569,15 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                             Text(
                               '• Nếu phân vân giữa 2 kích cỡ, bạn nên chọn kích cỡ lớn hơn để mặc thoải mái.',
                               style: TextStyle(
-                                  color: Colors.amber.shade900,
+                                  color: c.textSecondary,
                                   fontSize: 12,
                                   height: 1.4),
                             ),
-                            const SizedBox(height: 4),
+                            const SizedBox(height: AppSpacing.xs),
                             Text(
                               '• Menly hỗ trợ đổi size miễn phí tận nơi trong 30 ngày.',
                               style: TextStyle(
-                                  color: Colors.amber.shade900,
+                                  color: c.textSecondary,
                                   fontSize: 12,
                                   height: 1.4),
                             ),
@@ -542,20 +605,37 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
     return '';
   }
 
+  /// Nen chung cho cac khoi noi dung (quyen loi, mo ta, danh gia):
+  /// the sang bo goc manh, vien mong, khong do bong nang.
+  static BoxDecoration _contentCardDecoration(AppColors c) {
+    return BoxDecoration(
+      color: c.surface,
+      borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+      border: Border.all(color: c.border),
+    );
+  }
+
   /// Gallery anh that lay tu product_images cua backend.
   Widget _buildGallery(ProductModel p) {
+    final c = AppColors.of(context);
     final images = p.galleryImages;
     if (images.isEmpty) {
-      return Container(
-        width: double.infinity,
-        height: 400,
-        color: Colors.grey.shade100,
-        alignment: Alignment.center,
-        child: const Text('Menly',
-            style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: AppTheme.textMuted)),
+      return Padding(
+        padding: _galleryPadding,
+        child: Container(
+          width: double.infinity,
+          height: 400,
+          decoration: BoxDecoration(
+            color: c.surfaceVariant,
+            borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+          ),
+          alignment: Alignment.center,
+          child: Text('Menly',
+              style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: c.textMuted)),
+        ),
       );
     }
 
@@ -563,62 +643,77 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
 
     return Column(
       children: [
-        SizedBox(
-          height: 400,
-          child: Stack(
-            children: [
-              PageView.builder(
-                controller: _imageController,
-                itemCount: images.length,
-                onPageChanged: (index) => setState(() => _imageIndex = index),
-                itemBuilder: (_, index) => CachedNetworkImage(
-                  imageUrl: images[index],
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                  placeholder: (_, __) =>
-                      Container(color: Colors.grey.shade100),
-                  errorWidget: (_, __, ___) => Container(
-                    color: Colors.grey.shade100,
-                    alignment: Alignment.center,
-                    child: const Text('Menly',
-                        style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: AppTheme.textMuted)),
+        // Anh lon bo goc manh (radiusXl) va chua le hai ben cho thoang
+        Padding(
+          padding: _galleryPadding,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+            child: SizedBox(
+              height: 400,
+              child: Stack(
+                children: [
+                  PageView.builder(
+                    controller: _imageController,
+                    itemCount: images.length,
+                    onPageChanged: (index) =>
+                        setState(() => _imageIndex = index),
+                    itemBuilder: (_, index) => AppImage(
+                      url: images[index],
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                      placeholder: (_) => Container(color: c.surfaceVariant),
+                      errorWidget: (_) => Container(
+                        color: c.surfaceVariant,
+                        alignment: Alignment.center,
+                        child: Text('Menly',
+                            style: TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                                color: c.textMuted)),
+                      ),
+                    ),
                   ),
-                ),
+                  if (images.length > 1)
+                    Positioned(
+                      right: AppSpacing.md,
+                      bottom: AppSpacing.md,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.md,
+                          vertical: AppSpacing.xs,
+                        ),
+                        decoration: BoxDecoration(
+                          // Lop phu toi tren anh de so trang luon doc duoc
+                          color: Colors.black.withValues(alpha: 0.55),
+                          borderRadius:
+                              BorderRadius.circular(AppTheme.radiusPill),
+                        ),
+                        child: Text(
+                          '${activeIndex + 1}/${images.length}',
+                          style: TextStyle(
+                              color: c.onInk,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                    ),
+                ],
               ),
-              if (images.length > 1)
-                Positioned(
-                  right: 12,
-                  bottom: 12,
-                  child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.55),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      '${activeIndex + 1}/${images.length}',
-                      style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600),
-                    ),
-                  ),
-                ),
-            ],
+            ),
           ),
         ),
         if (images.length > 1)
           SizedBox(
-            height: 76,
+            height: 80,
             child: ListView.separated(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.xl,
+                vertical: AppSpacing.md,
+              ),
               scrollDirection: Axis.horizontal,
               itemCount: images.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 8),
+              separatorBuilder: (_, __) =>
+                  const SizedBox(width: AppSpacing.sm),
               itemBuilder: (_, index) {
                 final isActive = index == activeIndex;
                 return GestureDetector(
@@ -633,20 +728,19 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                   child: Container(
                     width: 56,
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(AppTheme.radiusMd),
                       border: Border.all(
-                        color: isActive ? AppTheme.primary : AppTheme.border,
+                        // Anh dang xem duoc vien ink day hon de de nhan ra
+                        color: isActive ? c.primary : c.border,
                         width: isActive ? 2 : 1,
                       ),
                     ),
                     clipBehavior: Clip.antiAlias,
-                    child: CachedNetworkImage(
-                      imageUrl: images[index],
+                    child: AppImage(
+                      url: images[index],
                       fit: BoxFit.cover,
-                      placeholder: (_, __) =>
-                          Container(color: Colors.grey.shade100),
-                      errorWidget: (_, __, ___) =>
-                          Container(color: Colors.grey.shade100),
+                      placeholder: (_) => Container(color: c.surfaceVariant),
+                      errorWidget: (_) => Container(color: c.surfaceVariant),
                     ),
                   ),
                 );
@@ -657,8 +751,177 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
     );
   }
 
+  /// O chon kich co: o vuong bo tron, dang chon thi nen ink chu sang.
+  ///
+  /// Hien het lua chon ra man hinh thay vi giau trong nut xo: nguoi mua nhin
+  /// mot cai la biet co nhung size nao, khong phai bam ra bam vao tung lan.
+  Widget _buildSizeChips(List<String> availableSizes) {
+    if (availableSizes.isEmpty) return const SizedBox.shrink();
+    final c = AppColors.of(context);
+    return Wrap(
+      spacing: AppSpacing.md,
+      runSpacing: AppSpacing.md,
+      children: availableSizes.map((size) {
+        final isSelected = size == _selectedSize;
+        final hint = _getSizeHint(size);
+        return InkWell(
+          onTap: () => _onSizeChanged(size),
+          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+          child: Container(
+            height: _sizeBoxHeight,
+            constraints: const BoxConstraints(minWidth: _sizeBoxMinWidth),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+            // Khong dat alignment o day: Container co alignment se no het be
+            // rong cho phep, nen san pham chi co mot size se thanh mot thanh
+            // dai suot man hinh. De cot con tu quyet dinh be rong.
+            decoration: BoxDecoration(
+              color: isSelected ? c.primary : c.surface,
+              borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+              border: Border.all(color: isSelected ? c.primary : c.border),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Text(
+                  size,
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                    height: 1.1,
+                    color: isSelected ? c.onPrimary : c.textPrimary,
+                  ),
+                ),
+                if (hint.isNotEmpty)
+                  Text(
+                    hint,
+                    style: TextStyle(
+                      fontSize: 10.5,
+                      height: 1.1,
+                      color: isSelected
+                          ? c.onPrimary.withValues(alpha: 0.75)
+                          : c.textMuted,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  /// O chon mau: cham tron, dang chon thi co vong ring bao ngoai.
+  ///
+  /// Ten mau van nam ngay duoi cham de nguoi mua doc duoc ca nhung mau chua co
+  /// ma mau that (luc do cham to bang nen phu de khong gay hieu nham).
+  Widget _buildColorChips(List<String> availableColors) {
+    if (availableColors.isEmpty) return const SizedBox.shrink();
+    final c = AppColors.of(context);
+    return Wrap(
+      spacing: AppSpacing.md,
+      runSpacing: AppSpacing.md,
+      children: availableColors.map((color) {
+        final isSelected = color == _selectedColor;
+        final colorDot = _getColorForName(color);
+        return InkWell(
+          onTap: () => _onColorChanged(color),
+          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+          child: SizedBox(
+            width: _colorSwatchSlotWidth,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: _colorSwatchRingSize,
+                  height: _colorSwatchRingSize,
+                  padding: const EdgeInsets.all(3),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: isSelected ? c.primary : Colors.transparent,
+                      width: 2,
+                    ),
+                  ),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: colorDot ?? c.surfaceVariant,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: c.border),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  color,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                    fontSize: 11.5,
+                    height: 1.2,
+                    color: isSelected ? c.textPrimary : c.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  /// Nut gio hang kem so mat hang, dat o thanh tren.
+  ///
+  /// De nguoi mua them hang xong la sang gio duoc ngay, khong phai quay lai
+  /// man truoc roi tim tab gio.
+  Widget _buildCartButton(CartProvider cart) {
+    final c = AppColors.of(context);
+    final soMatHang = cart.items.length;
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        IconButton(
+          icon: Icon(Icons.shopping_bag_outlined, color: c.textPrimary),
+          tooltip: 'Giỏ hàng',
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const CartPage()),
+            );
+          },
+        ),
+        if (soMatHang > 0)
+          Positioned(
+            top: AppSpacing.sm,
+            right: AppSpacing.sm,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+              decoration: BoxDecoration(
+                color: c.danger,
+                borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+              ),
+              constraints: const BoxConstraints(minWidth: 16),
+              child: Text(
+                soMatHang > 99 ? '99+' : '$soMatHang',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: c.onPrimary,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     final p = _product;
     final wishlist = context.watch<WishlistProvider>();
     final cart = context.read<CartProvider>();
@@ -673,14 +936,15 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
         : (selectedVariant.stock > 20 ? 20 : selectedVariant.stock);
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: c.background,
       appBar: AppBar(
         title: Text(p.name),
         actions: [
+          _buildCartButton(cart),
           IconButton(
             icon: Icon(
               isFav ? Icons.favorite : Icons.favorite_border,
-              color: isFav ? AppTheme.accentRed : AppTheme.textPrimary,
+              color: isFav ? c.danger : c.textPrimary,
             ),
             onPressed: () async {
               final added = await wishlist.toggleFavorite(p);
@@ -705,7 +969,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
             _buildGallery(p),
 
             Padding(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(AppSpacing.xl),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -715,25 +979,28 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                     children: [
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 4),
+                          horizontal: AppSpacing.md,
+                          vertical: AppSpacing.xs,
+                        ),
                         decoration: BoxDecoration(
-                          color: AppTheme.primary.withValues(alpha: 0.08),
-                          borderRadius: BorderRadius.circular(6),
+                          color: c.primarySoft,
+                          borderRadius:
+                              BorderRadius.circular(AppTheme.radiusPill),
                         ),
                         child: Text(
                           p.categoryName.toUpperCase(),
-                          style: const TextStyle(
+                          style: TextStyle(
                               fontSize: 11,
-                              color: AppTheme.primary,
+                              color: c.primary,
                               fontWeight: FontWeight.bold),
                         ),
                       ),
                       Row(
                         children: [
                           if (p.ratingCount > 0)
-                            const Text('★ ',
+                            Text('★ ',
                                 style: TextStyle(
-                                    color: Colors.amber,
+                                    color: c.secondary,
                                     fontWeight: FontWeight.bold,
                                     fontSize: 16)),
                           Text(
@@ -744,248 +1011,152 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                                   fontWeight: FontWeight.bold,
                                   fontSize: 14,
                                   color: p.ratingCount <= 0
-                                      ? AppTheme.textSecondary
-                                      : AppTheme.textPrimary)),
+                                      ? c.textSecondary
+                                      : c.textPrimary)),
                         ],
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: AppSpacing.md),
 
                   // Ten san pham
                   Text(
                     p.name,
-                    style: const TextStyle(
+                    style: TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
                         letterSpacing: -0.3,
-                        height: 1.3),
+                        height: 1.3,
+                        color: c.textPrimary),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: AppSpacing.sm),
 
-                  // Gia tien
+                  // Gia tien kem gia gach ngang lam moc neo tam ly.
+                  //
+                  // LUU Y: gia gach ngang hien dang suy ra tu gia ban nhan he
+                  // so ben duoi chu KHONG phai gia goc that trong du lieu. Khi
+                  // bang products co cot gia goc rieng thi doi sang doc cot do,
+                  // va chi hien khi gia goc thuc su lon hon gia ban.
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.baseline,
                     textBaseline: TextBaseline.alphabetic,
                     children: [
                       Text(
                         formatPrice(p.price),
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.w900,
-                          color: AppTheme.accentRed,
+                          color: c.danger,
                         ),
                       ),
-                      const SizedBox(width: 10),
+                      const SizedBox(width: AppSpacing.md),
                       Text(
-                        formatPrice((p.price * 1.25).toInt()),
-                        style: const TextStyle(
+                        formatPrice((p.price * _heSoGiaNeo).toInt()),
+                        style: TextStyle(
                           fontSize: 14,
-                          color: AppTheme.textMuted,
+                          color: c.textMuted,
                           decoration: TextDecoration.lineThrough,
                         ),
                       ),
                     ],
                   ),
-                  const Divider(height: 28),
+                  const Divider(height: AppSpacing.xxl),
 
                   // 2. CHON KICH CO & MAU SAC THEO DANG DROPDOWN
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
+                      Text(
                         'Chọn phân loại sản phẩm',
                         style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 15,
-                            color: AppTheme.textPrimary),
+                            color: c.textPrimary),
                       ),
                       TextButton(
                         style: TextButton.styleFrom(
                             visualDensity: VisualDensity.compact,
                             padding: EdgeInsets.zero),
                         onPressed: () => _showSizeGuideModal(context),
-                        child: const Text('Bảng quy đổi size',
+                        child: Text('Bảng quy đổi size',
                             style: TextStyle(
                                 fontSize: 12,
-                                color: AppTheme.primaryAccent,
+                                color: c.primary,
                                 fontWeight: FontWeight.bold)),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: AppSpacing.md),
 
-                  // DROPDOWN KICH CO
-                  Container(
-                    width: double.infinity,
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: AppTheme.border),
-                    ),
-                    child: DropdownButtonHideUnderline(
-                      child: DropdownButton<String>(
-                        value: availableSizes.contains(_selectedSize)
-                            ? _selectedSize
-                            : null,
-                        isExpanded: true,
-                        icon: const Text('▾',
-                            style: TextStyle(
-                                fontSize: 16, color: AppTheme.textMuted)),
-                        hint: const Text('Chọn kích cỡ',
-                            style: TextStyle(
-                                fontSize: 13, color: AppTheme.textMuted)),
-                        items: availableSizes.map((size) {
-                          final hint = _getSizeHint(size);
-                          return DropdownMenuItem<String>(
-                            value: size,
-                            child: Row(
-                              children: [
-                                Text(
-                                  'Kích cỡ: $size',
-                                  style: const TextStyle(
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 14,
-                                      color: AppTheme.textPrimary),
-                                ),
-                                if (hint.isNotEmpty) ...[
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    hint,
-                                    style: TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.grey.shade500),
-                                  ),
-                                ],
-                              ],
-                            ),
-                          );
-                        }).toList(),
-                        onChanged: _onSizeChanged,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
+                  // CHON KICH CO
+                  _buildSizeChips(availableSizes),
+                  const SizedBox(height: AppSpacing.md),
 
-                  // DROPDOWN MAU SAC
+                  // CHON MAU SAC
                   if (_loadingDetail && p.variants.isEmpty)
-                    const Padding(
-                      padding: EdgeInsets.only(bottom: 12),
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: AppSpacing.md),
                       child: Row(
                         children: [
                           SizedBox(
                             width: 14,
                             height: 14,
-                            child: CircularProgressIndicator(strokeWidth: 2),
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2, color: c.primary),
                           ),
-                          SizedBox(width: 8),
+                          const SizedBox(width: AppSpacing.sm),
                           Text('Đang tải phân loại sản phẩm...',
                               style: TextStyle(
-                                  fontSize: 12, color: AppTheme.textMuted)),
+                                  fontSize: 12, color: c.textMuted)),
                         ],
                       ),
                     )
                   else if (p.variants.isEmpty || availableSizes.isEmpty)
                     Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
+                      padding: const EdgeInsets.only(bottom: AppSpacing.md),
                       child: Text(
                         p.variants.isEmpty
                             ? 'Sản phẩm chưa có biến thể hàng hóa.'
                             : 'Sản phẩm hiện đã hết hàng.',
-                        style: const TextStyle(color: Colors.red),
+                        style: TextStyle(color: c.danger),
                       ),
                     ),
-                  Container(
-                    width: double.infinity,
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: AppTheme.border),
-                    ),
-                    child: DropdownButtonHideUnderline(
-                      child: DropdownButton<String>(
-                        value: availableColors.contains(_selectedColor)
-                            ? _selectedColor
-                            : null,
-                        isExpanded: true,
-                        icon: const Text('▾',
-                            style: TextStyle(
-                                fontSize: 16, color: AppTheme.textMuted)),
-                        hint: const Text('Chọn màu sắc',
-                            style: TextStyle(
-                                fontSize: 13, color: AppTheme.textMuted)),
-                        items: availableColors.map((color) {
-                          final colorDot = _getColorForName(color);
-                          return DropdownMenuItem<String>(
-                            value: color,
-                            child: Row(
-                              children: [
-                                if (colorDot != null) ...[
-                                  Container(
-                                    width: 16,
-                                    height: 16,
-                                    decoration: BoxDecoration(
-                                      color: colorDot,
-                                      shape: BoxShape.circle,
-                                      border: Border.all(
-                                        color: colorDot == Colors.white
-                                            ? Colors.grey.shade400
-                                            : Colors.transparent,
-                                        width: 1,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 10),
-                                ],
-                                Text(
-                                  'Màu sắc: $color',
-                                  style: const TextStyle(
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 14,
-                                      color: AppTheme.textPrimary),
-                                ),
-                              ],
-                            ),
-                          );
-                        }).toList(),
-                        onChanged: _onColorChanged,
-                      ),
-                    ),
-                  ),
+                  _buildColorChips(availableColors),
                   if (selectedVariant != null && selectedVariant.stock > 0)
                     Padding(
-                      padding: const EdgeInsets.only(top: 8),
+                      padding: const EdgeInsets.only(top: AppSpacing.sm),
                       child: Text(
                         'Còn ${selectedVariant.stock} sản phẩm cho phân loại này',
-                        style: const TextStyle(
-                            fontSize: 12, color: AppTheme.textSecondary),
+                        style: TextStyle(
+                            fontSize: 12, color: c.textSecondary),
                       ),
                     ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: AppSpacing.xl),
 
                   // 3. CHON SO LUONG
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('Số lượng:',
+                      Text('Số lượng:',
                           style: TextStyle(
-                              fontWeight: FontWeight.bold, fontSize: 14)),
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                              color: c.textPrimary)),
                       Container(
                         decoration: BoxDecoration(
-                          border: Border.all(color: AppTheme.border),
-                          borderRadius: BorderRadius.circular(10),
+                          color: c.surface,
+                          border: Border.all(color: c.border),
+                          borderRadius:
+                              BorderRadius.circular(AppTheme.radiusPill),
                         ),
                         child: Row(
                           children: [
                             IconButton(
-                              icon: const Text('-',
+                              icon: Text('-',
                                   style: TextStyle(
                                       fontSize: 18,
-                                      fontWeight: FontWeight.bold)),
+                                      fontWeight: FontWeight.bold,
+                                      color: c.textPrimary)),
                               onPressed: () {
                                 if (_quantity > 1) {
                                   setState(() => _quantity--);
@@ -993,18 +1164,20 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                               },
                             ),
                             Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 12),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: AppSpacing.md),
                               child: Text('$_quantity',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                       fontWeight: FontWeight.bold,
-                                      fontSize: 15)),
+                                      fontSize: 15,
+                                      color: c.textPrimary)),
                             ),
                             IconButton(
-                              icon: const Text('+',
+                              icon: Text('+',
                                   style: TextStyle(
                                       fontSize: 18,
-                                      fontWeight: FontWeight.bold)),
+                                      fontWeight: FontWeight.bold,
+                                      color: c.textPrimary)),
                               onPressed: _quantity < maxQuantity
                                   ? () => setState(() => _quantity++)
                                   : null,
@@ -1014,27 +1187,23 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                       ),
                     ],
                   ),
-                  const Divider(height: 36),
+                  const Divider(height: AppSpacing.xxxl),
 
                   // 4. CHINH SACH THOI TRANG MENLY
                   Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: AppTheme.scaffoldBackground,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppTheme.border),
-                    ),
+                    padding: const EdgeInsets.all(AppSpacing.lg),
+                    decoration: _contentCardDecoration(c),
                     child: const Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         ProductPerkItem(
                             title: 'Đổi trả 30 ngày',
                             subtitle: 'Miễn phí đổi size/màu tận nhà'),
-                        Divider(height: 16),
+                        Divider(height: AppSpacing.lg),
                         ProductPerkItem(
                             title: 'Giao nhanh 24h',
                             subtitle: 'Nội thành nhận ngay trong ngày'),
-                        Divider(height: 16),
+                        Divider(height: AppSpacing.lg),
                         ProductPerkItem(
                             title: 'Chất lượng cam kết',
                             subtitle:
@@ -1042,35 +1211,42 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: AppSpacing.xxl),
 
                   // 5. MO TA CHI TIET
-                  const Text('Mô tả sản phẩm',
-                      style:
-                          TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
-                  const SizedBox(height: 8),
-                  Text(
-                    p.description.trim().isEmpty
-                        ? 'Sản phẩm chưa có mô tả chi tiết.'
-                        : p.description,
-                    style: const TextStyle(
-                        fontSize: 14,
-                        height: 1.6,
-                        color: AppTheme.textSecondary),
+                  const SectionHeader(title: 'Mô tả sản phẩm'),
+                  const SizedBox(height: AppSpacing.md),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(AppSpacing.lg),
+                    decoration: _contentCardDecoration(c),
+                    child: Text(
+                      p.description.trim().isEmpty
+                          ? 'Sản phẩm chưa có mô tả chi tiết.'
+                          : p.description,
+                      style: TextStyle(
+                          fontSize: 14,
+                          height: 1.6,
+                          color: c.textSecondary),
+                    ),
                   ),
-                  const SizedBox(height: 30),
-                  ProductReviewsSection(
-                    productId: p.id,
-                    productName: p.name,
-                    thumbnailUrl: p.thumbnailUrl,
+                  const SizedBox(height: AppSpacing.xxxl),
+                  Container(
+                    padding: const EdgeInsets.all(AppSpacing.lg),
+                    decoration: _contentCardDecoration(c),
+                    child: ProductReviewsSection(
+                      productId: p.id,
+                      productName: p.name,
+                      thumbnailUrl: p.thumbnailUrl,
+                    ),
                   ),
-                  const SizedBox(height: 26),
+                  const SizedBox(height: AppSpacing.xxl),
                   ProductRelatedGrid(
                     product: _product,
                     relatedProducts: _relatedProducts,
                     wishlist: wishlist,
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: AppSpacing.lg),
                 ],
               ),
             ),
@@ -1080,12 +1256,13 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
 
       // Thanh thao tac duoi cung: Nut Them vao gio & Nut Mua ngay
       bottomNavigationBar: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppSpacing.lg),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: c.surface,
           boxShadow: [
+            // Bong rat nhe, chi de tach thanh thao tac khoi noi dung cuon
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
+              color: c.shadow,
               blurRadius: 10,
               offset: const Offset(0, -4),
             ),
@@ -1095,14 +1272,9 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
           child: Row(
             children: [
               Expanded(
-                child: OutlinedButton(
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppTheme.primary,
-                    side: const BorderSide(color: AppTheme.primary, width: 1.5),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                  ),
+                child: SecondaryButton(
+                  height: _actionButtonHeight,
+                  label: 'Thêm vào giỏ',
                   onPressed: canPurchase
                       ? () async {
                           final added = await cart.addToCart(
@@ -1113,34 +1285,28 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                           );
                           if (!context.mounted) return;
 
-                          ScaffoldMessenger.of(context).showSnackBar(
+                          final messenger = ScaffoldMessenger.of(context);
+                          messenger.hideCurrentSnackBar();
+                          messenger.showSnackBar(
                             SnackBar(
                               content: Text(added
                                   ? 'Đã thêm $_quantity x "${p.name}" (Size: $_selectedSize, Màu: $_selectedColor) vào giỏ hàng'
                                   : cart.errorMessage ??
                                       'Không thể thêm sản phẩm vào giỏ'),
                               backgroundColor:
-                                  added ? AppTheme.primary : Colors.red,
+                                  added ? c.primary : c.danger,
                               duration: const Duration(seconds: 2),
                             ),
                           );
                         }
                       : null,
-                  child: const Text('Thêm vào giỏ',
-                      style:
-                          TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                 ),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: AppSpacing.md),
               Expanded(
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.primary,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                  ),
+                child: PrimaryButton(
+                  height: _actionButtonHeight,
+                  label: 'Mua ngay',
                   onPressed: canPurchase
                       ? () {
                           final variantId = _resolveVariantId(p);
@@ -1163,9 +1329,6 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                           );
                         }
                       : null,
-                  child: const Text('Mua ngay',
-                      style:
-                          TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                 ),
               ),
             ],

@@ -6,16 +6,18 @@
   "scripts": {
     "dev": "tsx watch src/main.ts",
     "build": "tsc",
-    "test": "tsx --test src/validators/auth.validator.test.ts src/views/routes/auth.routes.test.ts src/validators/admin-product.validator.test.ts src/views/routes/admin.routes.test.ts src/models/product.model.test.ts src/validators/profile.validator.test.ts src/views/routes/profile.routes.test.ts src/validators/cart.validator.test.ts src/views/routes/cart.routes.test.ts src/validators/payment.validator.test.ts src/models/payment.model.test.ts src/views/routes/payment.routes.test.ts src/models/shipping.model.test.ts src/views/routes/order-track.routes.test.ts",
+    "test": "tsx --test \"src/**/*.test.ts\"",
     "start": "node dist/main.js"
   },
   "dependencies": {
+    "@google/genai": "^3.0.0",
     "@supabase/supabase-js": "^2.45.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
     "helmet": "^7.1.0",
     "multer": "^2.5.0",
+    "vietnam-address-database": "^1.0.0",
     "zod": "^3.23.8"
   },
   "devDependencies": {

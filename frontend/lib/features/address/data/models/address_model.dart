@@ -57,6 +57,21 @@ class AddressModel {
     );
   }
 
+  /// Ban ghi gui len may chu.
+  ///
+  /// KHONG kem 'id': ung dung tu sinh ma kieu 'addr-<thoi diem>' de dung tam
+  /// trong danh sach, nhung cot id duoi co so du lieu la uuid nen gui len se bi
+  /// tu choi 400 va dia chi khong bao gio vao so.
+  Map<String, dynamic> toServerJson() => {
+    'recipient_name': recipientName,
+    'phone': phone,
+    'province': province,
+    'district': district,
+    'ward': ward,
+    'detail_address': detailAddress,
+    'is_default': isDefault,
+  };
+
   Map<String, dynamic> toJson() => {
     'id': id,
     'recipient_name': recipientName,

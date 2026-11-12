@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
-import '../../../../core/theme/app_theme.dart';
 import 'package:menly_app/features/order/presentation/pages/my_orders_page.dart';
 import 'package:menly_app/features/voucher/presentation/pages/voucher_list_page.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/app_buttons.dart';
 import '../providers/notification_provider.dart';
+import 'notification_item_card.dart';
 
 class NotificationDetailSheet extends StatelessWidget {
   final NotificationModel notification;
@@ -29,38 +33,24 @@ class NotificationDetailSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     final type = notification.type;
     final isOrder = type == 'order';
     final isPromo = type == 'promo' || type == 'voucher';
-
-    Color categoryColor;
-    String categoryName;
-    IconData categoryIcon;
-
-    if (isOrder) {
-      categoryColor = const Color(0xFF2563EB);
-      categoryName = 'Đơn hàng';
-      categoryIcon = Icons.local_shipping_rounded;
-    } else if (isPromo) {
-      categoryColor = AppTheme.primaryAccent;
-      categoryName = 'Khuyến mãi & Ưu đãi';
-      categoryIcon = Icons.local_offer_rounded;
-    } else {
-      categoryColor = const Color(0xFF0D9488);
-      categoryName = 'Hệ thống';
-      categoryIcon = Icons.notifications_active_rounded;
-    }
+    final style = NotificationTypeStyle.of(c, type);
 
     return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      decoration: BoxDecoration(
+        color: c.surface,
+        borderRadius: const BorderRadius.vertical(
+          top: Radius.circular(AppTheme.radiusXl),
+        ),
       ),
       padding: EdgeInsets.only(
-        top: 16,
-        left: 20,
-        right: 20,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+        top: AppSpacing.lg,
+        left: AppSpacing.xl,
+        right: AppSpacing.xl,
+        bottom: MediaQuery.of(context).viewInsets.bottom + AppSpacing.xxl,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -71,10 +61,10 @@ class NotificationDetailSheet extends StatelessWidget {
             child: Container(
               width: 40,
               height: 4,
-              margin: const EdgeInsets.only(bottom: 20),
+              margin: const EdgeInsets.only(bottom: AppSpacing.xl),
               decoration: BoxDecoration(
-                color: Colors.grey.shade300,
-                borderRadius: BorderRadius.circular(2),
+                color: c.border,
+                borderRadius: BorderRadius.circular(AppTheme.radiusPill),
               ),
             ),
           ),
@@ -83,145 +73,102 @@ class NotificationDetailSheet extends StatelessWidget {
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(8),
+                padding: const EdgeInsets.all(AppSpacing.sm),
                 decoration: BoxDecoration(
-                  color: categoryColor.withValues(alpha: 0.12),
+                  color: style.color.withValues(alpha: 0.12),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(categoryIcon, color: categoryColor, size: 20),
+                child: Icon(style.icon, color: style.color, size: 20),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: AppSpacing.md),
               Text(
-                categoryName,
+                style.fullName,
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
-                  color: categoryColor,
+                  color: style.color,
                 ),
               ),
               const Spacer(),
               Text(
                 _formatDateTime(notification.createdAt),
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey.shade500,
-                ),
+                style: TextStyle(fontSize: 12, color: c.textMuted),
               ),
             ],
           ),
 
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.lg),
 
           // Title
           Text(
             notification.title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 17,
               fontWeight: FontWeight.bold,
-              color: AppTheme.textPrimary,
+              color: c.textPrimary,
               height: 1.3,
             ),
           ),
 
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.md),
 
           // Body
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(14),
+            padding: const EdgeInsets.all(AppSpacing.lg),
             decoration: BoxDecoration(
-              color: Colors.grey.shade50,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey.shade200),
+              color: c.surfaceVariant,
+              borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+              border: Border.all(color: c.border),
             ),
             child: Text(
               notification.body,
               style: TextStyle(
                 fontSize: 14,
-                color: Colors.grey.shade800,
+                color: c.textSecondary,
                 height: 1.5,
               ),
             ),
           ),
 
-          const SizedBox(height: 20),
+          const SizedBox(height: AppSpacing.xl),
 
           // Contextual Action Button
           if (isOrder) ...[
-            SizedBox(
-              width: double.infinity,
+            PrimaryButton(
+              label: 'Xem đơn hàng của bạn',
+              icon: Icons.receipt_long_rounded,
               height: 48,
-              child: ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.textPrimary,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  elevation: 0,
-                ),
-                icon: const Icon(Icons.receipt_long_rounded, size: 18),
-                label: const Text(
-                  'Xem đơn hàng của bạn',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                ),
-                onPressed: () {
-                  Navigator.pop(context);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const MyOrdersPage()),
-                  );
-                },
-              ),
+              onPressed: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const MyOrdersPage()),
+                );
+              },
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: AppSpacing.md),
           ] else if (isPromo) ...[
-            SizedBox(
-              width: double.infinity,
+            PrimaryButton(
+              label: 'Khám phá kho Voucher ngay',
+              icon: Icons.local_offer_rounded,
               height: 48,
-              child: ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.primaryAccent,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  elevation: 0,
-                ),
-                icon: const Icon(Icons.local_offer_rounded, size: 18),
-                label: const Text(
-                  'Khám phá kho Voucher ngay',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                ),
-                onPressed: () {
-                  Navigator.pop(context);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const VoucherListPage()),
-                  );
-                },
-              ),
+              onPressed: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const VoucherListPage()),
+                );
+              },
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: AppSpacing.md),
           ],
 
           // Close button
-          SizedBox(
-            width: double.infinity,
+          SecondaryButton(
+            label: 'Đóng',
             height: 44,
-            child: OutlinedButton(
-              style: OutlinedButton.styleFrom(
-                side: BorderSide(color: Colors.grey.shade300),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              onPressed: () => Navigator.pop(context),
-              child: const Text(
-                'Đóng',
-                style: TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.w600),
-              ),
-            ),
+            onPressed: () => Navigator.pop(context),
           ),
         ],
       ),

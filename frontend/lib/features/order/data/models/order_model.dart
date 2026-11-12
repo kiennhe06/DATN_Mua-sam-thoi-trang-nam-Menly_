@@ -1,12 +1,4 @@
-String _realThumbnail(dynamic raw) {
-  final url = raw?.toString().trim() ?? '';
-  if (url.isEmpty) return '';
-  final lower = url.toLowerCase();
-  if (lower.contains('unsplash') || lower.contains('picsum') || lower.contains('placeholder')) {
-    return '';
-  }
-  return url;
-}
+import 'package:menly_app/core/utils/image_url.dart';
 
 /// Item trong don hang
 class OrderItemModel {
@@ -38,7 +30,7 @@ class OrderItemModel {
       color: json['color']?.toString() ?? '',
       unitPrice: (json['unit_price'] is num) ? (json['unit_price'] as num).toInt() : 0,
       quantity: (json['quantity'] is num) ? (json['quantity'] as num).toInt() : 1,
-      thumbnailUrl: _realThumbnail(
+      thumbnailUrl: duongDanAnhThat(
         json['thumbnail_url'] ?? json['thumbnailUrl'],
       ),
     );
@@ -149,6 +141,34 @@ extension OrderStatusExtension on OrderStatus {
 }
 
 /// Model don hang (AP-DH2, TM07, AP-QT9, AP-TT1)
+/// Mot lan doi trang thai DA THUC SU xay ra, kem moc thoi gian.
+///
+/// Dung de ve hanh trinh giao hang theo du lieu that. Truoc day man chi tiet
+/// suy ra ca hanh trinh tu mot trang thai hien tai, nen don vua dat da hien
+/// san may buoc nhu the kho da xac nhan va dong goi xong.
+class OrderStatusEvent {
+  final OrderStatus fromStatus;
+  final OrderStatus toStatus;
+  final DateTime at;
+
+  const OrderStatusEvent({
+    required this.fromStatus,
+    required this.toStatus,
+    required this.at,
+  });
+
+  factory OrderStatusEvent.fromJson(Map<String, dynamic> json) {
+    return OrderStatusEvent(
+      fromStatus: OrderStatusExtension.fromString(
+          json['from_status']?.toString() ?? 'processing'),
+      toStatus: OrderStatusExtension.fromString(
+          json['to_status']?.toString() ?? 'processing'),
+      at: DateTime.tryParse(json['created_at']?.toString() ?? '') ??
+          DateTime.now(),
+    );
+  }
+}
+
 class OrderModel {
   final String id;
   final String code;
@@ -164,7 +184,25 @@ class OrderModel {
   final String shipAddress;
   final DateTime createdAt;
   final List<OrderItemModel> items;
+  /// Cac lan doi trang thai da ghi lai, xep theo thoi gian tang dan.
+  final List<OrderStatusEvent> statusHistory;
+
+  /// Ma cua tat ca don duoc tao trong cung lan dat hang.
+  ///
+  /// Moi san pham tao mot don rieng, nen mot lan bam dat hang co the sinh ra
+  /// nhieu don. Chi co gia tri ngay sau khi dat, khong luu lai.
+  final List<String> splitOrderCodes;
   String? cancelReason;
+
+  /// Don da duoc hoan tien qua yeu cau tra hang chua.
+  ///
+  /// Bang orders khong co trang thai "da hoan tien", nen phai mang rieng co
+  /// nay tu may chu. Khong co no thi don da hoan tien van hien "Da giao hang"
+  /// voi khach - nhin nhu shop chua tra lai tien.
+  final bool daHoanTien;
+
+  /// Thoi diem hoan tien, de ve dung moc tren hanh trinh don hang.
+  final DateTime? hoanTienLuc;
 
   OrderModel({
     required this.id,
@@ -174,15 +212,26 @@ class OrderModel {
     this.isPaid = false,
     required this.subtotal,
     this.discountAmount = 0,
-    this.shippingFee = 25000,
+    this.shippingFee = 0,
     required this.total,
     required this.shipName,
     required this.shipPhone,
     required this.shipAddress,
     required this.createdAt,
     required this.items,
+    this.statusHistory = const [],
+    this.splitOrderCodes = const [],
     this.cancelReason,
+    this.daHoanTien = false,
+    this.hoanTienLuc,
   });
+
+  /// Nhan trang thai de hien cho nguoi dung.
+  ///
+  /// Dung cai nay o moi cho ve chip trang thai, dung dung status.label: don da
+  /// hoan tien phai noi la da hoan tien chu khong phai trang thai giao hang cu.
+  String get nhanTrangThai =>
+      daHoanTien ? 'Đã hoàn tiền' : status.label;
 
   OrderModel copyWith({
     String? id,
@@ -200,6 +249,8 @@ class OrderModel {
     DateTime? createdAt,
     List<OrderItemModel>? items,
     String? cancelReason,
+    bool? daHoanTien,
+    DateTime? hoanTienLuc,
   }) {
     return OrderModel(
       id: id ?? this.id,
@@ -217,6 +268,8 @@ class OrderModel {
       createdAt: createdAt ?? this.createdAt,
       items: items ?? this.items,
       cancelReason: cancelReason ?? this.cancelReason,
+      daHoanTien: daHoanTien ?? this.daHoanTien,
+      hoanTienLuc: hoanTienLuc ?? this.hoanTienLuc,
     );
   }
 
@@ -224,8 +277,16 @@ class OrderModel {
   bool get canCancel =>
       status == OrderStatus.pendingPayment || status == OrderStatus.processing;
 
-  /// Co the gui yeu cau tra hang khi don da giao / hoan tat
+  /// Co the gui yeu cau tra hang khi don da giao / hoan tat.
+  ///
+  /// Don da hoan tien thi thoi: may chu cung chan lan tra hang thu hai, de nut
+  /// hien ra chi khien nguoi dung bam vao roi an loi.
   bool get canReturn =>
+      !daHoanTien &&
+      (status == OrderStatus.delivered || status == OrderStatus.completed);
+
+  /// Chi danh gia duoc khi da nhan hang, giong quy tac o may chu.
+  bool get canReview =>
       status == OrderStatus.delivered || status == OrderStatus.completed;
 
   factory OrderModel.fromJson(Map<String, dynamic> json) {
@@ -236,6 +297,15 @@ class OrderModel {
           .map((i) => OrderItemModel.fromJson(Map<String, dynamic>.from(i)))
           .toList();
     }
+    final rawHistory = json['order_status_history'];
+    final parsedHistory = rawHistory is List
+        ? (rawHistory
+            .map((item) =>
+                OrderStatusEvent.fromJson(Map<String, dynamic>.from(item)))
+            .toList()
+          ..sort((a, b) => a.at.compareTo(b.at)))
+        : <OrderStatusEvent>[];
+
     return OrderModel(
       id: json['id']?.toString() ?? '',
       code: json['code']?.toString() ?? 'MNL-${DateTime.now().millisecondsSinceEpoch % 100000}',
@@ -244,7 +314,9 @@ class OrderModel {
       isPaid: json['is_paid'] ?? false,
       subtotal: (json['subtotal'] is num) ? (json['subtotal'] as num).toInt() : 0,
       discountAmount: (json['discount_amount'] is num) ? (json['discount_amount'] as num).toInt() : 0,
-      shippingFee: (json['shipping_fee'] is num) ? (json['shipping_fee'] as num).toInt() : 25000,
+      // Phi ship la so da luu cung don hang; thieu truong thi de 0 chu khong
+      // doan mot muc phi, vi doan sai se lam tong tien hien ra khong khop.
+      shippingFee: (json['shipping_fee'] is num) ? (json['shipping_fee'] as num).toInt() : 0,
       total: (json['total'] is num) ? (json['total'] as num).toInt() : 0,
       shipName: json['ship_name']?.toString() ?? '',
       shipPhone: json['ship_phone']?.toString() ?? '',
@@ -253,7 +325,15 @@ class OrderModel {
           ? DateTime.tryParse(json['created_at'].toString()) ?? DateTime.now()
           : DateTime.now(),
       items: parsedItems,
+      statusHistory: parsedHistory,
+      splitOrderCodes: json['split_order_codes'] is List
+          ? (json['split_order_codes'] as List).map((e) => e.toString()).toList()
+          : const [],
       cancelReason: json['cancel_reason']?.toString(),
+      daHoanTien: json['refunded'] == true,
+      hoanTienLuc: json['refunded_at'] != null
+          ? DateTime.tryParse(json['refunded_at'].toString())
+          : null,
     );
   }
 

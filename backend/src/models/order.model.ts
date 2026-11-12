@@ -1,4 +1,5 @@
 import { supabase } from '../config/supabase.js';
+import { env } from '../config/env.js';
 import type { CalculateShippingFeeInput } from '../validators/shipping.validator.js';
 import { VoucherModel } from './voucher.model.js';
 
@@ -16,6 +17,10 @@ export interface CreateOrderInput {
   total: number;
   voucher_code?: string;
   idempotency_key?: string;
+  /** So tien tru tu vi cho don nay. */
+  wallet_amount?: number;
+  /** So xu dung cho don nay, 1 xu = 1 dong. */
+  coin_amount?: number;
   items: Array<{
     variant_id?: string;
     product_name: string;
@@ -43,6 +48,18 @@ export interface OrderRow {
   cancel_reason?: string;
   created_at: string;
   order_items?: OrderItemRow[];
+  /** Ban sao cua order_items, ten ma ung dung doc. Do enrichOrders gan vao. */
+  items?: OrderItemRow[];
+  /**
+   * Don nay da duoc hoan tien qua yeu cau tra hang chua.
+   *
+   * Bang orders khong co trang thai 'refunded', nen khong co co nay thi don da
+   * hoan tien van hien la "Da giao hang" voi khach - nhin nhu shop chua tra
+   * tien. Do enrichOrders tinh tu order_returns.
+   */
+  refunded?: boolean;
+  /** Thoi diem hoan tien, lay tu lan tra hang duoc duyet. */
+  refunded_at?: string | null;
 }
 
 export interface OrderItemRow {
@@ -66,6 +83,8 @@ export interface ShippingPolicy {
     name: string;
     description: string;
     baseFee: number;
+    /** Nhan thoi gian giao du kien de app hien ngay duoi ten phuong thuc. */
+    estimatedDays: string;
   }>;
   provincesFastDelivery: string[];
 }
@@ -82,22 +101,29 @@ export interface ShippingFeeCalculationResult {
   note: string;
 }
 
+/**
+ * Bang gia giao hang cua shop. Ba con so (phi chuan, phi hoa toc, nguong
+ * freeship) lay tu bien moi truong nen doi gia khong phai sua code; day cung
+ * la nguon duy nhat cho ca app lan web admin qua API /orders/shipping-policy.
+ */
 export const DEFAULT_SHIPPING_POLICY: ShippingPolicy = {
-  standardBaseFee: 25000,
-  expressBaseFee: 45000,
-  freeShippingThreshold: 499000,
+  standardBaseFee: env.shipping.standardBaseFee,
+  expressBaseFee: env.shipping.expressBaseFee,
+  freeShippingThreshold: env.shipping.freeShippingThreshold,
   supportedMethods: [
     {
       id: 'standard',
       name: 'Giao hàng tiêu chuẩn',
       description: 'Giao hàng tận nơi toàn quốc qua các đơn vị vận chuyển uy tín (GHN, GHTK, Viettel Post)',
-      baseFee: 25000,
+      baseFee: env.shipping.standardBaseFee,
+      estimatedDays: '2–4 ngày làm việc',
     },
     {
       id: 'express',
       name: 'Giao hàng hỏa tốc',
       description: 'Nhận hàng nhanh trong ngày hoặc tối đa 24h đối với khu vực nội thành',
-      baseFee: 45000,
+      baseFee: env.shipping.expressBaseFee,
+      estimatedDays: 'Trong ngày hoặc 24h',
     },
   ],
   provincesFastDelivery: [
@@ -107,8 +133,14 @@ export const DEFAULT_SHIPPING_POLICY: ShippingPolicy = {
     'ho chi minh',
     'tphcm',
     'sài gòn',
+    'hải phòng',
+    'hai phong',
     'đà nẵng',
     'da nang',
+    'cần thơ',
+    'can tho',
+    'huế',
+    'hue',
   ],
 };
 
@@ -139,7 +171,7 @@ export class OrderModel {
     const originalFee = shippingMethod === 'express' ? policy.expressBaseFee : policy.standardBaseFee;
 
     // Kiểm tra điều kiện Freeship:
-    // 1. Đơn hàng đạt giá trị tối thiểu (>= 499.000 VNĐ)
+    // 1. Đơn hàng đạt ngưỡng freeship trong bảng giá (freeShippingThreshold)
     // 2. Hoặc người dùng áp dụng mã Freeship hợp lệ (chứa 'FREESHIP' hoặc bắt đầu bằng 'FS')
     const isEligibleBySubtotal = subtotal >= policy.freeShippingThreshold;
     const normalizedVoucher = voucherCode.trim().toUpperCase();
@@ -203,12 +235,23 @@ export class OrderModel {
   }
 
   private static readonly ORDER_WITH_ITEMS_SELECT =
-    '*, order_items(*, product_variants(size, color, products(name, thumbnail_url)))';
+    '*, order_items(*, product_variants(size, color, products(name, thumbnail_url))), order_returns(status, resolved_at)';
 
+  // Man chi tiet don can them lich su doi trang thai de ve hanh trinh giao hang
+  // theo moc thoi gian that, thay vi suy ra tu mot trang thai hien tai.
+  private static readonly ORDER_DETAIL_SELECT =
+    '*, order_items(*, product_variants(size, color, products(name, thumbnail_url))), order_status_history(from_status, to_status, created_at), order_returns(status, resolved_at)';
+
+  /**
+   * Bo cac dia chi sinh anh ngau nhien (picsum, placeholder) vi moi lan goi tra
+   * ve mot anh khac, khong phai anh cua san pham. Anh unsplash van duoc giu vi
+   * do la anh that cua kho hang, dang hien o trang chu va trang chi tiet; bo no
+   * thi don hang tro thanh o trong trong khi cac man khac van co anh.
+   */
   private realImageUrl(url: unknown): string {
     const value = String(url ?? '').trim();
     if (!value) return '';
-    if (/unsplash|picsum|placeholder/i.test(value)) return '';
+    if (/picsum|placeholder/i.test(value)) return '';
     return value;
   }
 
@@ -232,10 +275,27 @@ export class OrderModel {
         };
       });
 
+      // Bang orders khong co cot giam gia; phan chenh giua (tam tinh + phi ship)
+      // va tong thanh toan chinh la so da giam. Khong tra ve thi man chi tiet
+      // hien tam tinh 299k, ship 25k nhung tong 274k, nguoi dung thay nhu sai.
+      const giamGia = Math.max(
+        0,
+        Number(order.subtotal ?? 0) + Number(order.shipping_fee ?? 0) - Number(order.total ?? 0),
+      );
+
+      // Mot don co the co nhieu lan yeu cau tra hang; chi can mot lan da hoan
+      // tien la don coi nhu da hoan tien.
+      const lanHoanTien = (order.order_returns ?? []).find(
+        (yeuCau: any) => yeuCau?.status === 'refunded',
+      );
+
       return {
         ...order,
+        discount_amount: giamGia,
         order_items: items,
         items,
+        refunded: Boolean(lanHoanTien),
+        refunded_at: lanHoanTien?.resolved_at ?? null,
       };
     });
   }
@@ -263,6 +323,8 @@ export class OrderModel {
     if (!normalizedCode && !normalizedPhone) return null;
 
     try {
+      // Dung chung select va buoc lam giau voi cac man khac, neu khong thi tra
+      // cuu don bang ma se khong co anh san pham va khong co dong giam gia.
       const { data, error } = await this.db
         .from('orders')
         .select(OrderModel.ORDER_WITH_ITEMS_SELECT)
@@ -270,7 +332,7 @@ export class OrderModel {
 
       if (error) return null;
 
-      const orders = (data ?? []) as any[];
+      const orders = this.enrichOrders(data ?? []);
 
       const found = orders.find((order) => {
         const orderCode = this.normalizeOrderCode(order.code ?? '');
@@ -286,14 +348,125 @@ export class OrderModel {
       });
 
       if (!found) return null;
-      return this.enrichOrders([found])[0] ?? null;
+      return found;
     } catch {
       return null;
     }
   }
 
   /** Tạo đơn hàng mới, lưu vào bảng orders + order_items trên Supabase */
+  /**
+   * Tao don hang tu gio hang: MOI SAN PHAM MOT DON RIENG.
+   *
+   * Moi don co ma rieng va trang thai rieng, nen quan tri danh dau da giao
+   * tung mon duoc, khong keo theo cac mon khac trong cung lan dat.
+   *
+   * Phi van chuyen tinh MOT LAN cho ca lan dat nen dat het vao don dau tien;
+   * giam gia cung vay, tru dan cho tung don cho den het. Nho do tong tien khach
+   * tra khong doi so voi so hien o man thanh toan.
+   */
   async createOrder(input: CreateOrderInput): Promise<OrderRow> {
+    if (!input.items.length) {
+      throw new Error('Sản phẩm hoặc số lượng đặt hàng không hợp lệ');
+    }
+
+    const createdOrders: OrderRow[] = [];
+    let giamGiaConLai = input.discount_amount ?? 0;
+
+    // Moi san pham tach thanh mot don rieng, nen phai chia dan vi va xu cho
+    // tung don. Truyen nguyen so cho moi don thi khach bi tru lap n lan.
+    //
+    // input.total la so phai tra sau khi tru ma giam gia nhung TRUOC khi tru
+    // vi va xu. Chan o day de tong vi + xu khong bao gio vuot qua so do, neu
+    // khong thi don ve 0 dong ma vi van bi tru thua.
+    let xuConLai = Math.max(0, Math.floor(input.coin_amount ?? 0));
+    let viConLai = Math.max(0, Math.floor(input.wallet_amount ?? 0));
+    const tongDuKien = Math.max(0, Math.floor(input.total ?? 0));
+    if (tongDuKien > 0) {
+      xuConLai = Math.min(xuConLai, tongDuKien);
+      viConLai = Math.min(viConLai, tongDuKien - xuConLai);
+    }
+
+    for (let i = 0; i < input.items.length; i++) {
+      const phiShip = i === 0 ? (input.shipping_fee ?? 0) : 0;
+
+      // Tao don truoc de biet subtotal that cua rieng mon nay
+      const don = await this.createSingleOrder({
+        ...input,
+        items: [input.items[i]],
+        subtotal: 0,
+        total: 0,
+        shipping_fee: phiShip,
+        discount_amount: 0,
+        wallet_amount: viConLai,
+        coin_amount: xuConLai,
+        voucher_code: i === 0 ? input.voucher_code : undefined,
+        idempotency_key: input.idempotency_key
+          ? `${input.idempotency_key}-${i + 1}`
+          : undefined,
+      }, false);
+
+      // Ham create_order co tran rieng (xu khong qua 20% tien hang, khong tra
+      // phi ship) nen so tru duoc co the it hon so xin. Tru dan theo so that.
+      const viDonNay = Number((don as any).wallet_amount ?? 0);
+      const xuDonNay = Number((don as any).coin_amount ?? 0);
+      viConLai -= viDonNay;
+      xuConLai -= xuDonNay;
+
+      // Tru dan giam gia, khong de vuot qua gia tri cua chinh don do
+      const giamChoDonNay = Math.min(giamGiaConLai, don.subtotal);
+      giamGiaConLai -= giamChoDonNay;
+
+      if (giamChoDonNay > 0) {
+        // Phai tru ca vi va xu o day. Thieu hai so nay thi tong tien bi ghi
+        // de ve nhu chua tru gi, khach tra bang vi xong van bi tinh du tien.
+        const tongMoi = Math.max(
+          0,
+          don.subtotal + phiShip - giamChoDonNay - viDonNay - xuDonNay,
+        );
+        await this.db.from('orders').update({ total: tongMoi }).eq('id', don.id);
+        don.total = tongMoi;
+      }
+
+      // Noi cac don sau ve don dau tien. Cong thanh toan doi chieu theo tung
+      // don, nen phai biet duoc nhung don nao thuoc cung mot lan tra tien.
+      if (i > 0) {
+        await this.db
+          .from('orders')
+          .update({ parent_order_id: createdOrders[0].id })
+          .eq('id', don.id);
+      }
+
+      createdOrders.push(don);
+    }
+
+    // Mot thong bao duy nhat cho ca lan dat, du tach thanh bao nhieu don
+    const donDau = createdOrders[0];
+    await this.notifyOrderUser(
+      donDau,
+      'Đặt hàng thành công',
+      createdOrders.length > 1
+        ? `Đã tạo ${createdOrders.length} đơn cho lần đặt này: ${createdOrders
+            .map((o) => `#${o.code}`)
+            .join(', ')}. Mỗi sản phẩm một đơn để theo dõi giao hàng riêng.`
+        : `Đơn hàng #${donDau.code} đã được tạo. Menly sẽ cập nhật khi đơn được xử lý.`,
+    );
+
+    // Tra ve don dau tien de giao dien cu van chay, kem ma cua cac don con lai
+    return {
+      ...donDau,
+      split_order_codes: createdOrders.map((o) => o.code),
+    } as OrderRow;
+  }
+
+  /// Tao MOT don hang cho danh sach san pham duoc truyen vao.
+  ///
+  /// Khong goi truc tiep tu ben ngoai: createOrder se goi ham nay nhieu lan,
+  /// moi san pham mot don.
+  private async createSingleOrder(
+    input: CreateOrderInput,
+    tuTaoThongBao = true,
+  ): Promise<OrderRow> {
     if (!input.items.length || input.items.some((item) => !item.variant_id || !Number.isInteger(item.quantity) || item.quantity < 1)) {
       throw new Error('Sản phẩm hoặc số lượng đặt hàng không hợp lệ');
     }
@@ -301,7 +474,13 @@ export class OrderModel {
     let created: any;
     let error: any;
 
-    // Thử gọi hàm create_order có hỗ trợ p_shipping_fee (9 tham số)
+    // So tien tru tu vi va so xu dung cho don nay. Lam tron ve so nguyen
+    // khong am truoc khi gui xuong, de app gui sai cung khong lam hong don.
+    const soVi = Math.max(0, Math.floor(input.wallet_amount ?? 0));
+    const soXu = Math.max(0, Math.floor(input.coin_amount ?? 0));
+    const dungViHoacXu = soVi > 0 || soXu > 0;
+
+    // Thử gọi hàm create_order có hỗ trợ ví và xu (11 tham số)
     const rpc9 = await this.db.rpc('create_order', {
       p_user_id: input.userId,
       p_payment_method: input.payment_method,
@@ -312,11 +491,25 @@ export class OrderModel {
       p_voucher_code: input.voucher_code ?? null,
       p_idempotency_key: input.idempotency_key ?? null,
       p_shipping_fee: input.shipping_fee ?? 0,
+      p_wallet_amount: soVi,
+      p_coin_amount: soXu,
     });
 
     const errMsg = (rpc9.error?.message ?? '').toLowerCase();
     const errCode = rpc9.error?.code ?? '';
-    if (rpc9.error && (errMsg.includes('schema cache') || errMsg.includes('create_order') || errMsg.includes('function') || errCode === 'PGRST202' || errCode === '42883')) {
+    const hamChuaCapNhat = Boolean(rpc9.error) && (errMsg.includes('schema cache') || errMsg.includes('create_order') || errMsg.includes('function') || errCode === 'PGRST202' || errCode === '42883');
+
+    // Khach dung vi hoac xu ma ham tren Supabase chua co hai tham so do thi
+    // PHAI bao loi, khong duoc lang le lui ve ham cu: lui ve la don van duoc
+    // tao nhung tien trong vi khong bi tru, khach nhu duoc mua khong.
+    if (hamChuaCapNhat && dungViHoacXu) {
+      throw new Error(
+        'Chưa bật được tính năng ví và xu: hàm create_order trên Supabase chưa có tham số ví/xu. '
+        + 'Hãy chạy database/10_vi_va_xu.sql rồi chạy lại database/03_functions.sql.',
+      );
+    }
+
+    if (hamChuaCapNhat) {
       // Fallback cho Supabase instance chưa cập nhật tham số p_shipping_fee (hàm 8 tham số)
       const rpc8 = await this.db.rpc('create_order', {
         p_user_id: input.userId,
@@ -341,15 +534,45 @@ export class OrderModel {
     const rpcOrder = Array.isArray(created) ? created[0] : created;
     if (!rpcOrder?.id) throw new Error('Backend không trả về mã đơn hàng vừa tạo');
 
-    // Đồng bộ chính xác tổng thanh toán, phí ship và giảm giá voucher theo đúng dữ liệu app gửi
-    const calculatedTotal = (input.total !== undefined && input.total > 0)
+    // Đồng bộ chính xác tổng thanh toán, phí ship và giảm giá voucher theo đúng dữ liệu app gửi.
+    // Khi tach don thi app khong gui subtotal/total cho tung don, luc do lay
+    // subtotal do ham create_order tu tinh theo gia that cua san pham.
+    const { data: vuaTao } = await this.db
+      .from('orders')
+      .select('subtotal')
+      .eq('id', rpcOrder.id)
+      .maybeSingle();
+    const baseSubtotal = (input.subtotal && input.subtotal > 0)
+      ? input.subtotal
+      : Number(vuaTao?.subtotal ?? 0);
+    const tongTruocViXu = (input.total !== undefined && input.total > 0)
       ? input.total
-      : Math.max(0, input.subtotal + (input.shipping_fee ?? 0) - (input.discount_amount ?? 0));
+      : Math.max(0, baseSubtotal + (input.shipping_fee ?? 0) - (input.discount_amount ?? 0));
+
+    // Doc lai so vi va xu ma ham create_order da tru that su. Ham co tran rieng
+    // (xu khong qua 20% tien hang, khong tra phi ship) nen so tru duoc co the
+    // nho hon so app xin. Lay theo so that, dung lay theo so app gui.
+    let viDaTru = 0;
+    let xuDaTru = 0;
+    if (dungViHoacXu) {
+      const { data: soDaTru } = await this.db
+        .from('orders')
+        .select('wallet_amount, coin_amount')
+        .eq('id', rpcOrder.id)
+        .maybeSingle();
+      viDaTru = Number(soDaTru?.wallet_amount ?? 0);
+      xuDaTru = Number(soDaTru?.coin_amount ?? 0);
+    }
+
+    // Tru not phan da tra bang vi va xu. Thieu dong nay thi tong tien ghi de
+    // len ket qua cua ham, khach tra bang vi xong van bi tinh du tien.
+    const calculatedTotal = Math.max(0, tongTruocViXu - viDaTru - xuDaTru);
 
     const updatePayload: Record<string, any> = {
       shipping_fee: input.shipping_fee ?? 0,
       total: calculatedTotal,
     };
+
     if (input.subtotal && input.subtotal > 0) {
       updatePayload.subtotal = input.subtotal;
     }
@@ -395,12 +618,21 @@ export class OrderModel {
     const createdOrder = {
       ...order,
       discount_amount: input.discount_amount ?? Math.max(0, order.subtotal + order.shipping_fee - order.total),
+      // Gan so vi va xu that su da tru. Phai gan o day chu khong gan vao ban
+      // ghi cua RPC: ban ghi do bi doc de ngay sau do nen gan vao se mat.
+      // createOrder dua vao hai so nay de tru dan khi tach don.
+      wallet_amount: viDaTru,
+      coin_amount: xuDaTru,
     } as OrderRow;
-    await this.notifyOrderUser(
-      createdOrder,
-      'Đặt hàng thành công',
-      `Đơn hàng #${createdOrder.code} đã được tạo. Menly sẽ cập nhật khi đơn được xử lý.`,
-    );
+    // Khi tach don thi createOrder tu gui MOT thong bao tong hop, neu de day
+    // gui thi mua 3 mon se nhan 3 thong bao giong het nhau.
+    if (tuTaoThongBao) {
+      await this.notifyOrderUser(
+        createdOrder,
+        'Đặt hàng thành công',
+        `Đơn hàng #${createdOrder.code} đã được tạo. Menly sẽ cập nhật khi đơn được xử lý.`,
+      );
+    }
     return createdOrder;
   }
 
@@ -422,7 +654,7 @@ export class OrderModel {
   }
 
   private async loadEnrichedOrder(orderId: string, userId?: string): Promise<OrderRow | null> {
-    let query = this.db.from('orders').select(OrderModel.ORDER_WITH_ITEMS_SELECT).eq('id', orderId);
+    let query = this.db.from('orders').select(OrderModel.ORDER_DETAIL_SELECT).eq('id', orderId);
     if (userId) query = query.eq('user_id', userId);
     const { data, error } = await query.maybeSingle();
     if (error || !data) return null;
@@ -450,16 +682,49 @@ export class OrderModel {
     return cancelledOrder;
   }
 
+  /**
+   * Huy cac don VNPay qua han tra tien va tra hang ve kho.
+   *
+   * Don VNPay duoc tao truoc khi khach sang cong thanh toan va da tru kho ngay
+   * de giu cho. Khach bo ngang thi so hang do bi giu mai neu khong co ai don.
+   * Ham SQL expire_pending_orders lam viec do, nhung phai co cho goi dinh ky.
+   *
+   * Tra ve false khi khong don duoc, de noi goi tu quyet dinh ghi log hay bo qua.
+   */
+  async expirePendingOrders(): Promise<boolean> {
+    const { error } = await this.db.rpc('expire_pending_orders');
+    if (error) {
+      console.error('Khong huy duoc don qua han:', error.message);
+      return false;
+    }
+    return true;
+  }
+
   // =========== ADMIN: QUAN LY DON HANG ===========
 
-  /** [Admin] Danh sach tat ca don hang (kem items), loc theo trang thai, gioi han so luong */
-  async adminListOrders(params: { status?: string; limit?: number }): Promise<OrderRow[]> {
+  /**
+   * [Admin] Danh sach don hang (kem items), loc theo trang thai va khoang ngay.
+   *
+   * from / to la moc thoi gian dang ISO do trang quan tri tinh san theo mui gio
+   * cua may admin, nen "hom nay" o Viet Nam khong bi lech 7 tieng so voi UTC.
+   * to la moc KHONG tinh vao ket qua (dau ngay hom sau).
+   */
+  async adminListOrders(params: {
+    status?: string;
+    limit?: number;
+    from?: string;
+    to?: string;
+  }): Promise<OrderRow[]> {
     let query = this.db
       .from('orders')
-      .select('*, order_items(*)')
+      // Kem trang thai tra hang de man quan tri cung phan biet duoc don da
+      // hoan tien voi don giao thanh cong.
+      .select('*, order_items(*), order_returns(status, resolved_at)')
       .order('created_at', { ascending: false });
 
     if (params.status) query = query.eq('status', params.status);
+    if (params.from) query = query.gte('created_at', params.from);
+    if (params.to) query = query.lt('created_at', params.to);
     if (params.limit && params.limit > 0) query = query.limit(params.limit);
 
     const { data, error } = await query;

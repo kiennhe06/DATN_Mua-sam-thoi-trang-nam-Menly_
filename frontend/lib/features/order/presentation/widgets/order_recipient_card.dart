@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_theme.dart';
 import 'package:menly_app/features/order/data/models/order_model.dart';
 
@@ -14,10 +15,11 @@ class OrderRecipientCard extends StatelessWidget {
     final c = AppColors.of(context);
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSpacing.xl),
+      // Cung kieu the voi cac khoi khac: bo goc manh, vien mong
       decoration: BoxDecoration(
         color: c.surface,
-        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
         border: Border.all(color: c.border.withValues(alpha: 0.6)),
       ),
       child: Column(
@@ -26,10 +28,11 @@ class OrderRecipientCard extends StatelessWidget {
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
                 decoration: BoxDecoration(
                   color: c.primarySoft,
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: BorderRadius.circular(AppTheme.radiusPill),
                 ),
                 child: Text(
                   'NGƯỜI NHẬN',
@@ -40,7 +43,7 @@ class OrderRecipientCard extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: AppSpacing.sm),
               Text(
                 'Địa chỉ nhận hàng',
                 style: TextStyle(
@@ -51,7 +54,7 @@ class OrderRecipientCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.lg),
           Text(
             '${order.shipName} · ${order.shipPhone}',
             style: TextStyle(
@@ -60,7 +63,7 @@ class OrderRecipientCard extends StatelessWidget {
               fontWeight: FontWeight.w700,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: AppSpacing.xs),
           Text(
             order.shipAddress,
             style: TextStyle(

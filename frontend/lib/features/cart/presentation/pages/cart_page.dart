@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/state_views.dart';
 import 'package:menly_app/features/cart/data/models/cart_item_model.dart';
 import '../providers/cart_provider.dart';
 import '../widgets/cart_bottom_bar.dart';
@@ -77,7 +80,7 @@ class _CartPageState extends State<CartPage> {
       body: RefreshIndicator(
         onRefresh: () => cart.loadCartFromApi(),
         child: cart.isLoading && cart.items.isEmpty
-            ? const Center(child: CircularProgressIndicator())
+            ? const LoadingView()
             : cart.items.isEmpty
                 ? ListView(
                     physics: const AlwaysScrollableScrollPhysics(),
@@ -94,15 +97,24 @@ class _CartPageState extends State<CartPage> {
                   )
                 : ListView(
                     physics: const AlwaysScrollableScrollPhysics(),
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.lg,
+                      AppSpacing.md,
+                      AppSpacing.lg,
+                      AppSpacing.xxl,
+                    ),
                     children: [
                 // Thanh chon tat ca & Ma giam gia
                 Container(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  margin: const EdgeInsets.only(bottom: AppSpacing.md),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.lg,
+                    vertical: AppSpacing.sm,
+                  ),
+                  // Cung kieu the voi tung dong san pham ben duoi
                   decoration: BoxDecoration(
                     color: c.surface,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppTheme.radiusXl),
                     border: Border.all(color: c.border),
                   ),
                   child: Row(
@@ -117,7 +129,8 @@ class _CartPageState extends State<CartPage> {
                               height: 22,
                               decoration: BoxDecoration(
                                 color: cart.isAllSelected ? c.primary : Colors.transparent,
-                                borderRadius: BorderRadius.circular(6),
+                                borderRadius:
+                                    BorderRadius.circular(AppTheme.radiusSm),
                                 border: Border.all(
                                   color: cart.isAllSelected ? c.primary : c.border,
                                   width: 1.6,
@@ -136,7 +149,7 @@ class _CartPageState extends State<CartPage> {
                                     )
                                   : null,
                             ),
-                            const SizedBox(width: 8),
+                            const SizedBox(width: AppSpacing.sm),
                             Text(
                               'Chọn tất cả (${cart.items.length})',
                               style: TextStyle(
@@ -156,7 +169,8 @@ class _CartPageState extends State<CartPage> {
                               ? 'Mã: ${cart.appliedVoucher!.code}'
                               : 'Chọn mã giảm giá',
                           style: TextStyle(
-                            color: c.secondary,
+                            // Chu hanh dong dung mau ink cho dong bo voi SectionHeader
+                            color: c.primary,
                             fontWeight: FontWeight.bold,
                             fontSize: 13,
                           ),

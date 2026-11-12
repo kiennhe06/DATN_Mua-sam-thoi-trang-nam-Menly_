@@ -1,24 +1,48 @@
 import 'package:flutter/material.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_spacing.dart';
+import 'about_page.dart';
+import 'package:menly_app/features/order/data/models/shipping_policy_model.dart';
+import 'package:menly_app/features/order/data/services/shipping_policy_service.dart';
 
 /// Trang Chinh sach mua hang, van chuyen, doi tra va bao mat
-class PolicyPage extends StatelessWidget {
+class PolicyPage extends StatefulWidget {
   const PolicyPage({super.key});
 
   @override
+  State<PolicyPage> createState() => _PolicyPageState();
+}
+
+class _PolicyPageState extends State<PolicyPage> {
+  /// Bang gia giao hang lay tu API, khong go cung trong trang chinh sach.
+  ShippingPolicyModel? _bangGiaGiaoHang;
+
+  @override
+  void initState() {
+    super.initState();
+    ShippingPolicyService.instance.tai().then((bangGia) {
+      if (!mounted) return;
+      setState(() => _bangGiaGiaoHang = bangGia);
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     return Scaffold(
+      backgroundColor: c.background,
       appBar: AppBar(
         title: const Text('Chính sách'),
         centerTitle: true,
       ),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppSpacing.lg),
         children: [
           Text(
             'Các chính sách áp dụng khi mua sắm tại Menly.',
-            style: TextStyle(fontSize: 14, color: Colors.grey.shade700, height: 1.4),
+            style: TextStyle(fontSize: 14, color: c.textSecondary, height: 1.4),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.md),
           _section(
             context,
             title: 'Chính sách mua hàng',
@@ -30,10 +54,13 @@ class PolicyPage extends StatelessWidget {
           _section(
             context,
             title: 'Chính sách vận chuyển',
-            body:
-                'Phí giao tiêu chuẩn 25.000 đ toàn quốc, hỏa tốc 45.000 đ. '
-                'Nội thành Hà Nội / TP.HCM / Đà Nẵng khoảng 1–2 ngày; tỉnh khác 3–4 ngày. '
-                'Đơn từ 499.000 đ được miễn phí vận chuyển. Menly hỗ trợ đồng kiểm khi nhận hàng.',
+            body: _bangGiaGiaoHang == null
+                ? 'Biểu phí giao hàng đang được cập nhật, bạn xem phí chính xác ở bước thanh toán. '
+                    'Nội thành Hà Nội / TP.HCM / Đà Nẵng khoảng 1–2 ngày; tỉnh khác 3–4 ngày. '
+                    'Menly hỗ trợ đồng kiểm khi nhận hàng.'
+                : '${_bangGiaGiaoHang!.moTaPhiGiaoHang} '
+                    'Nội thành Hà Nội / TP.HCM / Đà Nẵng khoảng 1–2 ngày; tỉnh khác 3–4 ngày. '
+                    'Menly hỗ trợ đồng kiểm khi nhận hàng.',
           ),
           _section(
             context,
@@ -56,22 +83,36 @@ class PolicyPage extends StatelessWidget {
   }
 
   Widget _section(BuildContext context, {required String title, required String body}) {
-    return Card(
-      elevation: 0,
-      margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Colors.grey.shade200),
-      ),
+    final c = AppColors.of(context);
+    return SupportCard(
       child: Theme(
         data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
         child: ExpansionTile(
           initiallyExpanded: title.contains('mua hàng'),
-          title: Text(title, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+          title: Text(
+            title,
+            style: TextStyle(
+              fontWeight: FontWeight.w700,
+              fontSize: 15,
+              color: c.textPrimary,
+            ),
+          ),
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-              child: Text(body, style: TextStyle(fontSize: 14, color: Colors.grey.shade800, height: 1.5)),
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.lg,
+                0,
+                AppSpacing.lg,
+                AppSpacing.lg,
+              ),
+              child: Text(
+                body,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: c.textSecondary,
+                  height: 1.5,
+                ),
+              ),
             ),
           ],
         ),

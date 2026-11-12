@@ -26,6 +26,8 @@ export class OrderReturnViewModel {
       status: string;
       rejectionReason?: string | null;
       adminResolutionNote?: string | null;
+      restock?: boolean;
+      actorId?: string;
     }
   ): Promise<OrderReturnRow | null> {
     return this.model.updateStatus(id, payload);

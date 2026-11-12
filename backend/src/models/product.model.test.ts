@@ -116,3 +116,53 @@ test('cập nhật tên đồng bộ chỉ mục tìm kiếm và giữ mô tả 
   assert.ok(update);
   assert.equal(update.body.search_text, 'Áo mới Áo nam');
 });
+
+test('sửa ảnh sản phẩm thì ghi đè gallery để không còn ảnh cũ nằm lại', async () => {
+  product = {
+    id: '00000000-0000-4000-8000-000000000002',
+    name: 'Áo sơ mi',
+    thumbnail_url: 'https://anh-cu.example.com/a.jpg',
+  };
+  requests.length = 0;
+
+  await model.updateAdminProduct('00000000-0000-4000-8000-000000000002', {
+    thumbnailUrl: 'https://anh-moi.example.com/b.jpg',
+    images: ['https://anh-moi.example.com/b.jpg'],
+  });
+
+  const xoaAnhCu = requests.find(
+    (request) => request.method === 'DELETE' && request.url.includes('product_images'),
+  );
+  assert.ok(xoaAnhCu, 'phải xóa ảnh cũ trước khi ghi ảnh mới');
+  assert.match(xoaAnhCu.url, /product_id=eq\.00000000-0000-4000-8000-000000000002/);
+
+  const ghiAnhMoi = requests.find(
+    (request) => request.method === 'POST' && request.url.includes('product_images'),
+  );
+  assert.ok(ghiAnhMoi, 'phải ghi ảnh mới vào gallery');
+  assert.deepEqual(ghiAnhMoi.body, [
+    {
+      product_id: '00000000-0000-4000-8000-000000000002',
+      url: 'https://anh-moi.example.com/b.jpg',
+      sort_order: 0,
+    },
+  ]);
+});
+
+test('chỉ đổi tên thì không đụng tới gallery', async () => {
+  product = {
+    id: '00000000-0000-4000-8000-000000000002',
+    name: 'Áo sơ mi',
+    description: 'Áo nam',
+    thumbnail_url: 'https://anh-cu.example.com/a.jpg',
+  };
+  requests.length = 0;
+
+  await model.updateAdminProduct('00000000-0000-4000-8000-000000000002', { name: 'Áo mới' });
+
+  assert.equal(
+    requests.filter((request) => request.url.includes('product_images')).length,
+    0,
+    'không được xóa hay ghi lại ảnh khi người dùng chỉ sửa tên',
+  );
+});

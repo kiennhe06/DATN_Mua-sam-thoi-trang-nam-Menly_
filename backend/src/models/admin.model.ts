@@ -191,11 +191,67 @@ export class AdminModel {
     return toAdminUser(data as ProfileRow);
   }
 
-  /** [Admin] Xoa nguoi dung (xoa auth.users -> profiles tu xoa theo cascade) */
+  /** [Admin] Xoa nguoi dung va tat ca du lieu lien quan tranh loi rang buoc khoa ngoai */
   async deleteUser(id: string): Promise<boolean> {
-    const { error } = await this.db.auth.admin.deleteUser(id);
-    if (error) throw new Error(error.message);
-    return true;
+    try {
+      // 1. Tim va don dep tat ca don hang cua nguoi dung
+      const { data: userOrders } = await this.db
+        .from('orders')
+        .select('id')
+        .eq('user_id', id);
+
+      const orderIds = (userOrders ?? []).map((o) => o.id);
+      if (orderIds.length > 0) {
+        // Xoa giao dich thanh toan
+        await this.db.from('payments').delete().in('order_id', orderIds);
+        // Huy lien ket bien dong ton kho
+        await this.db.from('inventory_movements').update({ order_id: null }).in('order_id', orderIds);
+        // Xoa yeu cau tra hang cua cac don hang nay
+        await this.db.from('order_returns').delete().in('order_id', orderIds);
+        // Xoa don hang (order_items, order_vouchers, order_status_history se tu dong cascade)
+        await this.db.from('orders').delete().in('id', orderIds);
+      }
+
+      // 2. Go lien ket o cac bang nhat ky/lich su
+      await this.db.from('inventory_movements').update({ created_by: null }).eq('created_by', id);
+      await this.db.from('order_status_history').update({ changed_by: null }).eq('changed_by', id);
+
+      // 3. Xoa danh gia san pham & yeu cau tra hang
+      await this.db.from('product_reviews').delete().eq('user_id', id);
+      await this.db.from('order_returns').delete().eq('user_id', id);
+
+      // 4. Xoa tin nhan & cuoc hoi thoai chat
+      await this.db.from('chat_messages').delete().eq('sender_id', id);
+      await this.db.from('chat_conversations').delete().eq('user_id', id);
+
+      // 5. Xoa nhat ky audit log neu co
+      await this.db.from('admin_audit_log').delete().eq('admin_id', id);
+
+      // 6. Xoa gio hang, yeu thich, thong bao, dia chi, theo doi shop
+      await this.db.from('cart_items').delete().eq('user_id', id);
+      await this.db.from('wishlists').delete().eq('user_id', id);
+      await this.db.from('notifications').delete().eq('user_id', id);
+      await this.db.from('user_addresses').delete().eq('user_id', id);
+      await this.db.from('shop_followers').delete().eq('user_id', id);
+
+      // 7. Xoa ho so profile
+      await this.db.from('profiles').delete().eq('id', id);
+
+      // 8. Xoa tai khoan khoi Supabase Auth
+      try {
+        const { error: authError } = await this.db.auth.admin.deleteUser(id);
+        if (authError && !authError.message.toLowerCase().includes('not found')) {
+          console.error('Loi khi xoa auth user:', authError.message);
+        }
+      } catch (authEx) {
+        console.error('Ngoai le khi xoa auth user:', authEx);
+      }
+
+      return true;
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : 'Không thể xóa người dùng';
+      throw new Error(msg);
+    }
   }
 
   async listInventoryMovements(limit = 200) {
@@ -226,6 +282,31 @@ export class AdminModel {
         productName: variant?.products?.name,
       };
     });
+  }
+
+  /**
+   * Ghi mot dong vao nhat ky quan tri.
+   *
+   * Khong nem loi ra ngoai: ghi nhat ky that bai khong duoc lam hong thao tac ma
+   * quan tri vien vua thuc hien. Loi van in ra console de con dau vet.
+   */
+  async recordAudit(entry: {
+    adminId: string;
+    action: string;
+    entityType: string;
+    entityId?: string | null;
+    before?: unknown;
+    after?: unknown;
+  }): Promise<void> {
+    const { error } = await this.db.from('admin_audit_log').insert({
+      admin_id: entry.adminId,
+      action: entry.action,
+      entity_type: entry.entityType,
+      entity_id: entry.entityId ?? null,
+      before: entry.before ?? null,
+      after: entry.after ?? null,
+    });
+    if (error) console.error('Khong ghi duoc nhat ky quan tri:', error.message);
   }
 
   async listAuditLogs(limit = 200) {
@@ -332,6 +413,88 @@ export class AdminModel {
       .order('sort_order', { ascending: true });
     if (error) throw new Error(error.message);
     return data ?? [];
+  }
+
+  /// Doi mot phan thong tin banner. Chi ghi nhung truong duoc gui len.
+  async updateBanner(id: string, input: Partial<BannerInput>) {
+    const updates: Record<string, string | number | boolean | null> = {};
+    if (input.title !== undefined) updates.title = input.title;
+    if (input.imageUrl !== undefined) updates.image_url = input.imageUrl;
+    if (input.linkUrl !== undefined) updates.link_url = input.linkUrl || null;
+    if (input.sortOrder !== undefined) updates.sort_order = input.sortOrder;
+    if (input.isActive !== undefined) updates.is_active = input.isActive;
+    if (input.startDate !== undefined) updates.start_date = input.startDate;
+    if (input.endDate !== undefined) updates.end_date = input.endDate;
+
+    const { data, error } = await this.db
+      .from('banners')
+      .update(updates)
+      .eq('id', id)
+      .select('*')
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    return data;
+  }
+
+  /// Bat hoac tat hien thi banner tren trang chu.
+  async setBannerActive(id: string, isActive: boolean) {
+    const { data, error } = await this.db
+      .from('banners')
+      .update({ is_active: isActive })
+      .eq('id', id)
+      .select('*')
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    return data;
+  }
+
+  async deleteBanner(id: string) {
+    const { data, error } = await this.db
+      .from('banners')
+      .delete()
+      .eq('id', id)
+      .select('id')
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    return data;
+  }
+
+  /// Ten kho anh banner tren Supabase Storage.
+  private bannerBucket = 'banners';
+
+  /// Tao kho anh banner neu chua co. Kho de o che do cong khai vi anh banner
+  /// hien tren trang chu cho moi nguoi xem.
+  private async taoKhoAnhBannerNeuChua() {
+    const { data: buckets } = await this.db.storage.listBuckets();
+    const daCo = buckets?.some((bucket) => bucket.name === this.bannerBucket);
+    if (!daCo) {
+      await this.db.storage.createBucket(this.bannerBucket, { public: true });
+    }
+  }
+
+  /**
+   * Tai mot anh banner tu may quan tri len Supabase Storage va tra ve dia chi
+   * cong khai cua anh. Nho vay nguoi quan tri khong can di tim link anh tren
+   * mang nua, chi can chon file trong may.
+   */
+  async uploadBannerImage(file: Express.Multer.File): Promise<string> {
+    await this.taoKhoAnhBannerNeuChua();
+
+    const duoiFile = file.originalname.match(/\.([a-zA-Z0-9]+)$/);
+    const duoi = duoiFile ? duoiFile[1].toLowerCase() : (file.mimetype?.split('/')[1] || 'jpg');
+    const tenFile = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}.${duoi}`;
+    const kieuNoiDung =
+      file.mimetype && file.mimetype !== 'application/octet-stream'
+        ? file.mimetype
+        : `image/${duoi === 'jpg' ? 'jpeg' : duoi}`;
+
+    const { error } = await this.db.storage
+      .from(this.bannerBucket)
+      .upload(tenFile, file.buffer, { contentType: kieuNoiDung, upsert: false });
+    if (error) throw new Error(`Lỗi tải ảnh banner lên kho lưu trữ: ${error.message}`);
+
+    const { data } = this.db.storage.from(this.bannerBucket).getPublicUrl(tenFile);
+    return data.publicUrl;
   }
 
   async createBanner(input: BannerInput) {

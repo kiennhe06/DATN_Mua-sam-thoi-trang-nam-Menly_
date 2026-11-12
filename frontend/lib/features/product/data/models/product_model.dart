@@ -1,3 +1,4 @@
+import 'package:menly_app/core/utils/image_url.dart';
 /// Model bien the san pham (size, mau, ton kho)
 class ProductVariantModel {
   final String id;
@@ -74,7 +75,7 @@ class ProductModel {
     final seen = <String>{};
     final real = <String>[];
     for (final url in [...images, thumbnailUrl]) {
-      if (url.isEmpty || url.contains('picsum.photos') || seen.contains(url)) {
+      if (url.isEmpty || laAnhSinhNgauNhien(url) || seen.contains(url)) {
         continue;
       }
       seen.add(url);
@@ -96,9 +97,7 @@ class ProductModel {
 
     final parsedImages = _parseImages(json['product_images'] ?? json['images']);
 
-    final rawThumb = json['thumbnail_url']?.toString() ?? '';
-    final validThumb =
-        (rawThumb.isNotEmpty && !rawThumb.contains('picsum')) ? rawThumb : '';
+    final validThumb = duongDanAnhThat(json['thumbnail_url']);
 
     return ProductModel(
       id: json['id']?.toString() ?? '',
@@ -157,7 +156,7 @@ class ProductModel {
 
     return entries
         .map((entry) => entry['url']?.toString() ?? '')
-        .where((url) => url.isNotEmpty && !url.contains('picsum.photos'))
+        .where((url) => url.isNotEmpty && !laAnhSinhNgauNhien(url))
         .toList();
   }
 

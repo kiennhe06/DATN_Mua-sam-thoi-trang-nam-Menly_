@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:menly_app/features/auth/presentation/pages/login_page.dart';
-import 'package:menly_app/features/auth/presentation/providers/auth_provider.dart';
+import 'package:menly_app/core/theme/app_colors.dart';
+import 'package:menly_app/core/theme/app_spacing.dart';
+import 'package:menly_app/core/theme/app_theme.dart';
+import 'package:menly_app/core/widgets/app_buttons.dart';
+import 'package:menly_app/features/support/presentation/pages/about_page.dart';
 import 'package:menly_app/features/support/presentation/pages/contact_page.dart';
 import 'package:menly_app/features/support/presentation/pages/policy_page.dart';
-import 'support_chat_page.dart';
+import 'package:menly_app/features/support/presentation/pages/support_chat_page.dart';
+import 'package:menly_app/features/order/data/models/shipping_policy_model.dart';
+import 'package:menly_app/features/order/data/services/shipping_policy_service.dart';
 
 /// Trang Cau hoi thuong gap (FAQ) (TM05)
 class FAQPage extends StatefulWidget {
@@ -17,7 +21,30 @@ class FAQPage extends StatefulWidget {
 class _FAQPageState extends State<FAQPage> {
   String _searchQuery = '';
 
-  final List<Map<String, dynamic>> _faqs = [
+  /// Bang gia giao hang lay tu API de cau tra loi ve phi ship luon dung voi
+  /// gia may chu dang tinh, khong phai mot con so go cung trong app.
+  ShippingPolicyModel? _bangGiaGiaoHang;
+
+  @override
+  void initState() {
+    super.initState();
+    ShippingPolicyService.instance.tai().then((bangGia) {
+      if (!mounted) return;
+      setState(() => _bangGiaGiaoHang = bangGia);
+    });
+  }
+
+  /// Cau mo ta phi giao hang. Chua tai duoc bang gia thi noi that la dang
+  /// cap nhat, khong bia mot con so.
+  String _moTaPhiShip() {
+    final bangGia = _bangGiaGiaoHang;
+    if (bangGia == null) {
+      return 'Biểu phí giao hàng đang được cập nhật, bạn xem phí chính xác ở bước thanh toán.';
+    }
+    return bangGia.moTaPhiGiaoHang;
+  }
+
+  List<Map<String, dynamic>> get _faqs => [
     {
       'category': 'Đặt hàng & Mua sắm',
       'items': [
@@ -44,7 +71,7 @@ class _FAQPageState extends State<FAQPage> {
         },
         {
           'q': 'Phí vận chuyển được tính như thế nào?',
-          'a': 'Phí vận chuyển mặc định là 25.000 đ cho toàn quốc. Đặc biệt, Menly miễn phí vận chuyển cho các đơn hàng từ 300.000 đ khi áp dụng mã FREESHIP.',
+          'a': '${_moTaPhiShip()} Ngoài ra bạn vẫn được miễn phí vận chuyển khi áp dụng mã FREESHIP.',
         },
         {
           'q': 'Tôi có được kiểm tra hàng trước khi thanh toán không?',
@@ -82,7 +109,9 @@ class _FAQPageState extends State<FAQPage> {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     return Scaffold(
+      backgroundColor: c.background,
       appBar: AppBar(
         title: const Text('Câu hỏi thường gặp (FAQ)'),
         centerTitle: true,
@@ -92,15 +121,17 @@ class _FAQPageState extends State<FAQPage> {
           children: [
             // Thanh tim kiem cau hoi
             Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(AppSpacing.lg),
               child: TextField(
                 decoration: InputDecoration(
                   hintText: 'Tìm kiếm câu hỏi thắc mắc...',
-                  
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                  ),
                   filled: true,
-                  fillColor: Colors.grey.shade100,
-                  contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                  fillColor: c.surfaceVariant,
+                  contentPadding:
+                      const EdgeInsets.symmetric(vertical: AppSpacing.md),
                 ),
                 onChanged: (val) => setState(() => _searchQuery = val.toLowerCase().trim()),
               ),
@@ -110,7 +141,7 @@ class _FAQPageState extends State<FAQPage> {
             ListView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
               itemCount: _faqs.length,
               itemBuilder: (ctx, i) {
                 final category = _faqs[i]['category'] as String;
@@ -125,39 +156,36 @@ class _FAQPageState extends State<FAQPage> {
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      child: Text(
-                        category,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
-                        ),
-                      ),
-                    ),
-                    Card(
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        side: BorderSide(color: Colors.grey.shade200),
-                      ),
+                    SupportSectionTitle(category),
+                    SupportCard(
                       child: Column(
                         children: items.map((item) {
                           return Theme(
                             data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
                             child: ExpansionTile(
-                              
                               title: Text(
                                 item['q']!,
-                                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 14,
+                                  color: c.textPrimary,
+                                ),
                               ),
                               children: [
                                 Padding(
-                                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                                  padding: const EdgeInsets.fromLTRB(
+                                    AppSpacing.lg,
+                                    0,
+                                    AppSpacing.lg,
+                                    AppSpacing.lg,
+                                  ),
                                   child: Text(
                                     item['a']!,
-                                    style: TextStyle(fontSize: 13, color: Colors.grey.shade700, height: 1.4),
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: c.textSecondary,
+                                      height: 1.4,
+                                    ),
                                   ),
                                 ),
                               ],
@@ -166,7 +194,6 @@ class _FAQPageState extends State<FAQPage> {
                         }).toList(),
                       ),
                     ),
-                    const SizedBox(height: 12),
                   ],
                 );
               },
@@ -174,74 +201,61 @@ class _FAQPageState extends State<FAQPage> {
 
             // Hop thoai lien he ho tro
             Container(
-              margin: const EdgeInsets.all(16),
-              padding: const EdgeInsets.all(16),
+              margin: const EdgeInsets.all(AppSpacing.lg),
+              padding: const EdgeInsets.all(AppSpacing.lg),
               decoration: BoxDecoration(
-                color: Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(12),
+                color: c.surfaceVariant,
+                borderRadius: BorderRadius.circular(AppTheme.radiusMd),
               ),
               child: Column(
                 children: [
-                  const Text('Bạn vẫn chưa tìm thấy câu trả lời?',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                  const SizedBox(height: 6),
-                  Text('Đội ngũ chăm sóc khách hàng Menly luôn sẵn sàng 24/7',
-                      style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.black87,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                      icon: const Icon(Icons.chat_bubble_outline_rounded),
-                      label: const Text('Chat trực tiếp với CSKH'),
-                      onPressed: () {
-                        if (!context.read<AuthProvider>().isLoggedIn) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Vui lòng đăng nhập để chat với CSKH'),
-                            ),
-                          );
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (_) => const LoginPage()),
-                          );
-                          return;
-                        }
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => const SupportChatPage()),
-                        );
-                      },
+                  Text(
+                    'Bạn vẫn chưa tìm thấy câu trả lời?',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: c.textPrimary,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    'Đội ngũ chăm sóc khách hàng Menly luôn sẵn sàng 24/7',
+                    style: TextStyle(color: c.textSecondary, fontSize: 12),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  // Nut nay nam duoi dong "Doi ngu cham soc khach hang",
+                  // nen phai mo chat voi nhan vien that chu khong phai tro ly ao.
+                  PrimaryButton(
+                    label: 'Chat với nhân viên',
+                    height: 48,
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const SupportChatPage()),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.black87,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                        ),
-                        child: const Text('Hotline: 1900 6868'),
+                      SecondaryButton(
+                        label: 'Hotline: 1900 6868',
+                        expanded: false,
+                        height: 44,
                         onPressed: () {
                           Navigator.push(context, MaterialPageRoute(builder: (_) => const ContactPage()));
                         },
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: AppSpacing.sm),
                       TextButton(
                         onPressed: () {
                           Navigator.push(context, MaterialPageRoute(builder: (_) => const PolicyPage()));
                         },
-                        child: const Text('Xem chính sách'),
+                        child: Text(
+                          'Xem chính sách',
+                          style: TextStyle(color: c.primary),
+                        ),
                       ),
                     ],
                   ),

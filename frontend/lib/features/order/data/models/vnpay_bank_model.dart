@@ -13,6 +13,9 @@ class VNPayBank {
   final String fullName;
   final String category; // 'qr' | 'atm' | 'intl'
   final bool isSandboxRecommended;
+
+  /// Mau thuong hieu that cua ngan hang / to chuc the, giu nguyen ma goc va
+  /// khong doi sang design token vi nguoi dung nhan dien logo qua dung mau nay.
   final Color primaryColor;
 
   const VNPayBank({

@@ -49,6 +49,11 @@ export const adminBannerSchema = z.object({
   endDate: endDateSchema,
 });
 
+/// Sua banner: chi gui nhung truong muon doi, phai co it nhat mot truong.
+export const adminBannerUpdateSchema = adminBannerSchema
+  .partial()
+  .refine((value) => Object.keys(value).length > 0, 'Cần có ít nhất một trường để cập nhật');
+
 export const adminReturnResolutionSchema = z.object({
   status: z.enum(['shop_approved', 'shop_rejected', 'refunded', 'rejected']),
   note: z.string().trim().max(2000).optional(),

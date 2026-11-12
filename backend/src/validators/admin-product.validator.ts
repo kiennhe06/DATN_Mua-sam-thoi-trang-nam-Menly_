@@ -37,8 +37,12 @@ export const adminProductSchema = z
   })
   .strict();
 
+// Giu lai 'images' de khi sua anh thi gallery duoc cap nhat theo, neu bo di
+// thi anh cu van nam lai trong product_images va hien thanh o anh trong.
+//
+// Giu ca 'variants': truoc day truong nay bi bo nen man sua san pham khong the
+// them size hay mau moi, phai xoa san pham tao lai tu dau.
 export const updateAdminProductSchema = adminProductSchema
-  .omit({ images: true, variants: true })
   .partial()
   .refine((value) => Object.keys(value).length > 0, 'Cần có ít nhất một trường để cập nhật');
 

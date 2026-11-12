@@ -111,4 +111,13 @@ class WishlistProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+  /// Xoa du lieu cua nguoi dung truoc khi doi tai khoan.
+  void clearUserData() {
+    _favorites.clear();
+    _error = null;
+    _isLoading = false;
+    notifyListeners();
+  }
+
 }

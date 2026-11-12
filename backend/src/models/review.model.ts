@@ -7,6 +7,7 @@ interface ReviewRow {
   user_id: string;
   rating: number;
   comment: string | null;
+  images: string[] | null;
   reply_comment: string | null;
   reply_at: string | null;
   created_at: string;
@@ -19,6 +20,7 @@ export interface AdminReview {
   productId: string;
   rating: number;
   comment: string | null;
+  images: string[];
   replyComment: string | null;
   replyAt: string | null;
   createdAt: string;
@@ -29,8 +31,9 @@ export interface AdminReview {
   };
 }
 
+// Co ca 'images' de trang quan tri xem duoc anh thuc te khach gui kem.
 const ADMIN_REVIEW_COLUMNS =
-  'id, product_id, user_id, rating, comment, reply_comment, reply_at, created_at';
+  'id, product_id, user_id, rating, comment, images, reply_comment, reply_at, created_at';
 
 // Lop truy cap du lieu cho: Danh gia
 const REVIEW_BUCKET = 'review-images';
@@ -122,13 +125,18 @@ export class ReviewModel {
     };
   }
 
-  async findReviewableOrderItemForProduct(userId: string, productId: string) {
+  /** Danh sach trang thai duoc truyen vao de chi co mot noi dinh nghia quy tac. */
+  async findReviewableOrderItemForProduct(
+    userId: string,
+    productId: string,
+    reviewableStatuses: string[],
+  ) {
     const { data: items, error } = await this.db
       .from('order_items')
       .select('id, orders!inner(user_id, status), product_variants!inner(product_id)')
       .eq('orders.user_id', userId)
       .eq('product_variants.product_id', productId)
-      .in('orders.status', ['delivered', 'completed', 'paid', 'processing']);
+      .in('orders.status', reviewableStatuses);
 
     if (error || !items || !items.length) return null;
 
@@ -254,6 +262,7 @@ export class ReviewModel {
         productId: r.product_id,
         rating: r.rating,
         comment: r.comment,
+        images: Array.isArray(r.images) ? r.images : [],
         replyComment: r.reply_comment,
         replyAt: r.reply_at,
         createdAt: r.created_at,
@@ -289,6 +298,7 @@ export class ReviewModel {
       productId: r.product_id,
       rating: r.rating,
       comment: r.comment,
+      images: Array.isArray(r.images) ? r.images : [],
       replyComment: r.reply_comment,
       replyAt: r.reply_at,
       createdAt: r.created_at,

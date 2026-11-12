@@ -1,5 +1,7 @@
 import { Router, type Response } from 'express';
-import { requireAdmin } from '../../middlewares/auth.js';
+import { supabase } from '../../config/supabase.js';
+import { requireStaffOrAdmin, forgetAuthUser } from '../../middlewares/auth.js';
+import { uploadAvatarMiddleware } from '../../middlewares/upload.js';
 import { ProductModel } from '../../models/product.model.js';
 import { OrderModel } from '../../models/order.model.js';
 import { VoucherModel } from '../../models/voucher.model.js';
@@ -18,6 +20,7 @@ import {
 } from '../../validators/admin-voucher.validator.js';
 import {
   adminBannerSchema,
+  adminBannerUpdateSchema,
   adminNotificationSchema,
   inventoryAdjustmentSchema,
 } from '../../validators/admin.validator.js';
@@ -30,7 +33,24 @@ import {
 
 // Quan tri routes
 const router = Router();
-router.use(requireAdmin);
+
+/**
+ * Duong dan ma tai khoan nhan vien (role staff) duoc dung.
+ *
+ * Nhan vien chi lam viec voi don hang. Chan tap trung o day thay vi gan quyen
+ * vao tung route: duong dan them sau nay mac dinh van chi admin vao duoc, khong
+ * ai phai nho sua them.
+ */
+const DUONG_DAN_CHO_NHAN_VIEN = [/^\/orders$/, /^\/orders\/[^/]+\/status$/];
+
+router.use(requireStaffOrAdmin);
+router.use((req, res, next) => {
+  if (req.user?.role === 'admin') return next();
+  if (DUONG_DAN_CHO_NHAN_VIEN.some((mau) => mau.test(req.path))) return next();
+  return res
+    .status(403)
+    .json({ error: 'Tài khoản nhân viên không có quyền dùng chức năng này' });
+});
 const productModel = new ProductModel();
 const orderModel = new OrderModel();
 const voucherModel = new VoucherModel();
@@ -38,6 +58,59 @@ const adminModel = new AdminModel();
 const reviewModel = new ReviewModel();
 
 // Cac trang thai don hang hop le (khop enum order_status trong DB)
+// Truong khong bao gio duoc ghi vao nhat ky
+const SENSITIVE_FIELDS = ['password', 'newPassword', 'currentPassword', 'token'];
+const ACTION_BY_METHOD: Record<string, string> = {
+  POST: 'create',
+  PUT: 'update',
+  PATCH: 'update',
+  DELETE: 'delete',
+};
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Bo mat khau va token ra khoi du lieu truoc khi luu lai. */
+function redact(body: unknown): unknown {
+  if (!body || typeof body !== 'object' || Array.isArray(body)) return body ?? null;
+  const copy: Record<string, unknown> = { ...(body as Record<string, unknown>) };
+  for (const field of SENSITIVE_FIELDS) {
+    if (field in copy) copy[field] = '***';
+  }
+  return copy;
+}
+
+/**
+ * Ghi nhat ky moi thao tac lam thay doi du lieu o trang quan tri.
+ *
+ * Dat tap trung o day thay vi rai rac trong tung handler: duong dan them sau nay
+ * cung tu dong duoc ghi, khong ai phai nho. Ghi sau khi phan hoi da gui xong nen
+ * khong lam cham thao tac.
+ */
+router.use((req, res, next) => {
+  if (req.method === 'GET') return next();
+
+  res.on('finish', () => {
+    if (res.statusCode >= 400) return;
+    const adminId = req.user?.id;
+    if (!adminId) return;
+
+    // Vi du duong dan: /users/<id>/lock -> ['users', '<id>', 'lock']
+    const segments = req.path.split('/').filter(Boolean);
+    const entityType = segments[0] ?? 'unknown';
+    const entityId = segments[1] && UUID_PATTERN.test(segments[1]) ? segments[1] : null;
+    const action = segments[2] ?? ACTION_BY_METHOD[req.method] ?? req.method.toLowerCase();
+
+    void adminModel.recordAudit({
+      adminId,
+      action,
+      entityType,
+      entityId,
+      after: redact(req.body),
+    });
+  });
+
+  return next();
+});
+
 const ORDER_STATUSES = [
   'pending_payment',
   'paid',
@@ -122,7 +195,7 @@ router.put('/products/:id', async (req, res, next) => {
   }
 
   try {
-    const data = await productModel.updateAdminProduct(id, parsed.data);
+    const data = await productModel.updateAdminProduct(id, parsed.data, req.user?.id);
     if (!data) return res.status(404).json({ error: 'Không tìm thấy sản phẩm' });
     return res.json({ data });
   } catch (error) {
@@ -172,18 +245,34 @@ router.patch('/products/:id/approve', async (req, res, next) => {
   }
 });
 
-// GET /api/v1/admin/orders - DS don (loc theo status, gioi han limit)
+/** Moc thoi gian dang ISO; tra ve undefined neu khong co, null neu sai dinh dang. */
+function parseMocThoiGian(raw: unknown): string | undefined | null {
+  if (typeof raw !== 'string' || raw.trim() === '') return undefined;
+  const moc = new Date(raw);
+  return Number.isNaN(moc.getTime()) ? null : moc.toISOString();
+}
+
+// GET /api/v1/admin/orders - DS don (loc theo status va khoang ngay, gioi han limit)
 router.get('/orders', async (req, res, next) => {
   const statusRaw = typeof req.query.status === 'string' ? req.query.status : undefined;
   if (statusRaw && !ORDER_STATUSES.includes(statusRaw)) {
     return res.status(400).json({ error: 'Trạng thái đơn hàng không hợp lệ' });
   }
 
+  const from = parseMocThoiGian(req.query.from);
+  const to = parseMocThoiGian(req.query.to);
+  if (from === null || to === null) {
+    return res.status(400).json({ error: 'Khoảng ngày không hợp lệ' });
+  }
+  if (from && to && from >= to) {
+    return res.status(400).json({ error: 'Ngày bắt đầu phải trước ngày kết thúc' });
+  }
+
   const limitRaw = typeof req.query.limit === 'string' ? Number.parseInt(req.query.limit, 10) : NaN;
   const limit = Number.isInteger(limitRaw) && limitRaw > 0 ? limitRaw : undefined;
 
   try {
-    const data = await orderModel.adminListOrders({ status: statusRaw, limit });
+    const data = await orderModel.adminListOrders({ status: statusRaw, limit, from, to });
     return res.json({ data });
   } catch (error) {
     return next(error);
@@ -297,6 +386,8 @@ router.put('/users/:id', async (req, res, next) => {
   try {
     const data = await adminModel.updateUser(id.data, parsed.data);
     if (!data) return res.status(404).json({ error: 'Không tìm thấy người dùng' });
+    // Doi vai tro / trang thai phai co hieu luc ngay, khong doi dem het han
+    forgetAuthUser(id.data);
     return res.json({ data });
   } catch (error) {
     return next(error);
@@ -308,11 +399,25 @@ router.delete('/users/:id', async (req, res, next) => {
   const id = userIdSchema.safeParse(req.params.id);
   if (!id.success) return res.status(400).json({ error: 'Mã người dùng không hợp lệ' });
 
+  if (id.data === req.user?.id) {
+    return res.status(400).json({ error: 'Không thể tự xóa tài khoản quản trị đang đăng nhập' });
+  }
+
   try {
+    const targetUser = await adminModel.getUser(id.data);
+    if (!targetUser) {
+      return res.status(404).json({ error: 'Không tìm thấy người dùng' });
+    }
+    if (targetUser.email === 'admin@gmail.com') {
+      return res.status(400).json({ error: 'Không thể xóa tài khoản Quản trị viên cấp cao (admin@gmail.com)' });
+    }
+
     await adminModel.deleteUser(id.data);
-    return res.json({ message: 'Đã xóa người dùng' });
+    forgetAuthUser(id.data);
+    return res.json({ message: 'Đã xóa người dùng thành công' });
   } catch (error) {
-    return next(error);
+    const message = error instanceof Error ? error.message : 'Không thể xóa người dùng';
+    return res.status(400).json({ error: message });
   }
 });
 
@@ -332,6 +437,8 @@ router.patch('/users/:id/lock', async (req, res, next) => {
   try {
     const user = await adminModel.setLock(id.data, parsed.data.isLocked);
     if (!user) return res.status(404).json({ error: 'Không tìm thấy người dùng' });
+    // Khoa tai khoan phai chan duoc ngay ca khi ho dang dung dich vu
+    forgetAuthUser(id.data);
     return res.json({ user });
   } catch (error) {
     return next(error);
@@ -378,12 +485,84 @@ router.get('/banners', async (_req, res, next) => {
   }
 });
 
+// POST /api/v1/admin/banners/upload - tai anh banner tu may len kho luu tru
+//
+// Phai dat truoc POST /banners/:id khong co, nhung van dat truoc cac route
+// banner khac cho de doc. Tra ve dia chi anh de form dien thang vao o "Ảnh".
+router.post('/banners/upload', uploadAvatarMiddleware('image'), async (req, res, next) => {
+  if (!req.file) {
+    return res.status(400).json({ error: 'Vui lòng chọn một file ảnh để tải lên' });
+  }
+
+  try {
+    const imageUrl = await adminModel.uploadBannerImage(req.file);
+    return res.status(201).json({ data: { imageUrl } });
+  } catch (error) {
+    return next(error);
+  }
+});
+
 // POST /api/v1/admin/banners - tạo banner
 router.post('/banners', async (req, res, next) => {
   const parsed = adminBannerSchema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: 'Thông tin banner không hợp lệ', details: parsed.error.flatten().fieldErrors });
   try {
     return res.status(201).json({ data: await adminModel.createBanner(parsed.data) });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+// PUT /api/v1/admin/banners/:id - sua banner
+router.put('/banners/:id', async (req, res, next) => {
+  const id = productIdSchema.safeParse(req.params.id);
+  if (!id.success) return res.status(400).json({ error: 'Mã banner không hợp lệ' });
+
+  const parsed = adminBannerUpdateSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({
+      error: 'Thông tin banner không hợp lệ',
+      details: parsed.error.flatten().fieldErrors,
+    });
+  }
+
+  try {
+    const data = await adminModel.updateBanner(id.data, parsed.data);
+    if (!data) return res.status(404).json({ error: 'Không tìm thấy banner' });
+    return res.json({ data });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+// PATCH /api/v1/admin/banners/:id/active - bat tat hien thi banner
+router.patch('/banners/:id/active', async (req, res, next) => {
+  const id = productIdSchema.safeParse(req.params.id);
+  if (!id.success) return res.status(400).json({ error: 'Mã banner không hợp lệ' });
+
+  const isActive = req.body?.isActive;
+  if (typeof isActive !== 'boolean') {
+    return res.status(400).json({ error: 'Trạng thái hiển thị phải là true hoặc false' });
+  }
+
+  try {
+    const data = await adminModel.setBannerActive(id.data, isActive);
+    if (!data) return res.status(404).json({ error: 'Không tìm thấy banner' });
+    return res.json({ data });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+// DELETE /api/v1/admin/banners/:id - xoa banner
+router.delete('/banners/:id', async (req, res, next) => {
+  const id = productIdSchema.safeParse(req.params.id);
+  if (!id.success) return res.status(400).json({ error: 'Mã banner không hợp lệ' });
+
+  try {
+    const data = await adminModel.deleteBanner(id.data);
+    if (!data) return res.status(404).json({ error: 'Không tìm thấy banner' });
+    return res.json({ data: { id: id.data } });
   } catch (error) {
     return next(error);
   }

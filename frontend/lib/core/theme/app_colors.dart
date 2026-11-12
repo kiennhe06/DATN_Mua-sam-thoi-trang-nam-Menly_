@@ -43,9 +43,19 @@ class AppColors extends ThemeExtension<AppColors> {
     required this.shadow,
   });
 
+  /// Mau nhan dung lam CHU va ICON tren nen sang.
+  ///
+  /// Nguoi dung chon duoc tong nhan, nhung tong qua sang (vi du be nhat) to len
+  /// nen kem thi gan nhu vo hinh. Gap tong nhu vay thi lui ve ink cho doc duoc;
+  /// sac be van giu o nen, vien va cac vung to mo.
+  static Color _nhanDocDuocTrenNenSang(Color accent) {
+    const ink = Color(0xFF1C1B17);
+    return accent.computeLuminance() > 0.45 ? ink : accent;
+  }
+
   static AppColors of(BuildContext context) {
     return Theme.of(context).extension<AppColors>() ??
-        AppColors.light(AppAccent.camel);
+        AppColors.light(AppAccent.mucDen);
   }
 
   /// "Kem & Ink" boutique light scheme: cream canvas, near-black ink for CTAs
@@ -53,18 +63,18 @@ class AppColors extends ThemeExtension<AppColors> {
   factory AppColors.light(AppAccent accent) {
     return AppColors(
       primary: const Color(0xFF1C1B17), // ink — CTA, nav, selected
-      onPrimary: const Color(0xFFF7F5F1),
+      onPrimary: const Color(0xFFF7F3EB),
       primarySoft: accent.color.withValues(alpha: 0.14),
-      secondary: accent.color, // camel highlight
-      background: const Color(0xFFF7F5F1), // cream
-      surface: const Color(0xFFFFFFFF),
-      surfaceVariant: const Color(0xFFEFEBE3), // beige fills
+      secondary: _nhanDocDuocTrenNenSang(accent.color),
+      background: const Color(0xFFFAFAF8), // trang nga — nen va header
+      surface: const Color(0xFFFFFFFF), // the trang tinh noi tren nen
+      surfaceVariant: const Color(0xFFF1F0EC), // chip, o tim kiem, vung to nhe
       inkCard: const Color(0xFF1C1B17),
       onInk: const Color(0xFFF7F5F1),
       textPrimary: const Color(0xFF15140F),
       textSecondary: const Color(0xFF6E6A5F),
       textMuted: const Color(0xFFA7A294),
-      border: const Color(0xFFE8E2D7),
+      border: const Color(0xFFE7E5E0),
       success: const Color(0xFF3E7C5A),
       danger: const Color(0xFFC0564B),
       shadow: const Color(0x14000000),

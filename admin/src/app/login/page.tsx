@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { loginUser, getLockoutStatus } from '@/lib/api';
+import { laVaiTroQuanTri, tenVaiTro, trangMacDinh } from '@/lib/admin-session';
 import { ShieldCheck, AlertCircle, CheckCircle2 } from 'lucide-react';
 
 export default function LoginPage() {
@@ -24,16 +25,23 @@ export default function LoginPage() {
 
     try {
       const res = await loginUser(email, password);
-      if (res.user.role !== 'admin') {
-        throw new Error('Chỉ tài khoản Quản trị viên (Admin) mới có quyền truy cập trang quản trị!');
+      // Nhan vien duoc cap quyen cung dang nhap bang chinh tai khoan cua ho,
+      // chi khac la vao duoc it trang hon admin.
+      if (!laVaiTroQuanTri(res.user.role)) {
+        throw new Error(
+          'Tài khoản này chưa được cấp quyền quản trị hoặc nhân viên. Liên hệ quản trị viên để được cấp quyền.',
+        );
       }
 
-      setSuccessMsg(`Đăng nhập thành công! Chào mừng ${res.user.fullName || res.user.email}`);
+      const vaiTro = res.user.role;
+      setSuccessMsg(
+        `Đăng nhập thành công! Chào mừng ${res.user.fullName || res.user.email} (${tenVaiTro(vaiTro)})`,
+      );
       localStorage.setItem('menshop_admin_token', `Bearer ${res.accessToken}`);
       localStorage.setItem('menshop_admin_user', JSON.stringify(res.user));
 
       setTimeout(() => {
-        router.push('/');
+        router.push(trangMacDinh(vaiTro));
       }, 800);
     } catch (err: unknown) {
       const error = err as { message?: string; status?: number };
@@ -104,14 +112,15 @@ export default function LoginPage() {
             {loading ? 'Đang xử lý...' : (
               <>
                 <ShieldCheck className="w-4 h-4" />
-                Đăng nhập Admin
+                Đăng nhập
               </>
             )}
           </button>
         </form>
 
         <div className="mt-6 p-3 rounded-xl bg-tint border border-line text-[11px] text-ink-muted">
-          Đăng nhập bằng tài khoản Supabase có quyền quản trị viên (role admin).
+          Dành cho tài khoản đã được cấp quyền. Nhân viên vào Đơn hàng và Chat CSKH;
+          quản trị viên vào các mục còn lại.
         </div>
       </div>
     </div>

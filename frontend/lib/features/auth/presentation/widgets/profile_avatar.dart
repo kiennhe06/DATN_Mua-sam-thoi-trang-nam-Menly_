@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:menly_app/core/theme/app_colors.dart';
+import 'package:menly_app/core/widgets/app_image.dart';
 
 class AvatarPreset {
   final String id;
@@ -17,6 +19,9 @@ class AvatarPreset {
     required this.shirt,
   });
 
+  /// Bang mau ve nguoi trong anh dai dien mac dinh. Day khong phai mau giao
+  /// dien ma la mau cua hinh ve de phan biet nguoi dung voi nhau, nen giu
+  /// nguyen chu khong doi sang token mau cua app.
   static const presets = [
     AvatarPreset(
       id: 'menly-avatar:classic',
@@ -101,34 +106,36 @@ class ProfileAvatar extends StatelessWidget {
     }
 
     final url = avatarUrl?.trim() ?? '';
-    if (url.startsWith('http://') || url.startsWith('https://')) {
-      return ClipOval(
-        child: Image.network(
-          url,
-          width: radius * 2,
-          height: radius * 2,
-          fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => _fallback(),
-        ),
-      );
-    }
-    return _fallback();
+    if (url.isEmpty) return _fallback(context);
+    return ClipOval(
+      child: AppImage(
+        url: url,
+        width: radius * 2,
+        height: radius * 2,
+        fit: BoxFit.cover,
+        placeholder: (ctx) => _fallback(ctx),
+        errorWidget: (ctx) => _fallback(ctx),
+      ),
+    );
   }
 
-  Widget _fallback() => CircleAvatar(
-        radius: radius,
-        backgroundColor: Colors.grey.shade200,
-        child: Text(
-          fallbackText.isEmpty
-              ? 'M'
-              : fallbackText.characters.first.toUpperCase(),
-          style: TextStyle(
-            fontSize: radius * 0.72,
-            fontWeight: FontWeight.bold,
-            color: const Color(0xFF1C1B17),
-          ),
+  Widget _fallback(BuildContext context) {
+    final c = AppColors.of(context);
+    return CircleAvatar(
+      radius: radius,
+      backgroundColor: c.surfaceVariant,
+      child: Text(
+        fallbackText.isEmpty
+            ? 'M'
+            : fallbackText.characters.first.toUpperCase(),
+        style: TextStyle(
+          fontSize: radius * 0.72,
+          fontWeight: FontWeight.bold,
+          color: c.textPrimary,
         ),
-      );
+      ),
+    );
+  }
 }
 
 class _PresetAvatarPainter extends CustomPainter {
@@ -191,6 +198,7 @@ class _PresetAvatarPainter extends CustomPainter {
       ..close();
     canvas.drawPath(hair, paint);
 
+    // Mau mat va mieng thuoc hinh ve nguoi, khong phai mau giao dien.
     paint.color = const Color(0xFF382923);
     canvas.drawCircle(Offset(scale * 0.41, scale * 0.47), scale * 0.018, paint);
     canvas.drawCircle(Offset(scale * 0.59, scale * 0.47), scale * 0.018, paint);
