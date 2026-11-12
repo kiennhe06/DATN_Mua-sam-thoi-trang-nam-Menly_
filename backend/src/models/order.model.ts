@@ -334,20 +334,21 @@ export class OrderModel {
 
       const orders = this.enrichOrders(data ?? []);
 
-      return (
-        orders.find((order) => {
-          const orderCode = this.normalizeOrderCode(order.code ?? '');
-          const orderPhone = this.normalizePhoneNumber(String(order.ship_phone ?? ''));
-          const matchCode = normalizedCode ? orderCode === this.normalizeOrderCode(normalizedCode) : false;
-          const matchPhone = normalizedPhone ? orderPhone === normalizedPhone : false;
+      const found = orders.find((order) => {
+        const orderCode = this.normalizeOrderCode(order.code ?? '');
+        const orderPhone = this.normalizePhoneNumber(String(order.ship_phone ?? ''));
+        const matchCode = normalizedCode ? orderCode === this.normalizeOrderCode(normalizedCode) : false;
+        const matchPhone = normalizedPhone ? orderPhone === normalizedPhone : false;
 
-          if (normalizedCode && normalizedPhone) {
-            return matchCode && matchPhone;
-          }
+        if (normalizedCode && normalizedPhone) {
+          return matchCode && matchPhone;
+        }
 
-          return matchCode || matchPhone;
-        }) ?? null
-      );
+        return matchCode || matchPhone;
+      });
+
+      if (!found) return null;
+      return found;
     } catch {
       return null;
     }

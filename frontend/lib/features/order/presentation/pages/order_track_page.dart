@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:menly_app/core/theme/app_colors.dart';
@@ -211,37 +212,81 @@ class _OrderTrackPageState extends State<OrderTrackPage> {
                                 fontWeight: FontWeight.bold,
                                 fontSize: 14)),
                         const SizedBox(height: AppSpacing.sm),
-                        ..._order!.items.map((item) => Container(
-                          margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-                          padding: const EdgeInsets.all(AppSpacing.md),
-                          decoration: BoxDecoration(
-                            color: c.surfaceVariant,
-                            borderRadius: BorderRadius.circular(AppTheme.radiusSm),
-                          ),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+                        ..._order!.items.map((item) {
+                          final variant = [
+                            if (item.size.trim().isNotEmpty) 'Size: ${item.size.trim()}',
+                            if (item.color.trim().isNotEmpty) 'Màu: ${item.color.trim()}',
+                          ].join(' · ');
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+                            padding: const EdgeInsets.all(AppSpacing.md),
+                            decoration: BoxDecoration(
+                              color: c.surfaceVariant,
+                              borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+                            ),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+                                  child: SizedBox(
+                                    width: 48,
+                                    height: 48,
+                                    child: item.thumbnailUrl.isNotEmpty
+                                        ? CachedNetworkImage(
+                                            imageUrl: item.thumbnailUrl,
+                                            fit: BoxFit.cover,
+                                            placeholder: (_, __) => _imageFallback(c),
+                                            errorWidget: (_, __, ___) => _imageFallback(c),
+                                          )
+                                        : _imageFallback(c),
+                                  ),
+                                ),
+                                const SizedBox(width: AppSpacing.sm),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(item.productName,
+                                          style: TextStyle(
+                                              color: c.textPrimary,
+                                              fontWeight: FontWeight.bold)),
+                                      if (variant.isNotEmpty) ...[
+                                        const SizedBox(height: AppSpacing.xs),
+                                        Text(variant,
+                                            style: TextStyle(color: c.textSecondary)),
+                                      ],
+                                      const SizedBox(height: AppSpacing.xs),
+                                      Text(
+                                        '${formatPrice(item.unitPrice)} × ${item.quantity}',
+                                        style: TextStyle(
+                                            color: c.textSecondary, fontSize: 12),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: AppSpacing.sm),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
                                   children: [
-                                    Text(item.productName,
+                                    Text('x${item.quantity}',
                                         style: TextStyle(
                                             color: c.textPrimary,
-                                            fontWeight: FontWeight.bold)),
+                                            fontWeight: FontWeight.w600)),
                                     const SizedBox(height: AppSpacing.xs),
-                                    Text('${item.size} • ${item.color}',
-                                        style: TextStyle(color: c.textSecondary)),
+                                    Text(
+                                      formatPrice(item.subtotal),
+                                      style: TextStyle(
+                                          color: c.textPrimary,
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 12.5),
+                                    ),
                                   ],
                                 ),
-                              ),
-                              Text('x${item.quantity}',
-                                  style: TextStyle(
-                                      color: c.textPrimary,
-                                      fontWeight: FontWeight.w600)),
-                            ],
-                          ),
-                        )),
+                              ],
+                            ),
+                          );
+                        }),
                       ],
                     ),
                   ),
@@ -250,6 +295,17 @@ class _OrderTrackPageState extends State<OrderTrackPage> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _imageFallback(AppColors c) {
+    return Container(
+      color: c.surfaceVariant,
+      alignment: Alignment.center,
+      child: Text(
+        'Menly',
+        style: TextStyle(color: c.textMuted, fontSize: 9, fontWeight: FontWeight.bold),
       ),
     );
   }
