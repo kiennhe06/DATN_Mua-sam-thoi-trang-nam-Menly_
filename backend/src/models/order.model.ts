@@ -265,27 +265,28 @@ export class OrderModel {
     try {
       const { data, error } = await this.db
         .from('orders')
-        .select('*, order_items(*)')
+        .select(OrderModel.ORDER_WITH_ITEMS_SELECT)
         .order('created_at', { ascending: false });
 
       if (error) return null;
 
-      const orders = (data ?? []) as OrderRow[];
+      const orders = (data ?? []) as any[];
 
-      return (
-        orders.find((order) => {
-          const orderCode = this.normalizeOrderCode(order.code ?? '');
-          const orderPhone = this.normalizePhoneNumber(String(order.ship_phone ?? ''));
-          const matchCode = normalizedCode ? orderCode === this.normalizeOrderCode(normalizedCode) : false;
-          const matchPhone = normalizedPhone ? orderPhone === normalizedPhone : false;
+      const found = orders.find((order) => {
+        const orderCode = this.normalizeOrderCode(order.code ?? '');
+        const orderPhone = this.normalizePhoneNumber(String(order.ship_phone ?? ''));
+        const matchCode = normalizedCode ? orderCode === this.normalizeOrderCode(normalizedCode) : false;
+        const matchPhone = normalizedPhone ? orderPhone === normalizedPhone : false;
 
-          if (normalizedCode && normalizedPhone) {
-            return matchCode && matchPhone;
-          }
+        if (normalizedCode && normalizedPhone) {
+          return matchCode && matchPhone;
+        }
 
-          return matchCode || matchPhone;
-        }) ?? null
-      );
+        return matchCode || matchPhone;
+      });
+
+      if (!found) return null;
+      return this.enrichOrders([found])[0] ?? null;
     } catch {
       return null;
     }

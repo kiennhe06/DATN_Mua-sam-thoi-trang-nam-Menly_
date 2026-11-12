@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:menly_app/core/utils/format.dart';
@@ -198,30 +199,70 @@ class _OrderTrackPageState extends State<OrderTrackPage> {
                         const SizedBox(height: 16),
                         const Text('Sản phẩm', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                         const SizedBox(height: 8),
-                        ..._order!.items.map((item) => Container(
-                          margin: const EdgeInsets.only(bottom: 8),
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: Colors.grey.shade50,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+                        ..._order!.items.map((item) {
+                          final variant = [
+                            if (item.size.trim().isNotEmpty) 'Size: ${item.size.trim()}',
+                            if (item.color.trim().isNotEmpty) 'Màu: ${item.color.trim()}',
+                          ].join(' · ');
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 8),
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade50,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: SizedBox(
+                                    width: 48,
+                                    height: 48,
+                                    child: item.thumbnailUrl.isNotEmpty
+                                        ? CachedNetworkImage(
+                                            imageUrl: item.thumbnailUrl,
+                                            fit: BoxFit.cover,
+                                            placeholder: (_, __) => _imageFallback(),
+                                            errorWidget: (_, __, ___) => _imageFallback(),
+                                          )
+                                        : _imageFallback(),
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(item.productName, style: const TextStyle(fontWeight: FontWeight.bold)),
+                                      if (variant.isNotEmpty) ...[
+                                        const SizedBox(height: 3),
+                                        Text(variant, style: TextStyle(color: Colors.grey.shade700, fontSize: 12)),
+                                      ],
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        '${formatPrice(item.unitPrice)} × ${item.quantity}',
+                                        style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
                                   children: [
-                                    Text(item.productName, style: const TextStyle(fontWeight: FontWeight.bold)),
-                                    const SizedBox(height: 3),
-                                    Text('${item.size} • ${item.color}', style: TextStyle(color: Colors.grey.shade700)),
+                                    Text('x${item.quantity}', style: const TextStyle(fontWeight: FontWeight.w600)),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      formatPrice(item.subtotal),
+                                      style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12.5),
+                                    ),
                                   ],
                                 ),
-                              ),
-                              Text('x${item.quantity}', style: const TextStyle(fontWeight: FontWeight.w600)),
-                            ],
-                          ),
-                        )),
+                              ],
+                            ),
+                          );
+                        }),
                       ],
                     ),
                   ),
@@ -230,6 +271,17 @@ class _OrderTrackPageState extends State<OrderTrackPage> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _imageFallback() {
+    return Container(
+      color: Colors.grey.shade200,
+      alignment: Alignment.center,
+      child: Text(
+        'Menly',
+        style: TextStyle(color: Colors.grey.shade500, fontSize: 9, fontWeight: FontWeight.bold),
       ),
     );
   }
