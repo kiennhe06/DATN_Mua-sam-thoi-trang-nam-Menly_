@@ -42,6 +42,8 @@ router.post('/', requireAuth, async (req, res) => {
       total: Number(req.body.total ?? 0),
       shipping_fee: Number(req.body.shipping_fee ?? 0),
       voucher_code: req.body.voucher_code,
+      wallet_amount: Math.max(0, Math.floor(Number(req.body.wallet_amount ?? 0))),
+      coin_amount: Math.max(0, Math.floor(Number(req.body.coin_amount ?? 0))),
       idempotency_key: typeof req.body.idempotency_key === 'string' ? req.body.idempotency_key : undefined,
       items: req.body.items ?? [],
     });
