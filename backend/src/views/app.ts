@@ -20,6 +20,7 @@ import bannerRoutes from './routes/banner.routes.js';
 import adminRoutes from './routes/admin.routes.js';
 import supportChatRoutes from './routes/support-chat.routes.js';
 import aiChatRoutes from './routes/ai-chat.routes.js';
+import walletRoutes from './routes/wallet.routes.js';
 
 export function createApp() {
   const app = express();
@@ -47,6 +48,7 @@ export function createApp() {
   app.use('/api/v1/banners', bannerRoutes);
   app.use('/api/v1/support-chat', supportChatRoutes);
   app.use('/api/v1/ai-chat', aiChatRoutes);
+  app.use('/api/v1/wallet', walletRoutes);
   app.use('/api/v1/admin', adminRoutes);
 
   app.use(errorHandler);
