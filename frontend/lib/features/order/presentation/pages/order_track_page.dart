@@ -1,4 +1,3 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:menly_app/core/theme/app_colors.dart';
@@ -7,6 +6,7 @@ import 'package:menly_app/core/theme/app_theme.dart';
 import 'package:menly_app/core/utils/format.dart';
 import 'package:menly_app/core/network/api_client.dart';
 import 'package:menly_app/core/widgets/app_buttons.dart';
+import 'package:menly_app/core/widgets/app_image.dart';
 import 'package:menly_app/features/order/data/models/order_model.dart';
 
 class OrderTrackPage extends StatefulWidget {
@@ -233,11 +233,11 @@ class _OrderTrackPageState extends State<OrderTrackPage> {
                                     width: 48,
                                     height: 48,
                                     child: item.thumbnailUrl.isNotEmpty
-                                        ? CachedNetworkImage(
-                                            imageUrl: item.thumbnailUrl,
+                                        ? AppImage(
+                                            url: item.thumbnailUrl,
                                             fit: BoxFit.cover,
-                                            placeholder: (_, __) => _imageFallback(c),
-                                            errorWidget: (_, __, ___) => _imageFallback(c),
+                                            placeholder: (_) => _imageFallback(c),
+                                            errorWidget: (_) => _imageFallback(c),
                                           )
                                         : _imageFallback(c),
                                   ),

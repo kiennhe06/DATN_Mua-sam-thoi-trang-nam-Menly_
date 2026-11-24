@@ -262,6 +262,11 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                         const Spacer(),
                         TextButton(
+                          style: TextButton.styleFrom(
+                            padding: EdgeInsets.zero,
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
                           onPressed: () {
                             Navigator.of(context).push(
                               MaterialPageRoute(builder: (_) => const ForgotPasswordPage()),

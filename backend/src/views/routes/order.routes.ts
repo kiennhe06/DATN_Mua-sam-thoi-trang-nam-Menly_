@@ -10,6 +10,18 @@ const router = Router();
 const orderModel = new OrderModel();
 const vm = new OrderViewModel();
 
+function soTienApDung(value: unknown, field: string): number {
+  const amount = value == null
+    ? 0
+    : typeof value === 'number' || typeof value === 'string'
+      ? Number(value)
+      : Number.NaN;
+  if (!Number.isSafeInteger(amount) || amount < 0) {
+    throw new Error(`${field} phải là số nguyên không âm`);
+  }
+  return amount;
+}
+
 /**
  * GET /api/v1/orders/shipping-policy
  * Lấy chính sách vận chuyển của hệ thống Menly
@@ -42,8 +54,8 @@ router.post('/', requireAuth, async (req, res) => {
       total: Number(req.body.total ?? 0),
       shipping_fee: Number(req.body.shipping_fee ?? 0),
       voucher_code: req.body.voucher_code,
-      wallet_amount: Math.max(0, Math.floor(Number(req.body.wallet_amount ?? 0))),
-      coin_amount: Math.max(0, Math.floor(Number(req.body.coin_amount ?? 0))),
+      wallet_amount: soTienApDung(req.body.wallet_amount, 'Số tiền từ ví'),
+      coin_amount: soTienApDung(req.body.coin_amount, 'Số xu'),
       idempotency_key: typeof req.body.idempotency_key === 'string' ? req.body.idempotency_key : undefined,
       items: req.body.items ?? [],
     });
