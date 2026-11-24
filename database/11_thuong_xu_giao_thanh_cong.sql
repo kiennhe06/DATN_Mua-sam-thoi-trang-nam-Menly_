@@ -12,8 +12,10 @@ declare
   v_order record;
   v_reward int;
   v_balance int;
+  v_discount int;
 begin
-  select id, user_id, status, subtotal, discount_amount
+  select id, user_id, status, subtotal, shipping_fee, total,
+         wallet_amount, coin_amount
     into v_order
     from public.orders
    where id = p_order_id
@@ -38,7 +40,14 @@ begin
     return v_balance;
   end if;
 
-  v_reward := greatest(0, floor(greatest(0, v_order.subtotal - coalesce(v_order.discount_amount, 0)) / 100.0)::int);
+  -- orders không có cột discount_amount. Suy ra giảm giá từ tổng đã thanh
+  -- toán sau khi loại phần xu và ví đã trừ.
+  v_discount := greatest(
+    0,
+    v_order.subtotal + v_order.shipping_fee - v_order.total
+      - coalesce(v_order.wallet_amount, 0) - coalesce(v_order.coin_amount, 0)
+  );
+  v_reward := greatest(0, floor(greatest(0, v_order.subtotal - v_discount) / 100.0)::int);
   if v_reward = 0 then
     return v_balance;
   end if;

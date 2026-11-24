@@ -22,8 +22,13 @@ class _WalletPageState extends State<WalletPage> {
   }
 
   Future<void> _reload() async {
-    setState(() => _overview = WalletService.instance.load());
-    await _overview;
+    final next = WalletService.instance.load();
+    setState(() => _overview = next);
+    try {
+      await next;
+    } catch (_) {
+      // FutureBuilder displays the error and keeps the retry button available.
+    }
   }
 
   @override
