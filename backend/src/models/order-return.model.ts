@@ -1,5 +1,10 @@
 import { supabase } from '../config/supabase.js';
-import { OrderModel, type OrderRow } from './order.model.js';
+import {
+  OrderModel,
+  SO_NGAY_DUOC_TRA_HANG,
+  thoiDiemNhanHang,
+  type OrderRow,
+} from './order.model.js';
 
 export interface OrderReturnRow {
   id: string;
@@ -31,6 +36,18 @@ export interface CreateOrderReturnInput {
 const RETURN_BUCKET = 'review-images';
 const MAX_PROOF_IMAGES = 5;
 const RETURNABLE_STATUSES = ['delivered', 'completed'];
+/**
+ * Do dai toi thieu cua ly do tra hang.
+ *
+ * Chan truong hop khach chon "Khác" roi khong ghi gi, luc do ly do gui len
+ * dung mot chu "Khác" va nguoi duyet khong biet hang bi sao. Moi ly do co san
+ * khac deu dai hon nguong nay.
+ *
+ * De nguong thap vua du chan "Khác" (4 ky tu) chu khong dat cao hon: ung dung
+ * da chan ky o man hinh roi, day chi la luoi do cho ai goi thang API, khong
+ * nen tu choi nham mot mo ta ngan nhung that nhu "Khác: bẩn".
+ */
+const DO_DAI_LY_DO_TOI_THIEU = 8;
 const OPEN_RETURN_STATUSES = ['requested', 'shop_approved', 'admin_dispute_review'];
 
 // Lop truy cap du lieu cho: Tra hang
@@ -44,6 +61,11 @@ export class OrderReturnModel {
     if (!reason) {
       throw new Error('Vui lòng nhập lý do trả hàng');
     }
+    if (reason.length < DO_DAI_LY_DO_TOI_THIEU) {
+      throw new Error(
+        `Lý do trả hàng quá ngắn, vui lòng mô tả rõ hơn (ít nhất ${DO_DAI_LY_DO_TOI_THIEU} ký tự)`,
+      );
+    }
 
     const order = await this.orderModel.getOrderById(input.orderId, input.userId);
     if (!order) {
@@ -51,6 +73,18 @@ export class OrderReturnModel {
     }
     if (!RETURNABLE_STATUSES.includes(order.status)) {
       throw new Error('Chỉ có thể trả hàng khi đơn đã giao');
+    }
+
+    // Qua han thi khong nhan nua. Phai chan o day chu khong chi an nut trong
+    // ung dung, vi goi thang API van tao duoc yeu cau.
+    const nhanHangLuc = thoiDiemNhanHang(order.order_status_history);
+    if (nhanHangLuc) {
+      const han = new Date(nhanHangLuc).getTime() + SO_NGAY_DUOC_TRA_HANG * 24 * 60 * 60 * 1000;
+      if (Date.now() > han) {
+        throw new Error(
+          `Đã quá ${SO_NGAY_DUOC_TRA_HANG} ngày kể từ khi nhận hàng nên không gửi được yêu cầu trả hàng`,
+        );
+      }
     }
 
     const openReturn = await this.findOpenByOrder(input.orderId, input.userId);

@@ -71,6 +71,30 @@ export default function ReturnsPage() {
     }
   }
 
+  /**
+   * Hoàn tiền là thao tác không lùi lại được: tiền đã trả cho khách, và nếu
+   * chọn "hàng còn bán được" thì kho cũng đã cộng. Bấm nhầm một cái là sai số
+   * liệu, nên hỏi lại trước khi gửi.
+   */
+  function hoanTien(yeuCau: OrderReturn, nhapLaiKho: boolean) {
+    const moTaKho = nhapLaiKho
+      ? 'hàng còn bán được nên sẽ được cộng lại vào kho'
+      : 'hàng lỗi nên sẽ KHÔNG cộng lại vào kho';
+    const dongY = window.confirm(
+      `Hoàn tiền ${yeuCau.refundAmount.toLocaleString('vi-VN')} đ cho đơn ${yeuCau.orderId}?\n\n` +
+        `Bạn đang chọn: ${moTaKho}.\n\n` +
+        'Thao tác này không hoàn tác được.',
+    );
+    if (!dongY) return;
+
+    doiTrangThai(
+      yeuCau,
+      'refunded',
+      nhapLaiKho ? 'Đã hoàn tiền và nhập lại kho' : 'Đã hoàn tiền, không nhập lại kho',
+      { restock: nhapLaiKho },
+    );
+  }
+
   function tuChoi(yeuCau: OrderReturn) {
     const lyDo = window.prompt('Lý do từ chối yêu cầu trả hàng này?');
     if (lyDo === null) return;
@@ -184,11 +208,7 @@ export default function ReturnsPage() {
                       <button
                         type="button"
                         disabled={dangBan}
-                        onClick={() =>
-                          doiTrangThai(yeuCau, 'refunded', 'Đã hoàn tiền và nhập lại kho', {
-                            restock: true,
-                          })
-                        }
+                        onClick={() => hoanTien(yeuCau, true)}
                         className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-ok-line bg-ok-bg px-3.5 py-2 text-xs font-semibold text-ok hover:brightness-95 disabled:opacity-50"
                       >
                         <PackageCheck className="h-3.5 w-3.5" />
@@ -197,11 +217,7 @@ export default function ReturnsPage() {
                       <button
                         type="button"
                         disabled={dangBan}
-                        onClick={() =>
-                          doiTrangThai(yeuCau, 'refunded', 'Đã hoàn tiền, không nhập lại kho', {
-                            restock: false,
-                          })
-                        }
+                        onClick={() => hoanTien(yeuCau, false)}
                         className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-line-strong bg-panel px-3.5 py-2 text-xs font-semibold text-ink-mid hover:bg-tint disabled:opacity-50"
                       >
                         <PackageX className="h-3.5 w-3.5" />

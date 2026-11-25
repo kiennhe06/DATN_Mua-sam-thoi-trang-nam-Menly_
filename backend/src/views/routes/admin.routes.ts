@@ -30,6 +30,7 @@ import {
   toggleLockSchema,
   userIdSchema,
 } from '../../validators/admin-user.validator.js';
+import { LoiChuyenTrangThai } from '../../models/order-status-flow.js';
 
 // Quan tri routes
 const router = Router();
@@ -296,6 +297,10 @@ router.put('/orders/:id/status', async (req, res, next) => {
     if (!data) return res.status(404).json({ error: 'Không tìm thấy đơn hàng' });
     return res.json({ data, message: 'Đã cập nhật trạng thái đơn hàng' });
   } catch (error) {
+    // Buoc chuyen sai luat la loi cua nguoi bam, khong phai su co may chu.
+    if (error instanceof LoiChuyenTrangThai) {
+      return res.status(409).json({ error: error.message });
+    }
     if (error instanceof Error && error.message.includes('không thể hủy')) {
       return res.status(409).json({ error: error.message });
     }

@@ -3,6 +3,11 @@ import 'package:menly_app/core/utils/image_url.dart';
 /// Item trong don hang
 class OrderItemModel {
   final String id;
+
+  /// Ma san pham goc. Rong khi san pham da bi xoa khoi cua hang: don hang van
+  /// giu ban chup ten, size, mau va gia nen van xem duoc, chi la khong mo
+  /// duoc trang chi tiet nua.
+  final String productId;
   final String productName;
   final String size;
   final String color;
@@ -12,6 +17,7 @@ class OrderItemModel {
 
   const OrderItemModel({
     required this.id,
+    this.productId = '',
     required this.productName,
     required this.size,
     required this.color,
@@ -25,6 +31,7 @@ class OrderItemModel {
   factory OrderItemModel.fromJson(Map<String, dynamic> json) {
     return OrderItemModel(
       id: json['id']?.toString() ?? '',
+      productId: json['product_id']?.toString() ?? json['productId']?.toString() ?? '',
       productName: json['product_name']?.toString() ?? json['productName']?.toString() ?? '',
       size: json['size']?.toString() ?? '',
       color: json['color']?.toString() ?? '',
@@ -38,6 +45,7 @@ class OrderItemModel {
 
   Map<String, dynamic> toJson() => {
     'id': id,
+    'product_id': productId,
     'product_name': productName,
     'size': size,
     'color': color,
@@ -204,6 +212,12 @@ class OrderModel {
   /// Thoi diem hoan tien, de ve dung moc tren hanh trinh don hang.
   final DateTime? hoanTienLuc;
 
+  /// Han cuoi con gui duoc yeu cau tra hang, do may chu tinh san.
+  ///
+  /// Lay tu may chu chu khong tu tinh o day, de khi doi so ngay cho phep tra
+  /// hang thi chi phai sua mot cho.
+  final DateTime? hanTraHang;
+
   OrderModel({
     required this.id,
     required this.code,
@@ -224,6 +238,7 @@ class OrderModel {
     this.cancelReason,
     this.daHoanTien = false,
     this.hoanTienLuc,
+    this.hanTraHang,
   });
 
   /// Nhan trang thai de hien cho nguoi dung.
@@ -251,6 +266,7 @@ class OrderModel {
     String? cancelReason,
     bool? daHoanTien,
     DateTime? hoanTienLuc,
+    DateTime? hanTraHang,
   }) {
     return OrderModel(
       id: id ?? this.id,
@@ -270,6 +286,7 @@ class OrderModel {
       cancelReason: cancelReason ?? this.cancelReason,
       daHoanTien: daHoanTien ?? this.daHoanTien,
       hoanTienLuc: hoanTienLuc ?? this.hoanTienLuc,
+      hanTraHang: hanTraHang ?? this.hanTraHang,
     );
   }
 
@@ -277,12 +294,20 @@ class OrderModel {
   bool get canCancel =>
       status == OrderStatus.pendingPayment || status == OrderStatus.processing;
 
-  /// Co the gui yeu cau tra hang khi don da giao / hoan tat.
+  /// Da qua han gui yeu cau tra hang chua.
+  ///
+  /// Chua co han (don chua giao, hoac don cu khong con lich su trang thai) thi
+  /// coi nhu chua qua han, de khong chan nham nguoi dung.
+  bool get quaHanTraHang =>
+      hanTraHang != null && DateTime.now().isAfter(hanTraHang!);
+
+  /// Co the gui yeu cau tra hang khi don da giao / hoan tat va con trong han.
   ///
   /// Don da hoan tien thi thoi: may chu cung chan lan tra hang thu hai, de nut
-  /// hien ra chi khien nguoi dung bam vao roi an loi.
+  /// hien ra chi khien nguoi dung bam vao roi an loi. Qua han cung vay.
   bool get canReturn =>
       !daHoanTien &&
+      !quaHanTraHang &&
       (status == OrderStatus.delivered || status == OrderStatus.completed);
 
   /// Chi danh gia duoc khi da nhan hang, giong quy tac o may chu.
@@ -333,6 +358,9 @@ class OrderModel {
       daHoanTien: json['refunded'] == true,
       hoanTienLuc: json['refunded_at'] != null
           ? DateTime.tryParse(json['refunded_at'].toString())
+          : null,
+      hanTraHang: json['return_deadline'] != null
+          ? DateTime.tryParse(json['return_deadline'].toString())
           : null,
     );
   }

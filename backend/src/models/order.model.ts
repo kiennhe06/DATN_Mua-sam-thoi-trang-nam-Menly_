@@ -1,6 +1,7 @@
 import { supabase } from '../config/supabase.js';
 import { env } from '../config/env.js';
 import type { CalculateShippingFeeInput } from '../validators/shipping.validator.js';
+import { kiemTraChuyenTrangThai } from './order-status-flow.js';
 import { VoucherModel } from './voucher.model.js';
 
 // =========== INTERFACES CHO ĐƠN HÀNG ===========
@@ -60,12 +61,65 @@ export interface OrderRow {
   refunded?: boolean;
   /** Thoi diem hoan tien, lay tu lan tra hang duoc duyet. */
   refunded_at?: string | null;
+  /** Lich su doi trang thai, do PostgREST tra kem theo ORDER_DETAIL_SELECT. */
+  order_status_history?: OrderStatusHistoryRow[];
+  /**
+   * Thoi diem hang den tay khach, de tinh han tra hang.
+   *
+   * Lay tu lich su trang thai chu khong tu created_at, vi khach nhan hang sau
+   * khi dat nhieu ngay. Do enrichOrders tinh.
+   */
+  delivered_at?: string | null;
+  /**
+   * Han cuoi con gui duoc yeu cau tra hang. May chu tinh san de ung dung khong
+   * phai chep lai quy tac va khong bi lech khi doi so ngay.
+   */
+  return_deadline?: string | null;
+}
+
+export interface OrderStatusHistoryRow {
+  from_status?: string | null;
+  to_status: string;
+  created_at: string;
+}
+
+/**
+ * So ngay khach con duoc gui yeu cau tra hang, tinh tu luc nhan hang.
+ *
+ * Doi so nay la doi luon ca ung dung lan may chu, vi han tra hang do may chu
+ * tinh roi gui xuong.
+ */
+export const SO_NGAY_DUOC_TRA_HANG = 7;
+
+/**
+ * Thoi diem hang den tay khach, doc tu lich su trang thai.
+ *
+ * Lay ban ghi 'delivered' hoac 'completed' som nhat: du lieu that co don nhay
+ * thang sang 'completed' ma khong di qua 'delivered', neu chi tim 'delivered'
+ * thi nhung don do se khong bao gio co han tra hang.
+ */
+export function thoiDiemNhanHang(
+  lichSu: OrderStatusHistoryRow[] | undefined | null,
+): string | null {
+  const cacMoc = (lichSu ?? [])
+    .filter((dong) => dong?.to_status === 'delivered' || dong?.to_status === 'completed')
+    .map((dong) => dong.created_at)
+    .filter(Boolean)
+    .sort();
+  return cacMoc[0] ?? null;
 }
 
 export interface OrderItemRow {
   id: string;
   order_id: string;
   variant_id?: string;
+  /**
+   * Ma san pham goc, de ung dung gop cac dong cung mot san pham va mo duoc
+   * trang chi tiet. Co the null: order_items.variant_id dung on delete set
+   * null nen san pham bi xoa thi don hang van con nhung khong con duong lan
+   * ve san pham.
+   */
+  product_id?: string | null;
   product_name: string;
   size: string;
   color: string;
@@ -234,13 +288,15 @@ export class OrderModel {
     };
   }
 
+  // Man danh sach cung can lich su trang thai: khong co no thi khong tinh duoc
+  // han tra hang, va nut "Tra hang" tren the don se hien ca khi da qua han.
   private static readonly ORDER_WITH_ITEMS_SELECT =
-    '*, order_items(*, product_variants(size, color, products(name, thumbnail_url))), order_returns(status, resolved_at)';
+    '*, order_items(*, product_variants(size, color, products(id, name, thumbnail_url))), order_status_history(from_status, to_status, created_at), order_returns(status, resolved_at)';
 
   // Man chi tiet don can them lich su doi trang thai de ve hanh trinh giao hang
   // theo moc thoi gian that, thay vi suy ra tu mot trang thai hien tai.
   private static readonly ORDER_DETAIL_SELECT =
-    '*, order_items(*, product_variants(size, color, products(name, thumbnail_url))), order_status_history(from_status, to_status, created_at), order_returns(status, resolved_at)';
+    '*, order_items(*, product_variants(size, color, products(id, name, thumbnail_url))), order_status_history(from_status, to_status, created_at), order_returns(status, resolved_at)';
 
   /**
    * Bo cac dia chi sinh anh ngau nhien (picsum, placeholder) vi moi lan goi tra
@@ -266,6 +322,7 @@ export class OrderModel {
           id: it.id,
           order_id: it.order_id,
           variant_id: it.variant_id,
+          product_id: prod?.id ?? null,
           product_name: it.product_name || prod?.name || '',
           size: it.size || variant?.size || '',
           color: it.color || variant?.color || '',
@@ -289,6 +346,15 @@ export class OrderModel {
         (yeuCau: any) => yeuCau?.status === 'refunded',
       );
 
+      // Han tra hang tinh tu luc nhan hang. Don chua giao thi chua co han, de
+      // null chu khong de ngay hom nay: ung dung doc null la "chua toi luc".
+      const nhanHangLuc = thoiDiemNhanHang(order.order_status_history);
+      const hanTraHang = nhanHangLuc
+        ? new Date(
+            new Date(nhanHangLuc).getTime() + SO_NGAY_DUOC_TRA_HANG * 24 * 60 * 60 * 1000,
+          ).toISOString()
+        : null;
+
       return {
         ...order,
         discount_amount: giamGia,
@@ -296,6 +362,8 @@ export class OrderModel {
         items,
         refunded: Boolean(lanHoanTien),
         refunded_at: lanHoanTien?.resolved_at ?? null,
+        delivered_at: nhanHangLuc,
+        return_deadline: hanTraHang,
       };
     });
   }
@@ -757,6 +825,23 @@ export class OrderModel {
     adminId: string,
     note?: string
   ): Promise<OrderRow | null> {
+    // Doc trang thai cu truoc moi viec khac: ca nhanh huy don lan nhanh doi
+    // trang thai thuong deu phai qua luat chuyen tiep.
+    const { data: current, error: fetchErr } = await this.db
+      .from('orders')
+      .select('id, status')
+      .eq('id', orderId)
+      .maybeSingle();
+
+    if (fetchErr) throw new Error(fetchErr.message);
+    if (!current) return null;
+
+    kiemTraChuyenTrangThai(current.status, toStatus);
+
+    if (current.status === toStatus) {
+      return this.loadEnrichedOrder(orderId);
+    }
+
     if (toStatus === 'cancelled') {
       const { data, error } = await this.db.rpc('cancel_order', {
         p_order_id: orderId,
@@ -777,15 +862,6 @@ export class OrderModel {
       );
       return cancelledOrder;
     }
-
-    const { data: current, error: fetchErr } = await this.db
-      .from('orders')
-      .select('id, status')
-      .eq('id', orderId)
-      .maybeSingle();
-
-    if (fetchErr) throw new Error(fetchErr.message);
-    if (!current) return null;
 
     const { data: updated, error: updateErr } = await this.db
       .from('orders')

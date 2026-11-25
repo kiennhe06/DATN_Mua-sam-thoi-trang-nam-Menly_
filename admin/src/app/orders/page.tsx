@@ -11,6 +11,11 @@ import {
   NHAN_KHOANG_NGAY,
   tinhMocLoc,
 } from '../../lib/order-date-filter';
+import {
+  NHAN_TRANG_THAI_DON,
+  cacTrangThaiTiepTheo,
+  laTrangThaiKetThuc,
+} from '../../lib/order-status-flow';
 import { Order, OrderStatus } from '../../lib/types';
 import {
   ShoppingBag,
@@ -314,16 +319,26 @@ export default function OrdersPage() {
                         <Printer className="w-3.5 h-3.5" />
                         Xem / In hóa đơn
                       </button>
-                      {ord.status === 'cancelled' ? (
+                      {laTrangThaiKetThuc(ord.status) ? (
+                        // Huy, quá han va hoan tat deu la trang thai chot;
+                        // truoc day chi chan moi 'cancelled' nen don da hoan
+                        // tat van bam doi trang thai duoc.
                         <span className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-danger-bg text-danger border border-danger-line flex items-center gap-1.5 cursor-not-allowed">
                           <AlertCircle className="w-3.5 h-3.5" />
-                          Đã huỷ (Cố định)
+                          {NHAN_TRANG_THAI_DON[ord.status]} (Cố định)
                         </span>
                       ) : (
                         <button
                           onClick={() => {
                             setSelectedOrder(ord);
-                            setNewStatus(ord.status);
+                            // Chon san buoc tiep theo hop le, khong chon lai
+                            // chinh trang thai hien tai vi no da bi bo khoi
+                            // danh sach va bam Luu se khong doi duoc gi.
+                            setNewStatus(cacTrangThaiTiepTheo(ord.status)[0] ?? ord.status);
+                            // Khong de lai ly do cua don vua xu ly: ly do huy
+                            // la bat buoc nen o nhap con chu cu se qua duoc
+                            // kiem tra va gui nham ly do cua don khac.
+                            setStatusNote('');
                           }}
                           className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-tint hover:bg-tint-strong text-camel-dark border border-line-strong transition-all flex items-center gap-1.5 cursor-pointer"
                         >

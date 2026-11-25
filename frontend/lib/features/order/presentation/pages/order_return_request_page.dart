@@ -27,6 +27,12 @@ class OrderReturnRequestPage extends StatefulWidget {
 class _OrderReturnRequestPageState extends State<OrderReturnRequestPage> {
   static const int _maxImages = 5;
 
+  /// Ly do duy nhat bat buoc phai ghi them mo ta.
+  ///
+  /// Cac ly do con lai da noi ro hang bi sao; rieng cai nay khong ghi them thi
+  /// nguoi duyet nhan duoc dung mot chu "Khác".
+  static const String _lyDoKhac = 'Khác';
+
   final TextEditingController _detailController = TextEditingController();
   final ImagePicker _picker = ImagePicker();
   final List<XFile> _images = [];
@@ -50,7 +56,7 @@ class _OrderReturnRequestPageState extends State<OrderReturnRequestPage> {
     'Sản phẩm bị lỗi do nhà sản xuất',
     'Giao sai size hoặc màu',
     'Không còn nhu cầu sử dụng',
-    'Khác',
+    _lyDoKhac,
   ];
 
   @override
@@ -96,6 +102,16 @@ class _OrderReturnRequestPageState extends State<OrderReturnRequestPage> {
 
     final detail = _detailController.text.trim();
     final reason = detail.isEmpty ? _selectedReason : '$_selectedReason: $detail';
+
+    if (_selectedReason == _lyDoKhac && detail.isEmpty) {
+      AppSnackBar.show(
+        context,
+        message: 'Chọn lý do "Khác" thì cần mô tả chi tiết cho shop biết',
+        backgroundColor: AppColors.of(context).danger,
+        icon: Icons.error_outline,
+      );
+      return;
+    }
 
     if (_images.isEmpty) {
       AppSnackBar.show(
@@ -186,7 +202,7 @@ class _OrderReturnRequestPageState extends State<OrderReturnRequestPage> {
           ),
           const SizedBox(height: AppSpacing.xl),
           Text(
-            'Mô tả chi tiết',
+            _selectedReason == _lyDoKhac ? 'Mô tả chi tiết (bắt buộc)' : 'Mô tả chi tiết',
             style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w700, fontSize: 14),
           ),
           const SizedBox(height: AppSpacing.md),
