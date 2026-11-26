@@ -719,3 +719,69 @@ export async function sendSupportMessage(
   });
   return normalizeSupportMessage(res?.data ?? res);
 }
+
+// ===================== NHÂN VIÊN: nhật ký & lương =====================
+
+export interface StaffActivityEntry {
+  staffId: string;
+  staffName: string;
+  loai: 'order' | 'chat' | 'stock';
+  moTa: string;
+  orderId: string | null;
+  orderCode: string | null;
+  at: string;
+}
+
+export interface StaffSummaryRow {
+  staffId: string;
+  staffName: string;
+  email: string | null;
+  role: string;
+  counts: { orders: number; chats: number; stock: number };
+  salary: {
+    baseSalary: number;
+    bonusPerOrder: number;
+    bonusPerChat: number;
+    bonusPerStock: number;
+  };
+  tongLuong: number;
+}
+
+/** Ghép bộ lọc thành query string, bỏ qua ô trống. */
+function queryLoc(loc: { staffId?: string; from?: string; to?: string }): string {
+  const p = new URLSearchParams();
+  if (loc.staffId) p.set('staffId', loc.staffId);
+  if (loc.from) p.set('from', loc.from);
+  if (loc.to) p.set('to', loc.to);
+  const s = p.toString();
+  return s ? `?${s}` : '';
+}
+
+export async function fetchStaffActivity(
+  loc: { staffId?: string; from?: string; to?: string } = {},
+): Promise<StaffActivityEntry[]> {
+  const res = await apiFetch<any>(`/api/v1/admin/staff/activity${queryLoc(loc)}`);
+  return Array.isArray(res?.data) ? res.data : [];
+}
+
+export async function fetchStaffSummary(
+  loc: { staffId?: string; from?: string; to?: string } = {},
+): Promise<StaffSummaryRow[]> {
+  const res = await apiFetch<any>(`/api/v1/admin/staff/summary${queryLoc(loc)}`);
+  return Array.isArray(res?.data) ? res.data : [];
+}
+
+export async function updateStaffSalary(
+  staffId: string,
+  salary: {
+    baseSalary: number;
+    bonusPerOrder: number;
+    bonusPerChat: number;
+    bonusPerStock: number;
+  },
+): Promise<void> {
+  await apiFetch<unknown>(`/api/v1/admin/staff/${staffId}/salary`, {
+    method: 'PUT',
+    body: JSON.stringify(salary),
+  });
+}

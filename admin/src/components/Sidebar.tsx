@@ -14,6 +14,7 @@ import {
   ShoppingBag,
   Star,
   Ticket,
+  UserCog,
   Users,
   X,
 } from 'lucide-react';
@@ -34,6 +35,7 @@ const NAV_ITEMS = [
   { href: '/banners', label: 'Banner quảng cáo', icon: Images },
   { href: '/returns', label: 'Yêu cầu trả hàng', icon: Undo2 },
   { href: '/reviews', label: 'Đánh giá', icon: Star },
+  { href: '/staff', label: 'Nhân viên', icon: UserCog },
   { href: '/users', label: 'Người dùng', icon: Users },
 ];
 

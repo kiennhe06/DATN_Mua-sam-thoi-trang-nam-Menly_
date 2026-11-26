@@ -31,6 +31,7 @@ import {
   userIdSchema,
 } from '../../validators/admin-user.validator.js';
 import { LoiChuyenTrangThai } from '../../models/order-status-flow.js';
+import { StaffActivityModel, chuanHoaLuong } from '../../models/staff-activity.model.js';
 
 // Quan tri routes
 const router = Router();
@@ -57,6 +58,7 @@ const orderModel = new OrderModel();
 const voucherModel = new VoucherModel();
 const adminModel = new AdminModel();
 const reviewModel = new ReviewModel();
+const staffActivityModel = new StaffActivityModel();
 
 // Cac trang thai don hang hop le (khop enum order_status trong DB)
 // Truong khong bao gio duoc ghi vao nhat ky
@@ -710,6 +712,66 @@ router.delete('/vouchers/:id', async (req, res, next) => {
   try {
     await voucherModel.adminRemove(id.data);
     return res.json({ success: true, message: 'Đã xóa mã giảm giá' });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+// ===================== NHÂN VIÊN: nhật ký & lương =====================
+// Các route này không nằm trong DUONG_DAN_CHO_NHAN_VIEN nên chỉ admin vào
+// được — lương là dữ liệu nhạy cảm, nhân viên không tự xem được.
+
+function docBoLoc(req: { query: Record<string, unknown> }) {
+  const lay = (ten: string) => {
+    const v = req.query[ten];
+    return typeof v === 'string' && v.trim() ? v.trim() : undefined;
+  };
+  return { staffId: lay('staffId'), from: lay('from'), to: lay('to') };
+}
+
+// GET /api/v1/admin/staff — danh sách nhân viên
+router.get('/staff', async (_req, res, next) => {
+  try {
+    return res.json({ data: await staffActivityModel.listStaff() });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+// GET /api/v1/admin/staff/activity — nhật ký thao tác
+router.get('/staff/activity', async (req, res, next) => {
+  try {
+    const data = await staffActivityModel.getActivityLog(docBoLoc(req));
+    return res.json({ data });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+// GET /api/v1/admin/staff/summary — bảng tổng + lương tính ra
+router.get('/staff/summary', async (req, res, next) => {
+  try {
+    const data = await staffActivityModel.getSummary(docBoLoc(req));
+    return res.json({ data });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+// PUT /api/v1/admin/staff/:id/salary — đặt lại cấu hình lương
+router.put('/staff/:id/salary', async (req, res, next) => {
+  if (!UUID_PATTERN.test(req.params.id)) {
+    return res.status(400).json({ error: 'Mã nhân viên không hợp lệ' });
+  }
+  try {
+    const luong = chuanHoaLuong({
+      baseSalary: req.body?.baseSalary,
+      bonusPerOrder: req.body?.bonusPerOrder,
+      bonusPerChat: req.body?.bonusPerChat,
+      bonusPerStock: req.body?.bonusPerStock,
+    });
+    const data = await staffActivityModel.setSalary(req.params.id, luong);
+    return res.json({ data, message: 'Đã lưu mức lương' });
   } catch (error) {
     return next(error);
   }
