@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:menly_app/core/utils/app_logger.dart';
+
 class ReviewModel {
   final String id;
   final String userId;
@@ -67,7 +69,13 @@ class ReviewModel {
               .where((url) => url.isNotEmpty)
               .toList();
         }
-      } catch (_) {}
+      } catch (e) {
+        AppLogger.canhBao(
+          'Ảnh đánh giá lưu sai định dạng, bỏ qua',
+          khuVuc: 'DanhGia',
+          loi: e,
+        );
+      }
     }
     return const [];
   }

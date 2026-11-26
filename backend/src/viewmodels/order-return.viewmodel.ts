@@ -30,6 +30,8 @@ export class OrderReturnViewModel {
       actorId?: string;
     }
   ): Promise<OrderReturnRow | null> {
+    // Khong co gi them o day: luat nghiep vu nam trong model de hai duong
+    // (nhan vien va quan tri) deu di qua cung mot cho.
     return this.model.updateStatus(id, payload);
   }
 }

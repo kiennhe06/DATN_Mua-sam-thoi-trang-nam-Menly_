@@ -18,6 +18,7 @@ import 'package:menly_app/core/widgets/app_image.dart';
 import 'package:menly_app/features/order/data/models/shipping_policy_model.dart';
 import 'package:menly_app/features/order/data/services/shipping_policy_service.dart';
 import 'package:menly_app/features/support/presentation/pages/support_chat_page.dart';
+import 'package:menly_app/core/utils/app_logger.dart';
 
 /// Ten hien thi cua man nay. Day la tro ly Gemini chu khong phai nhan vien
 /// that, nen moi noi deu phai goi dung la tro ly ao. Nhan vien that nam o
@@ -107,7 +108,13 @@ class _LiveChatPageState extends State<LiveChatPage> {
           }
         }
       }
-    } catch (_) {}
+    } catch (e) {
+      AppLogger.canhBao(
+        'Không đọc được lịch sử trò chuyện đã lưu',
+        khuVuc: 'TroChuyen',
+        loi: e,
+      );
+    }
 
     if (mounted) {
       setState(() {
@@ -127,7 +134,13 @@ class _LiveChatPageState extends State<LiveChatPage> {
           : _messages;
       final encoded = jsonEncode(toSave.map((m) => m.toJson()).toList());
       await prefs.setString(key, encoded);
-    } catch (_) {}
+    } catch (e) {
+      AppLogger.canhBao(
+        'Không lưu được lịch sử trò chuyện',
+        khuVuc: 'TroChuyen',
+        loi: e,
+      );
+    }
   }
 
   void _confirmClearHistory() {
@@ -241,7 +254,14 @@ class _LiveChatPageState extends State<LiveChatPage> {
       );
       staffReply = res.reply;
       suggestedProducts = res.suggestedProducts;
-    } catch (_) {
+    } catch (e) {
+      // Khong goi duoc tro ly ao thi tra loi bang cau soan san. Nguoi dung
+      // khong phan biet duoc hai truong hop, nen phai ghi lai.
+      AppLogger.canhBao(
+        'Trợ lý ảo không trả lời được, dùng câu trả lời soạn sẵn',
+        khuVuc: 'TroChuyen',
+        loi: e,
+      );
       staffReply = _buildStaffReply(text);
     }
 

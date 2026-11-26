@@ -103,7 +103,27 @@ export type InventoryMovementReason =
   | 'order_created'
   | 'order_cancelled'
   | 'admin_restock'
-  | 'admin_correction';
+  | 'admin_correction'
+  | 'admin_damaged';
+
+/** Ba lý do người quản trị tự chọn khi chỉnh kho bằng tay. */
+export const LY_DO_CHINH_KHO = [
+  {
+    gia_tri: 'admin_restock' as const,
+    nhan: 'Nhập kho mới',
+    moTa: 'Hàng mới nhập về từ nhà cung cấp.',
+  },
+  {
+    gia_tri: 'admin_damaged' as const,
+    nhan: 'Hàng hỏng / mất',
+    moTa: 'Hàng vỡ, bẩn, mất — trừ khỏi kho và không bán được nữa.',
+  },
+  {
+    gia_tri: 'admin_correction' as const,
+    nhan: 'Hiệu chỉnh kiểm kê',
+    moTa: 'Sửa cho khớp số đếm thực tế khi kiểm kho.',
+  },
+];
 
 export interface InventoryMovement {
   id: string;

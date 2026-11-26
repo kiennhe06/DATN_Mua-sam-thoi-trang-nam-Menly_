@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../utils/app_logger.dart';
 import 'app_accent.dart';
 import 'app_theme.dart';
+
+/// Khu vuc ghi log cua cai dat giao dien.
+const String _khuVuc = 'GiaoDien';
 
 /// Holds the user's display preferences (light/dark + accent color) and
 /// persists them. Drives [MaterialApp] theme selection and powers the
@@ -44,8 +48,13 @@ class ThemeController extends ChangeNotifier {
           orElse: () => ThemeMode.light,
         );
       }
-    } catch (_) {
+    } catch (e) {
       // Keep defaults on any storage error.
+      AppLogger.canhBao(
+        'Không đọc được cài đặt giao diện, dùng mặc định',
+        khuVuc: _khuVuc,
+        loi: e,
+      );
     }
     notifyListeners();
   }
@@ -71,8 +80,13 @@ class ThemeController extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(key, value);
-    } catch (_) {
+    } catch (e) {
       // Non-fatal: preference just won't survive a restart.
+      AppLogger.canhBao(
+        'Không lưu được cài đặt giao diện "$key"',
+        khuVuc: _khuVuc,
+        loi: e,
+      );
     }
   }
 }

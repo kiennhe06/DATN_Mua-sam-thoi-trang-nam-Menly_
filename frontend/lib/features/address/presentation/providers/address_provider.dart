@@ -2,8 +2,12 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/network/api_client.dart';
+import '../../../../core/utils/app_logger.dart';
 import 'package:menly_app/features/address/data/models/address_model.dart';
 import 'package:dio/dio.dart';
+
+/// Khu vuc ghi log cua so dia chi.
+const String _khuVuc = 'DiaChi';
 
 /// Provider quan ly So dia chi giao hang
 /// Phu trach boi: Thanh Toan (AP-DC1)
@@ -115,7 +119,13 @@ class AddressProvider extends ChangeNotifier {
 
     try {
       await _api.dio.patch('/addresses/$addressId/default');
-    } catch (_) {}
+    } catch (e) {
+      AppLogger.canhBao(
+        'Không đặt được địa chỉ mặc định trên máy chủ',
+        khuVuc: _khuVuc,
+        loi: e,
+      );
+    }
   }
 
   /// Xoa dia chi (DELETE /api/v1/addresses/:id)
@@ -133,7 +143,13 @@ class AddressProvider extends ChangeNotifier {
 
     try {
       await _api.dio.delete('/addresses/$addressId');
-    } catch (_) {}
+    } catch (e) {
+      AppLogger.canhBao(
+        'Không xóa được địa chỉ trên máy chủ',
+        khuVuc: _khuVuc,
+        loi: e,
+      );
+    }
   }
 
   /// Load tu Backend API (GET /api/v1/addresses) voi fallback SharedPreferences
@@ -156,8 +172,13 @@ class AddressProvider extends ChangeNotifier {
           return;
         }
       }
-    } catch (_) {
+    } catch (e) {
       // Fallback local
+      AppLogger.canhBao(
+        'Không tải được địa chỉ từ máy chủ, dùng bản lưu trong máy',
+        khuVuc: _khuVuc,
+        loi: e,
+      );
     }
 
     // Fallback SharedPreferences (dia chi that nguoi dung da luu tren may, khong phai mock)
@@ -170,7 +191,13 @@ class AddressProvider extends ChangeNotifier {
       } else {
         _addresses = [];
       }
-    } catch (_) {
+    } catch (e, s) {
+      AppLogger.loi(
+        'Không đọc được địa chỉ đã lưu trong máy',
+        khuVuc: _khuVuc,
+        loi: e,
+        stackTrace: s,
+      );
       _addresses = [];
     }
     _isLoading = false;
@@ -182,7 +209,14 @@ class AddressProvider extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       final list = _addresses.map((a) => a.toJson()).toList();
       await prefs.setString('saved_addresses', jsonEncode(list));
-    } catch (_) {}
+    } catch (e, s) {
+      AppLogger.loi(
+        'Không lưu được địa chỉ vào máy',
+        khuVuc: _khuVuc,
+        loi: e,
+        stackTrace: s,
+      );
+    }
   }
 
   /// Xoa du lieu cua nguoi dung truoc khi doi tai khoan.

@@ -5,13 +5,16 @@ import '../theme/app_spacing.dart';
 import '../theme/app_theme.dart';
 
 /// Helper tiện ích cho SnackBar trong toàn ứng dụng MenShop.
-/// Giảm thời gian hiển thị mặc định xuống 1500ms (1.5 giây)
-/// và tự động ẩn SnackBar cũ để tránh hiện tượng xếp hàng chờ đợi.
+///
+/// Luôn gọi qua đây thay vì `ScaffoldMessenger.showSnackBar` trực tiếp. Gọi
+/// thẳng sẽ lấy mặc định của Flutter là **4 giây và xếp hàng chờ nhau**: thêm
+/// 4 món vào giỏ là có 16 giây thông báo nằm đè dưới đáy màn hình, bấm nút
+/// thanh toán không được vì SnackBar ăn luôn cú chạm trong vùng của nó.
 class AppSnackBar {
   AppSnackBar._();
 
-  /// Thời gian hiển thị mặc định của SnackBar trong toàn app (1.5 giây)
-  static const Duration defaultDuration = Duration(milliseconds: 500);
+  /// Thời gian hiển thị mặc định: đủ đọc một câu ngắn rồi biến mất.
+  static const Duration defaultDuration = Duration(milliseconds: 1500);
 
   /// Tạo một đối tượng SnackBar với duration 1.5s mặc định
   static SnackBar create({
@@ -47,7 +50,10 @@ class AppSnackBar {
   }) {
     final c = AppColors.of(context);
     final messenger = ScaffoldMessenger.of(context);
-    messenger.hideCurrentSnackBar();
+    // removeCurrentSnackBar bo ngay lap tuc, con hideCurrentSnackBar con chay
+    // hoat anh tat roi moi den cai moi. Bam them hang lien tay thi cai sau
+    // phai doi cai truoc dong xong, nhin nhu app bi khuc khuyu.
+    messenger.removeCurrentSnackBar();
     messenger.showSnackBar(
       SnackBar(
         content: icon != null

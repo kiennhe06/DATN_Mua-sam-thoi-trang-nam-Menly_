@@ -1,12 +1,16 @@
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:menly_app/core/network/api_client.dart';
+import 'package:menly_app/core/utils/app_logger.dart';
 import 'package:menly_app/features/home/data/models/banner_model.dart';
 import 'package:menly_app/features/product/data/models/category_model.dart';
 import 'package:menly_app/features/product/data/models/product_model.dart';
 
 /// So san pham toi da tai ve mot lan cho man hinh chinh.
 const int _productFetchLimit = 200;
+
+/// Khu vuc ghi log cua man san pham.
+const String _khuVuc = 'SanPham';
 
 /// Provider quan ly San pham, Banner, Danh muc, Da xem gan day, Lich su tim kiem
 /// Ket noi truc tiep cac API backend da hoan thien:
@@ -147,8 +151,9 @@ class ProductProvider extends ChangeNotifier {
       } else {
         _banners = [];
       }
-    } catch (_) {
+    } catch (e) {
       // Loi API -> khong hien banner (khong dung du lieu gia)
+      AppLogger.canhBao('Không tải được banner', khuVuc: _khuVuc, loi: e);
       _banners = [];
     }
     notifyListeners();
@@ -164,7 +169,9 @@ class ProductProvider extends ChangeNotifier {
             .toList();
         notifyListeners();
       }
-    } catch (_) {}
+    } catch (e) {
+      AppLogger.canhBao('Không tải được danh mục', khuVuc: _khuVuc, loi: e);
+    }
   }
 
   /// AP-SP1 & TM11: Goi API GET /api/v1/products (loc theo search, categoryId, limit)
@@ -193,8 +200,15 @@ class ProductProvider extends ChangeNotifier {
         _allProducts = [];
         _error = 'Không tải được danh sách sản phẩm';
       }
-    } catch (_) {
-      // Loi API -> trang thai loi that, khong thay the bang du lieu gia
+    } catch (e, s) {
+      // Loi API -> trang thai loi that, khong thay the bang du lieu gia.
+      // Nguoi dung chi thay cau chung chung, nen phai ghi lai nguyen nhan.
+      AppLogger.loi(
+        'Không tải được danh sách sản phẩm',
+        khuVuc: _khuVuc,
+        loi: e,
+        stackTrace: s,
+      );
       _allProducts = [];
       _error = 'Không tải được danh sách sản phẩm. Vui lòng thử lại.';
     }
@@ -213,8 +227,15 @@ class ProductProvider extends ChangeNotifier {
         return ProductModel.fromJson(
             Map<String, dynamic>.from(res.data['data']));
       }
-    } catch (_) {}
-    // Fallback
+    } catch (e) {
+      AppLogger.canhBao(
+        'Không lấy được chi tiết sản phẩm $id, tìm trong danh sách đã tải',
+        khuVuc: _khuVuc,
+        loi: e,
+      );
+    }
+    // Fallback: firstWhere nem loi khi khong tim thay, day la luong binh
+    // thuong chu khong phai su co nen khong ghi log.
     try {
       return _allProducts.firstWhere((p) => p.id == id);
     } catch (_) {
@@ -270,7 +291,13 @@ class ProductProvider extends ChangeNotifier {
           return apiProducts.take(8).toList();
         }
       }
-    } catch (_) {}
+    } catch (e) {
+      AppLogger.canhBao(
+        'Không lấy được sản phẩm liên quan, dùng danh sách tự gợi ý',
+        khuVuc: _khuVuc,
+        loi: e,
+      );
+    }
 
     return relatedProductsFor(product);
   }
@@ -690,7 +717,9 @@ class ProductProvider extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       final ids = _recentlyViewed.map((p) => p.id).toList();
       await prefs.setStringList('recently_viewed_ids', ids);
-    } catch (_) {}
+    } catch (e) {
+      AppLogger.canhBao('Không lưu được sản phẩm đã xem', khuVuc: _khuVuc, loi: e);
+    }
   }
 
   Future<void> loadRecentlyViewed() async {
@@ -706,7 +735,9 @@ class ProductProvider extends ChangeNotifier {
             .whereType<ProductModel>()
             .toList();
       }
-    } catch (_) {}
+    } catch (e) {
+      AppLogger.canhBao('Không đọc được sản phẩm đã xem', khuVuc: _khuVuc, loi: e);
+    }
     notifyListeners();
   }
 
@@ -716,7 +747,9 @@ class ProductProvider extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove('recently_viewed_ids');
-    } catch (_) {}
+    } catch (e) {
+      AppLogger.canhBao('Không xóa được sản phẩm đã xem', khuVuc: _khuVuc, loi: e);
+    }
   }
 
   // =================== TM03: GỢI Ý & LỊCH SỬ TÌM KIẾM ===================
@@ -731,7 +764,12 @@ class ProductProvider extends ChangeNotifier {
             'Áo khoác bomber',
             'Áo polo nam',
           ];
-    } catch (_) {
+    } catch (e) {
+      AppLogger.canhBao(
+        'Không đọc được lịch sử tìm kiếm, dùng danh sách mặc định',
+        khuVuc: _khuVuc,
+        loi: e,
+      );
       _searchHistory = ['Áo sơ mi', 'Áo thun', 'Quần jeans'];
     }
     notifyListeners();
@@ -751,7 +789,9 @@ class ProductProvider extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setStringList('search_history', _searchHistory);
-    } catch (_) {}
+    } catch (e) {
+      AppLogger.canhBao('Không lưu được lịch sử tìm kiếm', khuVuc: _khuVuc, loi: e);
+    }
   }
 
   Future<void> removeSearchKeyword(String keyword) async {
@@ -760,7 +800,9 @@ class ProductProvider extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setStringList('search_history', _searchHistory);
-    } catch (_) {}
+    } catch (e) {
+      AppLogger.canhBao('Không xóa được từ khóa tìm kiếm', khuVuc: _khuVuc, loi: e);
+    }
   }
 
   Future<void> clearSearchHistory() async {
@@ -769,7 +811,9 @@ class ProductProvider extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove('search_history');
-    } catch (_) {}
+    } catch (e) {
+      AppLogger.canhBao('Không xóa được lịch sử tìm kiếm', khuVuc: _khuVuc, loi: e);
+    }
   }
 
   List<String> getSuggestions(String query) {

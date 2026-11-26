@@ -75,6 +75,8 @@ export function ReasonBadge({ reason }: { reason: string }) {
     order: { label: 'Khách đặt hàng', color: 'text-blue-700 bg-blue-50 border-blue-200' },
     cancel: { label: 'Hủy đơn, hoàn kho', color: 'text-purple-700 bg-purple-50 border-purple-200' },
     return: { label: 'Trả hàng, nhập lại kho', color: 'text-camel-dark bg-camel-tint border-camel/30' },
+    damaged: { label: 'Hàng hỏng / mất', color: 'text-danger bg-danger-bg border-danger-line' },
+    exchange: { label: 'Đổi size', color: 'text-blue-700 bg-blue-50 border-blue-200' },
   };
 
   const item = mapping[reason] || { label: reason, color: 'text-ink-muted bg-tint border-line-strong' };

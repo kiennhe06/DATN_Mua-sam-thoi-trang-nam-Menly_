@@ -2,8 +2,11 @@
 
 import React, { useState } from 'react';
 import { PlusCircle, CheckCircle2, AlertCircle } from 'lucide-react';
-import { Product } from '../lib/types';
+import { InventoryMovementReason, LY_DO_CHINH_KHO, Product } from '../lib/types';
 import { adjustInventory } from '../lib/api';
+
+/** Lý do nào thì mặc định là trừ kho chứ không cộng. */
+const LY_DO_TRU_KHO: InventoryMovementReason[] = ['admin_damaged'];
 
 interface InventoryRestockFormProps {
   products: Product[];
@@ -19,7 +22,7 @@ export function InventoryRestockForm({
   onSuccess,
 }: InventoryRestockFormProps) {
   const [delta, setDelta] = useState(20);
-  const [reason, setReason] = useState<'admin_restock' | 'admin_correction'>('admin_restock');
+  const [reason, setReason] = useState<InventoryMovementReason>('admin_restock');
   const [note, setNote] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
@@ -53,7 +56,7 @@ export function InventoryRestockForm({
     <div className="bg-panel border border-line rounded-2xl p-6 shadow-panel">
       <div className="flex items-center gap-2 mb-4">
         <PlusCircle className="w-5 h-5 text-camel-dark" />
-        <h3 className="font-bold text-base text-ink">Nhập / Hiệu chỉnh Tồn Kho</h3>
+        <h3 className="font-bold text-base text-ink">Chỉnh kho</h3>
       </div>
 
       {message && (
@@ -100,16 +103,24 @@ export function InventoryRestockForm({
             <label className="text-ink-mid font-semibold block mb-1.5">Lý do</label>
             <select
               value={reason}
-              onChange={(e) => setReason(e.target.value as 'admin_restock' | 'admin_correction')}
+              onChange={(e) => {
+                const moi = e.target.value as InventoryMovementReason;
+                setReason(moi);
+                // Chon "Hang hong" ma o so luong van dang la so duong thi doi
+                // dau giup, vi hang hong la tru kho chu khong phai cong.
+                if (LY_DO_TRU_KHO.includes(moi) && delta > 0) setDelta(-delta);
+                if (!LY_DO_TRU_KHO.includes(moi) && delta < 0) setDelta(-delta);
+              }}
               className="w-full px-3 py-2 bg-panel border border-line rounded-xl text-ink text-xs focus:outline-none focus:border-camel shadow-panel"
             >
-              <option value="admin_restock">Nhập kho mới</option>
-              <option value="admin_correction">Hiệu chỉnh kiểm kê</option>
+              {LY_DO_CHINH_KHO.map((muc) => (
+                <option key={muc.gia_tri} value={muc.gia_tri}>
+                  {muc.nhan}
+                </option>
+              ))}
             </select>
             <p className="mt-1 text-[11px] leading-4 text-ink-muted">
-              {reason === 'admin_restock'
-                ? 'Hàng mới nhập về từ nhà cung cấp.'
-                : 'Sửa cho khớp số đếm thực tế (hỏng, mất, đếm sai).'}
+              {LY_DO_CHINH_KHO.find((muc) => muc.gia_tri === reason)?.moTa}
             </p>
           </div>
         </div>

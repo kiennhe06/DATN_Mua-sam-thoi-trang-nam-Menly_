@@ -4,6 +4,8 @@ import 'dart:typed_data';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
+import '../utils/app_logger.dart';
+
 /// Giai ma anh nhung dang `data:image/...;base64,...`.
 ///
 /// Tra ve null neu chuoi khong phai dang do hoac khong giai ma duoc.
@@ -14,7 +16,10 @@ Uint8List? decodeInlineImage(String url) {
   if (!url.substring(0, viTriDauPhay).contains('base64')) return null;
   try {
     return base64Decode(url.substring(viTriDauPhay + 1));
-  } catch (_) {
+  } catch (e) {
+    // Anh hong thi widget tu hien o trong, nhin nhu thiet ke von the. Ghi lai
+    // de con biet la du lieu anh sai chu khong phai quen dat anh.
+    AppLogger.canhBao('Ảnh base64 giải mã hỏng', khuVuc: 'Anh', loi: e);
     return null;
   }
 }

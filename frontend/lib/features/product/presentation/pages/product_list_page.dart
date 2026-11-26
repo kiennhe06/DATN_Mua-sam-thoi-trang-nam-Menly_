@@ -13,6 +13,7 @@ import 'package:menly_app/features/wishlist/presentation/providers/wishlist_prov
 import 'package:menly_app/features/product/presentation/providers/product_provider.dart';
 import 'product_detail_page.dart';
 import 'search_page.dart';
+import 'package:menly_app/core/utils/app_snackbar.dart';
 
 /// Man hinh danh sach san pham cao cap Menly (AP-SP1: Loc, Tim kiem, Sap xep, Luoi 2 cot chu dong)
 class ProductListPage extends StatelessWidget {
@@ -786,15 +787,19 @@ class ProductListPage extends StatelessWidget {
                                 final availableVariants = source.variants
                                     .where((variant) => variant.stock > 0);
                                 if (availableVariants.isEmpty) {
-                                  messenger.showSnackBar(const SnackBar(
-                                      content: Text(
+                                  messenger.removeCurrentSnackBar();
+                                  messenger.showSnackBar(AppSnackBar.create(
+                                      content: const Text(
                                           'Sản phẩm hiện không có hàng')));
                                   return;
                                 }
                                 final variant = availableVariants.first;
                                 final added = await cart.addToCart(source,
                                     size: variant.size, color: variant.color);
-                                messenger.showSnackBar(SnackBar(
+                                // Thay thong bao cu thay vi xep hang, de bam
+                                // them lien tay van cham duoc nut ben duoi.
+                                messenger.removeCurrentSnackBar();
+                                messenger.showSnackBar(AppSnackBar.create(
                                     content: Text(added
                                         ? 'Đã thêm "${p.name}" vào giỏ'
                                         : cart.errorMessage ??

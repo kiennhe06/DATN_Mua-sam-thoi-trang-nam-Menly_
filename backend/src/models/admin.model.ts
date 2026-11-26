@@ -11,6 +11,25 @@ import {
 import type { z } from 'zod';
 
 type InventoryAdjustmentInput = z.infer<typeof inventoryAdjustmentSchema>;
+
+/**
+ * Doi ten ly do giua man quan tri va co so du lieu.
+ *
+ * Hai ben dung hai bo ten khac nhau tu truoc: man quan tri noi 'admin_restock',
+ * con bang inventory_movements luu 'restock'. Gom vao hai bang nay de khong
+ * con cho nao tu doi bang if long nhau roi quen mot gia tri.
+ */
+const LY_DO_KHO_THEO_MAN_QUAN_TRI: Record<string, string> = {
+  admin_restock: 'restock',
+  admin_correction: 'adjust',
+  admin_damaged: 'damaged',
+};
+
+const LY_DO_MAN_QUAN_TRI_THEO_KHO: Record<string, string> = {
+  restock: 'admin_restock',
+  adjust: 'admin_correction',
+  damaged: 'admin_damaged',
+};
 type BannerInput = z.infer<typeof adminBannerSchema>;
 type NotificationInput = z.infer<typeof adminNotificationSchema>;
 
@@ -272,7 +291,7 @@ export class AdminModel {
         variantId: row.variant_id,
         delta: row.change,
         change: row.change,
-        reason: row.reason === 'restock' ? 'admin_restock' : row.reason === 'adjust' ? 'admin_correction' : row.reason,
+        reason: LY_DO_MAN_QUAN_TRI_THEO_KHO[row.reason] ?? row.reason,
         orderId: row.order_id,
         actorId: row.created_by,
         createdBy: row.created_by,
@@ -357,7 +376,7 @@ export class AdminModel {
     const { error: movementError } = await this.db.from('inventory_movements').insert({
       variant_id: input.variantId,
       change: input.delta,
-      reason: input.reason === 'admin_restock' ? 'restock' : 'adjust',
+      reason: LY_DO_KHO_THEO_MAN_QUAN_TRI[input.reason] ?? 'adjust',
       created_by: actorId,
       note: input.note || null,
     });

@@ -4,6 +4,22 @@ import { requireAuth, requireStaffOrAdmin } from '../../middlewares/auth.js';
 import { uploadMultipleImagesMiddleware } from '../../middlewares/upload.js';
 import { OrderReturnViewModel } from '../../viewmodels/order-return.viewmodel.js';
 
+/**
+ * Cac trang thai duoc phep dat cho mot yeu cau tra hang.
+ *
+ * Truoc day route nhan bat ky chuoi nao roi de co so du lieu tu choi, nen
+ * nhan vien nhan duoc thong bao loi Postgres bang tieng Anh.
+ */
+const TRANG_THAI_HOP_LE = [
+  'requested',
+  'shop_approved',
+  'shop_rejected',
+  'admin_dispute_review',
+  'refunded',
+  'rejected',
+  'exchanged',
+];
+
 // Tra hang routes
 const router = Router();
 const vm = new OrderReturnViewModel();
@@ -48,6 +64,13 @@ router.post('/', requireAuth, uploadMultipleImagesMiddleware('images', 5), async
       proofImages,
       files: getUploadedFiles(req),
       refundAmount,
+      requestType: String(req.body?.requestType ?? req.body?.request_type ?? 'refund').trim(),
+      exchangeVariantId: String(
+        req.body?.exchangeVariantId ?? req.body?.exchange_variant_id ?? '',
+      ).trim() || null,
+      returnedVariantId: String(
+        req.body?.returnedVariantId ?? req.body?.returned_variant_id ?? '',
+      ).trim() || null,
     });
 
     return res.status(201).json({ data });
@@ -84,10 +107,16 @@ router.patch('/:id', requireStaffOrAdmin, async (req, res) => {
       return res.status(400).json({ error: 'Vui lòng chọn trạng thái mới cho yêu cầu trả hàng' });
     }
 
-    // Hang tra con ban duoc hay khong. Bat buoc khai bao khi hoan tien, vi
-    // doan bua se hoac lam hut kho, hoac nhap nham hang loi vao kho.
+    if (!TRANG_THAI_HOP_LE.includes(status)) {
+      return res.status(400).json({
+        error: `Trạng thái "${status}" không hợp lệ cho yêu cầu trả hàng`,
+      });
+    }
+
+    // Hang tra con ban duoc hay khong. Bat buoc khai bao khi hoan tien hoac
+    // doi size, vi doan bua se hoac lam hut kho, hoac nhap nham hang loi vao kho.
     const restock = req.body?.restock;
-    if (status === 'refunded' && typeof restock !== 'boolean') {
+    if (['refunded', 'exchanged'].includes(status) && typeof restock !== 'boolean') {
       return res.status(400).json({
         error: 'Vui lòng cho biết hàng trả có còn bán lại được không (restock: true hoặc false)',
       });

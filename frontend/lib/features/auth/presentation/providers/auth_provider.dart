@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/network/api_client.dart';
+import 'package:menly_app/core/utils/app_logger.dart';
 
 class UserModel {
   final String id;
@@ -137,7 +138,13 @@ class AuthProvider extends ChangeNotifier {
         }
       }
       // Khi chua co token: de _user = null (khach), khong bia user demo
-    } catch (_) {}
+    } catch (e) {
+      AppLogger.canhBao(
+        'Không tải được hồ sơ người dùng, coi như đang là khách',
+        khuVuc: 'TaiKhoan',
+        loi: e,
+      );
+    }
   }
 
   Future<bool> updateProfile({

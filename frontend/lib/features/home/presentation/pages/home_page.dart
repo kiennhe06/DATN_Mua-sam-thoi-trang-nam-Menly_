@@ -25,6 +25,7 @@ import '../widgets/home_info_footer.dart';
 import '../widgets/home_recently_viewed.dart';
 import 'package:menly_app/core/theme/app_theme.dart';
 import 'package:menly_app/core/widgets/pressable.dart';
+import 'package:menly_app/core/utils/app_snackbar.dart';
 
 enum _HomeTabFilter { newest, bestSeller }
 
@@ -379,14 +380,19 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               final availableVariants =
                   source.variants.where((variant) => variant.stock > 0);
               if (availableVariants.isEmpty) {
-                messenger.showSnackBar(const SnackBar(
-                    content: Text('Sản phẩm hiện không có hàng')));
+                messenger.removeCurrentSnackBar();
+                messenger.showSnackBar(AppSnackBar.create(
+                    content: const Text('Sản phẩm hiện không có hàng')));
                 return;
               }
               final variant = availableVariants.first;
               final added = await cart.addToCart(source,
                   size: variant.size, color: variant.color);
-              messenger.showSnackBar(SnackBar(
+              // Bam them nhieu mon lien tay thi tung thong bao phai thay nhau
+              // chu khong xep hang, neu khong nguoi dung phai cho het luot
+              // moi bam duoc nut thanh toan.
+              messenger.removeCurrentSnackBar();
+              messenger.showSnackBar(AppSnackBar.create(
                 content: Text(added
                     ? 'Đã thêm "${p.name}" vào giỏ'
                     : cart.errorMessage ?? 'Không thể thêm sản phẩm vào giỏ'),

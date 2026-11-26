@@ -9,6 +9,7 @@ import 'package:menly_app/core/widgets/state_views.dart';
 import 'package:menly_app/core/utils/format.dart';
 import 'package:menly_app/features/order/data/models/order_model.dart';
 import 'package:menly_app/features/order/presentation/providers/order_provider.dart';
+import 'package:menly_app/core/utils/app_logger.dart';
 
 /// Man hinh thanh toan online VNPay su dung flutter_inappwebview (AP-TT1)
 /// Dong bo truc tiep voi Backend API:
@@ -126,7 +127,15 @@ class _VNPayPaymentPageState extends State<VNPayPaymentPage> {
             'Không kết nối được tới máy chủ thanh toán. Vui lòng kiểm tra kết nối mạng.';
         _isLoading = false;
       });
-    } catch (_) {
+    } catch (e, s) {
+      // Day la luong tien. Khong ghi lai thi khach bao "khong thanh toan
+      // duoc" ma khong con gi de lan ra nguyen nhan.
+      AppLogger.loi(
+        'Không tạo được link thanh toán VNPay',
+        khuVuc: 'ThanhToan',
+        loi: e,
+        stackTrace: s,
+      );
       setState(() {
         _paymentUrl = null;
         _error =
@@ -188,8 +197,13 @@ class _VNPayPaymentPageState extends State<VNPayPaymentPage> {
           }
         }
       }
-    } catch (_) {
+    } catch (e) {
       // Neu loi ket noi toi backend return, giu nguyen danh gia theo responseCode cua VNPay
+      AppLogger.canhBao(
+        'Không hỏi được máy chủ về kết quả thanh toán, tạm tin theo mã VNPay trả về',
+        khuVuc: 'ThanhToan',
+        loi: e,
+      );
     }
 
     if (!mounted) return;

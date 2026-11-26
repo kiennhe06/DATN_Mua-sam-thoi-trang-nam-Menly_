@@ -3,7 +3,11 @@ import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../../core/network/api_client.dart';
+import '../../../../core/utils/app_logger.dart';
 import '../../data/models/review_model.dart';
+
+/// Khu vuc ghi log cua danh gia.
+const String _khuVuc = 'DanhGia';
 
 /// Quan ly trang thai cho: review
 class ReviewProvider extends ChangeNotifier {
@@ -42,8 +46,13 @@ class ReviewProvider extends ChangeNotifier {
                 (item) => ReviewModel.fromJson(Map<String, dynamic>.from(item)))
             .toList();
       }
-    } catch (_) {
+    } catch (e) {
       // Giu du lieu hien co neu khong tai duoc danh gia
+      AppLogger.canhBao(
+        'Không tải được đánh giá của sản phẩm $productId',
+        khuVuc: _khuVuc,
+        loi: e,
+      );
     } finally {
       _loadingProducts.remove(productId);
       notifyListeners();
@@ -59,7 +68,14 @@ class ReviewProvider extends ChangeNotifier {
       final res = await _api.dio.get('/reviews/can-review/$productId');
       final data = res.data is Map ? res.data['data'] : null;
       return data is Map && data['canReview'] == true;
-    } catch (_) {
+    } catch (e) {
+      // Tra ve false la an nut danh gia di. Loi mang va "khong duoc phep danh
+      // gia" nhin tu ben ngoai giong het nhau, nen phai ghi lai de phan biet.
+      AppLogger.canhBao(
+        'Không kiểm tra được quyền đánh giá sản phẩm $productId, tạm coi là không được',
+        khuVuc: _khuVuc,
+        loi: e,
+      );
       return false;
     }
   }
@@ -80,8 +96,13 @@ class ReviewProvider extends ChangeNotifier {
           }
         }
       }
-    } catch (_) {
+    } catch (e) {
       // Bo qua loi mang, man hinh van cho phep thu lai
+      AppLogger.canhBao(
+        'Không tải được đánh giá của tôi',
+        khuVuc: _khuVuc,
+        loi: e,
+      );
     } finally {
       _isLoadingMine = false;
       notifyListeners();

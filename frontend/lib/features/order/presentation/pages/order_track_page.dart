@@ -7,6 +7,7 @@ import 'package:menly_app/core/utils/format.dart';
 import 'package:menly_app/core/network/api_client.dart';
 import 'package:menly_app/core/widgets/app_buttons.dart';
 import 'package:menly_app/features/order/data/models/order_model.dart';
+import 'package:menly_app/core/utils/app_logger.dart';
 
 class OrderTrackPage extends StatefulWidget {
   const OrderTrackPage({super.key});
@@ -59,7 +60,13 @@ class _OrderTrackPageState extends State<OrderTrackPage> {
     } on DioException catch (e) {
       final serverMessage = e.response?.data is Map ? e.response?.data['error'] : null;
       _error = serverMessage ?? 'Không thể tra cứu đơn hàng. Vui lòng thử lại.';
-    } catch (_) {
+    } catch (e, s) {
+      AppLogger.loi(
+        'Tra cứu đơn hàng thất bại',
+        khuVuc: 'DonHang',
+        loi: e,
+        stackTrace: s,
+      );
       _error = 'Không thể tra cứu đơn hàng. Vui lòng thử lại.';
     } finally {
       setState(() => _isLoading = false);

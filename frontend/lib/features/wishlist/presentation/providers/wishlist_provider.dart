@@ -1,6 +1,10 @@
 import 'package:flutter/foundation.dart';
 import 'package:menly_app/core/network/api_client.dart';
+import 'package:menly_app/core/utils/app_logger.dart';
 import 'package:menly_app/features/product/data/models/product_model.dart';
+
+/// Khu vuc ghi log cua danh sach yeu thich.
+const String _khuVuc = 'YeuThich';
 
 /// Provider quan ly Danh sach yeu thich (Wishlist) & Nut trai tim
 /// Ket noi truc tiep cac API backend da hoan thien (AP-YT1):
@@ -39,7 +43,13 @@ class WishlistProvider extends ChangeNotifier {
       // Goi API backend DELETE /api/v1/wishlist/:productId
       try {
         await _api.dio.delete('/wishlist/${product.id}');
-      } catch (_) {}
+      } catch (e) {
+        AppLogger.canhBao(
+          'Không bỏ được yêu thích trên máy chủ',
+          khuVuc: _khuVuc,
+          loi: e,
+        );
+      }
       return false;
     } else {
       _favorites.insert(0, product);
@@ -48,7 +58,13 @@ class WishlistProvider extends ChangeNotifier {
       // Goi API backend POST /api/v1/wishlist/:productId
       try {
         await _api.dio.post('/wishlist/${product.id}');
-      } catch (_) {}
+      } catch (e) {
+        AppLogger.canhBao(
+          'Không thêm được yêu thích trên máy chủ',
+          khuVuc: _khuVuc,
+          loi: e,
+        );
+      }
       return true;
     }
   }
@@ -60,7 +76,13 @@ class WishlistProvider extends ChangeNotifier {
 
     try {
       await _api.dio.delete('/wishlist/$productId');
-    } catch (_) {}
+    } catch (e) {
+      AppLogger.canhBao(
+        'Không bỏ được yêu thích trên máy chủ',
+        khuVuc: _khuVuc,
+        loi: e,
+      );
+    }
   }
 
   /// Xoa toan bo
@@ -72,7 +94,13 @@ class WishlistProvider extends ChangeNotifier {
     for (var id in ids) {
       try {
         await _api.dio.delete('/wishlist/$id');
-      } catch (_) {}
+      } catch (e) {
+        AppLogger.canhBao(
+          'Không xóa được mục yêu thích $id trên máy chủ',
+          khuVuc: _khuVuc,
+          loi: e,
+        );
+      }
     }
   }
 
@@ -102,8 +130,13 @@ class WishlistProvider extends ChangeNotifier {
         _favorites.clear();
         _error = 'Không tải được danh sách yêu thích';
       }
-    } catch (_) {
+    } catch (e) {
       // Loi API hoac chua dang nhap -> trang thai loi that, khong dung du lieu gia
+      AppLogger.canhBao(
+        'Không tải được danh sách yêu thích',
+        khuVuc: _khuVuc,
+        loi: e,
+      );
       _favorites.clear();
       _error = 'Không tải được danh sách yêu thích. Vui lòng thử lại.';
     } finally {

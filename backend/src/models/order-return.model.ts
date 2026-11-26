@@ -19,6 +19,10 @@ export interface OrderReturnRow {
   admin_resolution_note?: string | null;
   /** true: hang con ban duoc va da nhap lai kho; false: hang loi. */
   restocked?: boolean | null;
+  /** 'refund' doi lai tien, 'exchange' chi doi size. */
+  request_type?: string;
+  exchange_variant_id?: string | null;
+  returned_variant_id?: string | null;
   created_at: string;
   resolved_at?: string | null;
 }
@@ -31,6 +35,12 @@ export interface CreateOrderReturnInput {
   files?: Express.Multer.File[];
   refundAmount?: number;
   shopId?: string | null;
+  /** 'refund' doi lai tien, 'exchange' chi doi size. Mac dinh 'refund'. */
+  requestType?: string;
+  /** Size khach muon doi sang. Bat buoc khi requestType = 'exchange'. */
+  exchangeVariantId?: string | null;
+  /** Size khach dang giu va muon tra lai. */
+  returnedVariantId?: string | null;
 }
 
 const RETURN_BUCKET = 'review-images';
@@ -106,6 +116,20 @@ export class OrderReturnModel {
       throw new Error('Đơn hàng này đã được hoàn tiền trả hàng trước đó');
     }
 
+    const loaiYeuCau = input.requestType === 'exchange' ? 'exchange' : 'refund';
+    const bienTheMuonDoi = input.exchangeVariantId?.trim() || null;
+    const bienTheTra = input.returnedVariantId?.trim() || null;
+
+    if (loaiYeuCau === 'exchange') {
+      if (!bienTheMuonDoi) {
+        throw new Error('Đổi size thì phải chọn size muốn đổi sang');
+      }
+      if (bienTheMuonDoi === bienTheTra) {
+        throw new Error('Size muốn đổi phải khác size đang có');
+      }
+      await this.kiemTraBienTheDoiDuoc(input.orderId, bienTheMuonDoi, bienTheTra);
+    }
+
     const uploaded = await this.uploadImages(input.userId, input.files ?? []);
     const images = [...(Array.isArray(input.proofImages) ? input.proofImages : []), ...uploaded]
       .map((url) => String(url).trim())
@@ -128,6 +152,9 @@ export class OrderReturnModel {
         proof_images: images,
         refund_amount: Number(order.total ?? input.refundAmount ?? 0),
         status: 'requested',
+        request_type: loaiYeuCau,
+        exchange_variant_id: bienTheMuonDoi,
+        returned_variant_id: bienTheTra,
       })
       .select()
       .single();
@@ -138,6 +165,101 @@ export class OrderReturnModel {
 
     await this.notifyReturnCreated(order);
     return this.normalize(data);
+  }
+
+  /**
+   * Size khach muon doi sang co doi duoc that khong.
+   *
+   * Ba dieu kien, thieu cai nao cung thanh ra duyet xong khong lay hang ra gui
+   * duoc:
+   *   - Bien the do con ton kho.
+   *   - No thuoc cung san pham voi mon khach da mua, khong phai doi sang mon
+   *     khac gia.
+   *   - Mon khach tra lai that su nam trong don nay.
+   */
+  private async kiemTraBienTheDoiDuoc(
+    orderId: string,
+    bienTheMuonDoi: string,
+    bienTheTra: string | null,
+  ): Promise<void> {
+    const { data: dongTrongDon, error: loiDon } = await this.db
+      .from('order_items')
+      .select('variant_id, product_variants(product_id)')
+      .eq('order_id', orderId);
+    if (loiDon) throw new Error(loiDon.message);
+
+    const cacDong = dongTrongDon ?? [];
+    if (bienTheTra && !cacDong.some((dong: any) => dong.variant_id === bienTheTra)) {
+      throw new Error('Sản phẩm muốn trả không có trong đơn hàng này');
+    }
+
+    const { data: bienThe, error: loiBienThe } = await this.db
+      .from('product_variants')
+      .select('id, stock, product_id, size, color')
+      .eq('id', bienTheMuonDoi)
+      .maybeSingle();
+    if (loiBienThe) throw new Error(loiBienThe.message);
+    if (!bienThe) throw new Error('Không tìm thấy size muốn đổi sang');
+
+    if ((bienThe.stock ?? 0) <= 0) {
+      throw new Error(`Size ${bienThe.size} đã hết hàng, không đổi sang được`);
+    }
+
+    const cacSanPhamTrongDon = cacDong
+      .map((dong: any) => dong.product_variants?.product_id)
+      .filter(Boolean);
+    if (
+      cacSanPhamTrongDon.length > 0 &&
+      !cacSanPhamTrongDon.includes(bienThe.product_id)
+    ) {
+      throw new Error('Chỉ đổi được sang size khác của cùng sản phẩm');
+    }
+  }
+
+  /**
+   * Chuyen kho khi duyet doi size: tra lai mon cu, lay ra mon moi.
+   *
+   * Hai dong nhat ky deu mang ly do 'exchange' va cung order_id, nen sau nay
+   * nhin vao kho la biet hai lan chuyen nay thuoc cung mot viec doi size chu
+   * khong phai hai lan chinh kho roi rac.
+   */
+  private async chuyenKhoDoiSize(
+    yeuCau: { id: string; order_id: string; exchange_variant_id?: string | null; returned_variant_id?: string | null },
+    hangTraConBanDuoc: boolean,
+    actorId?: string,
+  ): Promise<void> {
+    const bienTheMoi = yeuCau.exchange_variant_id;
+    if (!bienTheMoi) {
+      throw new Error('Yêu cầu đổi size này không ghi size muốn đổi sang');
+    }
+
+    // Chua tung chuyen kho cho lan doi size nay thi moi lam, bam duyet hai lan
+    // khong duoc tru kho hai lan.
+    const { data: daChuyen, error: loiKiemTra } = await this.db
+      .from('inventory_movements')
+      .select('id')
+      .eq('order_id', yeuCau.order_id)
+      .eq('reason', 'exchange')
+      .limit(1);
+    if (loiKiemTra) throw new Error(loiKiemTra.message);
+    if ((daChuyen ?? []).length > 0) return;
+
+    // Lay size moi ra giao cho khach.
+    await this.congTonKho(bienTheMoi, -1, yeuCau.order_id, actorId, 'exchange',
+      'Đổi size: lấy hàng size mới ra giao');
+
+    // Size cu nhan lai: con ban duoc thi cong vao kho, hong thi chi ghi nhat ky
+    // de con truy, khong cong so luong.
+    const bienTheCu = yeuCau.returned_variant_id;
+    if (!bienTheCu) return;
+
+    if (hangTraConBanDuoc) {
+      await this.congTonKho(bienTheCu, 1, yeuCau.order_id, actorId, 'exchange',
+        'Đổi size: nhận lại hàng size cũ, còn bán được');
+    } else {
+      await this.ghiNhatKyKhongDoiKho(bienTheCu, yeuCau.order_id, actorId,
+        'Đổi size: hàng size cũ bị lỗi, không nhập lại kho');
+    }
   }
 
   async findByUser(userId: string): Promise<OrderReturnRow[]> {
@@ -230,6 +352,8 @@ export class OrderReturnModel {
     soLuong: number,
     orderId: string,
     actorId?: string,
+    lyDo: 'return' | 'exchange' | 'damaged' = 'return',
+    ghiChu = 'Hàng trả còn bán được, nhập lại kho',
   ): Promise<void> {
     for (let lan = 0; lan < 3; lan += 1) {
       const { data: bienThe, error: loiDoc } = await this.db
@@ -240,9 +364,14 @@ export class OrderReturnModel {
       if (loiDoc) throw new Error(loiDoc.message);
       if (!bienThe) return;
 
+      const tonMoi = bienThe.stock + soLuong;
+      if (tonMoi < 0) {
+        throw new Error('Tồn kho không đủ để thực hiện thao tác này');
+      }
+
       const { data: daGhi, error: loiCong } = await this.db
         .from('product_variants')
-        .update({ stock: bienThe.stock + soLuong })
+        .update({ stock: tonMoi })
         .eq('id', variantId)
         .eq('stock', bienThe.stock)
         .select('id')
@@ -253,16 +382,84 @@ export class OrderReturnModel {
       const { error: loiNhatKy } = await this.db.from('inventory_movements').insert({
         variant_id: variantId,
         change: soLuong,
-        reason: 'return' as const,
+        reason: lyDo,
         order_id: orderId,
         created_by: actorId || null,
-        note: 'Hàng trả còn bán được, nhập lại kho',
+        note: ghiChu,
       });
       if (loiNhatKy) throw new Error(loiNhatKy.message);
       return;
     }
 
     throw new Error('Tồn kho đang được thao tác bởi người khác, vui lòng thử lại');
+  }
+
+  /**
+   * Ghi mot dong nhat ky kho ma khong doi so luong ton.
+   *
+   * Dung cho hang tra ve bi loi: no da roi kho tu luc khach dat, khong quay
+   * lai nua nen ton kho khong doi. Nhung neu khong ghi gi thi mon hang do bien
+   * mat khong dau vet - cuoi thang khong biet hong bao nhieu, va cung khong
+   * doi chieu duoc khi kiem ke thieu hang.
+   */
+  private async ghiNhatKyKhongDoiKho(
+    variantId: string,
+    orderId: string,
+    actorId: string | undefined,
+    ghiChu: string,
+  ): Promise<void> {
+    const { error } = await this.db.from('inventory_movements').insert({
+      variant_id: variantId,
+      change: 0,
+      reason: 'damaged' as const,
+      order_id: orderId,
+      created_by: actorId || null,
+      note: ghiChu,
+    });
+    // Co so du lieu chua chay 13_hang_hong_va_doi_size.sql thi chua co ly do
+    // 'damaged'. Van cho luong duyet chay tiep, chi thieu dong nhat ky.
+    if (error) {
+      const thieuLyDo = error.message.toLowerCase().includes('damaged');
+      if (!thieuLyDo) throw new Error(error.message);
+      console.error('Chua co ly do kho "damaged", bo qua ghi nhat ky hang hong');
+    }
+  }
+
+  /**
+   * Ghi nhat ky "hang hong" cho tung mon trong don tra hang.
+   *
+   * Goi khi nguoi duyet xac nhan hang loi: kho khong cong them mon nao, nhung
+   * moi mon deu co mot dong de sau nay con truy ra.
+   */
+  private async ghiNhatKyHangHongCuaDon(
+    orderId: string,
+    actorId?: string,
+  ): Promise<void> {
+    const { data: daGhi, error: loiKiemTra } = await this.db
+      .from('inventory_movements')
+      .select('id')
+      .eq('order_id', orderId)
+      .eq('reason', 'damaged')
+      .limit(1);
+    // Chua co ly do 'damaged' trong co so du lieu thi thoi, khong chan viec duyet.
+    if (loiKiemTra) return;
+    if ((daGhi ?? []).length > 0) return;
+
+    const { data: items, error } = await this.db
+      .from('order_items')
+      .select('variant_id, quantity')
+      .eq('order_id', orderId);
+    if (error) throw new Error(error.message);
+
+    for (const item of items ?? []) {
+      if (!item.variant_id) continue;
+      await this.ghiNhatKyKhongDoiKho(
+        item.variant_id,
+        orderId,
+        actorId,
+        `Hàng trả bị lỗi, không nhập lại kho (${item.quantity} cái)`,
+      );
+    }
   }
 
   async updateStatus(
@@ -278,7 +475,9 @@ export class OrderReturnModel {
   ): Promise<OrderReturnRow | null> {
     const { data: hienTai, error: loiDoc } = await this.db
       .from('order_returns')
-      .select('id, order_id, status')
+      .select(
+        'id, order_id, status, request_type, exchange_variant_id, returned_variant_id',
+      )
       .eq('id', id)
       .maybeSingle();
     if (loiDoc) throw new Error(loiDoc.message);
@@ -288,17 +487,42 @@ export class OrderReturnModel {
     // Bam duyet lai lan nua se khong cong them nua.
     const laLanHoanTienDauTien =
       payload.status === 'refunded' && hienTai.status !== 'refunded';
-    if (laLanHoanTienDauTien && payload.restock === true) {
-      await this.nhapLaiKho(hienTai.order_id, payload.actorId);
+    if (laLanHoanTienDauTien) {
+      if (payload.restock === true) {
+        await this.nhapLaiKho(hienTai.order_id, payload.actorId);
+      } else if (payload.restock === false) {
+        // Hang loi: kho khong cong them, nhung van phai de lai dau vet. Truoc
+        // day nhanh nay khong ghi gi ca nen hang hong bien mat khong vet.
+        await this.ghiNhatKyHangHongCuaDon(hienTai.order_id, payload.actorId);
+      }
+    }
+
+    // Duyet doi size: khong dong den tien, chi chuyen hang giua hai bien the.
+    const laLanDoiSizeDauTien =
+      payload.status === 'exchanged' && hienTai.status !== 'exchanged';
+    if (laLanDoiSizeDauTien) {
+      if (hienTai.request_type !== 'exchange') {
+        throw new Error('Yêu cầu này là đòi hoàn tiền, không phải đổi size');
+      }
+      await this.chuyenKhoDoiSize(
+        hienTai as any,
+        payload.restock !== false,
+        payload.actorId,
+      );
     }
 
     const thayDoi: Record<string, string | boolean | null> = {
       status: payload.status,
       rejection_reason: payload.rejectionReason ?? null,
       admin_resolution_note: payload.adminResolutionNote ?? null,
-      resolved_at: ['refunded', 'rejected'].includes(payload.status) ? new Date().toISOString() : null,
+      resolved_at: ['refunded', 'rejected', 'exchanged'].includes(payload.status)
+        ? new Date().toISOString()
+        : null,
     };
-    if (payload.status === 'refunded' && payload.restock !== undefined) {
+    if (
+      ['refunded', 'exchanged'].includes(payload.status) &&
+      payload.restock !== undefined
+    ) {
       thayDoi.restocked = payload.restock;
     }
 

@@ -11,6 +11,7 @@ import '../../../../core/utils/app_snackbar.dart';
 import '../providers/review_provider.dart';
 import 'package:menly_app/core/widgets/app_buttons.dart';
 import 'package:menly_app/core/widgets/app_image.dart';
+import 'package:menly_app/core/utils/app_logger.dart';
 
 class ReviewFormPage extends StatefulWidget {
   final String? orderItemId;
@@ -66,7 +67,8 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
           }
         }
       });
-    } catch (_) {
+    } catch (e) {
+      AppLogger.canhBao('Không chọn được ảnh đánh giá', khuVuc: 'DanhGia', loi: e);
       if (!mounted) return;
       AppSnackBar.show(context, message: 'Không thể chọn ảnh. Vui lòng thử lại.');
     }

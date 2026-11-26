@@ -8,9 +8,12 @@ import 'package:provider/provider.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/utils/app_logger.dart';
 import '../../../../core/utils/app_snackbar.dart';
 import '../../../../core/utils/format.dart';
 import '../../../../core/widgets/app_buttons.dart';
+import '../../../product/data/models/product_model.dart';
+import '../../../product/presentation/providers/product_provider.dart';
 import '../../data/models/order_model.dart';
 import '../providers/order_provider.dart';
 import 'package:menly_app/core/widgets/app_image.dart';
@@ -41,6 +44,18 @@ class _OrderReturnRequestPageState extends State<OrderReturnRequestPage> {
   bool _submitting = false;
   bool _loadingOrder = false;
 
+  /// Khach muon doi size hay doi lai tien.
+  bool _doiSize = false;
+
+  /// Mon trong don ma khach muon doi.
+  OrderItemModel? _monMuonDoi;
+
+  /// Cac size khac cua chinh mon do, lay tu may chu vi don hang chi luu ban
+  /// chup luc mua chu khong biet con nhung size nao.
+  List<ProductVariantModel> _cacSizeDoiDuoc = [];
+  ProductVariantModel? _sizeMuonDoi;
+  bool _dangTaiSize = false;
+
   @override
   void initState() {
     super.initState();
@@ -63,6 +78,30 @@ class _OrderReturnRequestPageState extends State<OrderReturnRequestPage> {
   void dispose() {
     _detailController.dispose();
     super.dispose();
+  }
+
+  /// Tai cac size khac cua mon khach chon, de biet con size nao doi duoc.
+  ///
+  /// Don hang chi giu ban chup ten, size, mau luc mua nen khong biet san pham
+  /// con nhung size nao; phai hoi lai may chu.
+  Future<void> _taiCacSizeDoiDuoc(OrderItemModel mon) async {
+    setState(() {
+      _monMuonDoi = mon;
+      _sizeMuonDoi = null;
+      _cacSizeDoiDuoc = [];
+      _dangTaiSize = true;
+    });
+
+    final sanPham = await context.read<ProductProvider>().fetchProductDetail(mon.productId);
+    if (!mounted) return;
+
+    setState(() {
+      _dangTaiSize = false;
+      _cacSizeDoiDuoc = (sanPham?.variants ?? [])
+          // Bo size dang giu va cac size het hang: chon vao cung khong doi duoc.
+          .where((bienThe) => bienThe.id != mon.variantId && bienThe.stock > 0)
+          .toList();
+    });
   }
 
   Future<void> _pickImages({bool fromCamera = false}) async {
@@ -91,7 +130,12 @@ class _OrderReturnRequestPageState extends State<OrderReturnRequestPage> {
           }
         }
       });
-    } catch (_) {
+    } catch (e) {
+      AppLogger.canhBao(
+        'Không chọn được ảnh minh chứng trả hàng',
+        khuVuc: 'TraHang',
+        loi: e,
+      );
       if (!mounted) return;
       AppSnackBar.show(context, message: 'Không thể chọn ảnh. Vui lòng thử lại.');
     }
@@ -102,6 +146,16 @@ class _OrderReturnRequestPageState extends State<OrderReturnRequestPage> {
 
     final detail = _detailController.text.trim();
     final reason = detail.isEmpty ? _selectedReason : '$_selectedReason: $detail';
+
+    if (_doiSize && _sizeMuonDoi == null) {
+      AppSnackBar.show(
+        context,
+        message: 'Vui lòng chọn size muốn đổi sang',
+        backgroundColor: AppColors.of(context).danger,
+        icon: Icons.error_outline,
+      );
+      return;
+    }
 
     if (_selectedReason == _lyDoKhac && detail.isEmpty) {
       AppSnackBar.show(
@@ -129,6 +183,9 @@ class _OrderReturnRequestPageState extends State<OrderReturnRequestPage> {
             orderId: widget.order.id,
             reason: reason,
             images: _images,
+            doiSize: _doiSize,
+            bienTheMuonDoi: _sizeMuonDoi?.id,
+            bienTheTra: _monMuonDoi?.variantId,
           );
       if (!mounted) return;
       Navigator.pop(context, true);
@@ -170,6 +227,12 @@ class _OrderReturnRequestPageState extends State<OrderReturnRequestPage> {
               child: LinearProgressIndicator(minHeight: 2),
             ),
           _buildOrderCard(c, order),
+          const SizedBox(height: AppSpacing.lg),
+          _buildChonLoaiYeuCau(c, order),
+          if (_doiSize) ...[
+            const SizedBox(height: AppSpacing.lg),
+            _buildChonSize(c, order),
+          ],
           const SizedBox(height: AppSpacing.lg),
           Text(
             'Lý do trả hàng',
@@ -244,6 +307,181 @@ class _OrderReturnRequestPageState extends State<OrderReturnRequestPage> {
           ),
         ],
       ),
+    );
+  }
+
+  /// Khach muon lay lai tien hay chi muon doi size.
+  ///
+  /// Hai viec nay khac han nhau ve tien, nen phai hoi ngay tu dau chu khong de
+  /// nhan vien doan tu cau ly do.
+  Widget _buildChonLoaiYeuCau(AppColors c, OrderModel order) {
+    Widget nut({
+      required bool chonDoiSize,
+      required IconData bieuTuong,
+      required String tieuDe,
+      required String moTa,
+    }) {
+      final dangChon = _doiSize == chonDoiSize;
+      return Expanded(
+        child: InkWell(
+          onTap: () => setState(() {
+            _doiSize = chonDoiSize;
+            if (!chonDoiSize) {
+              _monMuonDoi = null;
+              _sizeMuonDoi = null;
+              _cacSizeDoiDuoc = [];
+            }
+          }),
+          borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+          child: Container(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            decoration: BoxDecoration(
+              color: dangChon ? c.primary.withValues(alpha: 0.08) : c.surface,
+              borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+              border: Border.all(
+                color: dangChon ? c.primary : c.border,
+                width: dangChon ? 1.6 : 1,
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(bieuTuong, size: 20, color: dangChon ? c.primary : c.textSecondary),
+                const SizedBox(height: AppSpacing.sm),
+                Text(
+                  tieuDe,
+                  style: TextStyle(
+                    color: c.textPrimary,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(moTa, style: TextStyle(color: c.textMuted, fontSize: 11.5)),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Bạn muốn gì?',
+          style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w700, fontSize: 14),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            nut(
+              chonDoiSize: false,
+              bieuTuong: Icons.payments_outlined,
+              tieuDe: 'Hoàn tiền',
+              moTa: 'Trả hàng, lấy lại ${formatVnd(order.total)}',
+            ),
+            const SizedBox(width: AppSpacing.md),
+            nut(
+              chonDoiSize: true,
+              bieuTuong: Icons.swap_horiz_rounded,
+              tieuDe: 'Đổi size',
+              moTa: 'Giữ nguyên tiền, chỉ đổi sang size khác',
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  /// Chon mon nao va doi sang size nao.
+  Widget _buildChonSize(AppColors c, OrderModel order) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Đổi món nào?',
+          style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w700, fontSize: 14),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        if (order.items.isEmpty)
+          Text(
+            'Đơn chưa có dòng sản phẩm từ máy chủ.',
+            style: TextStyle(color: c.textMuted, fontSize: 12.5),
+          ),
+        Wrap(
+          spacing: AppSpacing.sm,
+          runSpacing: AppSpacing.sm,
+          children: order.items.map((mon) {
+            final dangChon = _monMuonDoi?.id == mon.id;
+            return ChoiceChip(
+              label: Text(
+                '${mon.productName} (${mon.size})',
+                style: TextStyle(
+                  color: dangChon ? c.onPrimary : c.textPrimary,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 12,
+                ),
+              ),
+              selected: dangChon,
+              onSelected: (_) => _taiCacSizeDoiDuoc(mon),
+              selectedColor: c.primary,
+              backgroundColor: c.surface,
+              side: BorderSide(color: dangChon ? c.primary : c.border),
+            );
+          }).toList(),
+        ),
+        if (_monMuonDoi != null) ...[
+          const SizedBox(height: AppSpacing.lg),
+          Text(
+            'Đổi sang size nào?',
+            style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w700, fontSize: 14),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          if (_dangTaiSize)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
+              child: LinearProgressIndicator(minHeight: 2),
+            )
+          else if (_cacSizeDoiDuoc.isEmpty)
+            Container(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              decoration: BoxDecoration(
+                color: c.surfaceVariant,
+                borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+              ),
+              child: Text(
+                'Sản phẩm này không còn size nào khác đang có hàng. '
+                'Bạn chọn hoàn tiền nhé.',
+                style: TextStyle(color: c.textSecondary, fontSize: 12.5),
+              ),
+            )
+          else
+            Wrap(
+              spacing: AppSpacing.sm,
+              runSpacing: AppSpacing.sm,
+              children: _cacSizeDoiDuoc.map((bienThe) {
+                final dangChon = _sizeMuonDoi?.id == bienThe.id;
+                return ChoiceChip(
+                  label: Text(
+                    '${bienThe.size} · ${bienThe.color} (còn ${bienThe.stock})',
+                    style: TextStyle(
+                      color: dangChon ? c.onPrimary : c.textPrimary,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12,
+                    ),
+                  ),
+                  selected: dangChon,
+                  onSelected: (_) => setState(() => _sizeMuonDoi = bienThe),
+                  selectedColor: c.primary,
+                  backgroundColor: c.surface,
+                  side: BorderSide(color: dangChon ? c.primary : c.border),
+                );
+              }).toList(),
+            ),
+        ],
+      ],
     );
   }
 

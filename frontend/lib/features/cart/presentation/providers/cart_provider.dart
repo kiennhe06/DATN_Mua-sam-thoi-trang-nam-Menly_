@@ -2,12 +2,16 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:menly_app/core/network/api_client.dart';
+import 'package:menly_app/core/utils/app_logger.dart';
 import 'package:menly_app/features/cart/data/models/cart_item_model.dart';
 import 'package:menly_app/features/product/data/models/product_model.dart';
 import 'package:menly_app/features/voucher/data/models/voucher_model.dart';
 import 'package:menly_app/core/network/api_error.dart';
 import 'package:menly_app/features/order/data/models/shipping_policy_model.dart';
 import 'package:menly_app/features/order/data/services/shipping_policy_service.dart';
+
+/// Khu vuc ghi log cua gio hang.
+const String _khuVuc = 'GioHang';
 
 /// Provider quan ly Gio hang va Ap dung ma giam gia
 /// Ket noi truc tiep cac API backend moi nhat (AP-GH1, AP-VC1):
@@ -71,7 +75,14 @@ class CartProvider extends ChangeNotifier {
           notifyListeners();
         }
       }
-    } catch (_) {}
+    } catch (e, s) {
+      AppLogger.loi(
+        'Không đọc được giỏ hàng đã lưu trong máy',
+        khuVuc: _khuVuc,
+        loi: e,
+        stackTrace: s,
+      );
+    }
   }
 
   Future<void> _saveToLocalCache() async {
@@ -79,7 +90,14 @@ class CartProvider extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       final encoded = jsonEncode(_items.map((i) => i.toJson()).toList());
       await prefs.setString('cached_cart_items', encoded);
-    } catch (_) {}
+    } catch (e, s) {
+      AppLogger.loi(
+        'Không lưu được giỏ hàng vào máy',
+        khuVuc: _khuVuc,
+        loi: e,
+        stackTrace: s,
+      );
+    }
   }
 
   List<CartItemModel> get items => _items;
@@ -166,8 +184,13 @@ class CartProvider extends ChangeNotifier {
         _shippingNote = data['note']?.toString();
         notifyListeners();
       }
-    } catch (_) {
+    } catch (e) {
       // Khong tinh duoc phi ship tu backend -> dung chinh sach local trong getter shippingFee
+      AppLogger.canhBao(
+        'Không tính được phí ship từ máy chủ, dùng bảng giá trong máy',
+        khuVuc: _khuVuc,
+        loi: e,
+      );
       _shippingFeeFromApi = null;
       notifyListeners();
     }
@@ -195,8 +218,13 @@ class CartProvider extends ChangeNotifier {
           _saveToLocalCache();
         }
       }
-    } catch (_) {
+    } catch (e) {
       // Giu nguyen gio hang hien tai khi loi mang hoac chua dang nhap
+      AppLogger.canhBao(
+        'Không tải được giỏ hàng từ máy chủ, giữ nguyên giỏ trong máy',
+        khuVuc: _khuVuc,
+        loi: e,
+      );
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -302,7 +330,15 @@ class CartProvider extends ChangeNotifier {
           await _api.dio.put('/cart/items/${item.variantId}', data: {
             'quantity': item.quantity,
           });
-        } catch (_) {}
+        } catch (e) {
+          // Gio hang trong may da doi roi ma may chu chua biet. Khong ghi lai
+          // thi khong the giai thich vi sao mo app tren may khac lai ra so cu.
+          AppLogger.canhBao(
+            'Không đồng bộ được số lượng lên máy chủ',
+            khuVuc: _khuVuc,
+            loi: e,
+          );
+        }
       }
     }
   }
@@ -322,7 +358,13 @@ class CartProvider extends ChangeNotifier {
             await _api.dio.put('/cart/items/${item.variantId}', data: {
               'quantity': item.quantity,
             });
-          } catch (_) {}
+          } catch (e) {
+            AppLogger.canhBao(
+              'Không đồng bộ được số lượng lên máy chủ',
+              khuVuc: _khuVuc,
+              loi: e,
+            );
+          }
         }
       } else {
         await removeItem(cartItemId);
@@ -343,7 +385,13 @@ class CartProvider extends ChangeNotifier {
       if (_uuidRegex.hasMatch(variantId)) {
         try {
           await _api.dio.delete('/cart/items/$variantId');
-        } catch (_) {}
+        } catch (e) {
+          AppLogger.canhBao(
+            'Không xóa được sản phẩm khỏi giỏ trên máy chủ',
+            khuVuc: _khuVuc,
+            loi: e,
+          );
+        }
       }
     }
   }
@@ -386,7 +434,13 @@ class CartProvider extends ChangeNotifier {
       if (_uuidRegex.hasMatch(item.variantId)) {
         try {
           await _api.dio.delete('/cart/items/${item.variantId}');
-        } catch (_) {}
+        } catch (e) {
+          AppLogger.canhBao(
+            'Không xóa được sản phẩm khỏi giỏ trên máy chủ',
+            khuVuc: _khuVuc,
+            loi: e,
+          );
+        }
       }
     }
     await loadCartFromApi();
@@ -406,7 +460,13 @@ class CartProvider extends ChangeNotifier {
       if (_uuidRegex.hasMatch(item.variantId)) {
         try {
           await _api.dio.delete('/cart/items/${item.variantId}');
-        } catch (_) {}
+        } catch (e) {
+          AppLogger.canhBao(
+            'Không xóa được sản phẩm khỏi giỏ trên máy chủ',
+            khuVuc: _khuVuc,
+            loi: e,
+          );
+        }
       }
     }
   }
@@ -422,7 +482,13 @@ class CartProvider extends ChangeNotifier {
 
     try {
       await _api.dio.delete('/cart');
-    } catch (_) {}
+    } catch (e) {
+      AppLogger.canhBao(
+        'Không xóa được giỏ hàng trên máy chủ',
+        khuVuc: _khuVuc,
+        loi: e,
+      );
+    }
   }
 
   // =================== AP-VC1: ÁP DỤNG MÃ GIẢM GIÁ ===================
@@ -450,7 +516,15 @@ class CartProvider extends ChangeNotifier {
           await _api.dio.put('/cart/items/${item.variantId}', data: {
             'quantity': item.quantity,
           });
-        } catch (_) {}
+        } catch (e) {
+          // Gio hang trong may da doi roi ma may chu chua biet. Khong ghi lai
+          // thi khong the giai thich vi sao mo app tren may khac lai ra so cu.
+          AppLogger.canhBao(
+            'Không đồng bộ được số lượng lên máy chủ',
+            khuVuc: _khuVuc,
+            loi: e,
+          );
+        }
       }
     }
   }

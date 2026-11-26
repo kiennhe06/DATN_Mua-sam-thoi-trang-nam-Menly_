@@ -1,9 +1,13 @@
 import 'package:flutter/foundation.dart';
 import '../../../../core/network/api_client.dart';
+import '../../../../core/utils/app_logger.dart';
 import '../../data/default_notifications.dart';
 import '../../data/models/notification_model.dart';
 
 export '../../data/models/notification_model.dart';
+
+/// Khu vuc ghi log cua thong bao.
+const String _khuVuc = 'ThongBao';
 
 /// Provider quản lý thông báo cho Menly (AP-TB1)
 /// Hỗ trợ lọc theo loại thông báo: Tất cả, Đơn hàng, Khuyến mãi, Hệ thống, Chưa đọc
@@ -122,8 +126,13 @@ class NotificationProvider extends ChangeNotifier {
             ? apiUnread.toInt()
             : _notifications.where((n) => !n.isRead).length;
       }
-    } catch (_) {
+    } catch (e) {
       // Dùng dữ liệu hiện tại nếu offline hoặc chưa đăng nhập
+      AppLogger.canhBao(
+        'Không tải được thông báo, giữ dữ liệu đang có',
+        khuVuc: _khuVuc,
+        loi: e,
+      );
       if (_notifications.isEmpty) {
         _notifications = getInitialSampleNotifications();
       }
@@ -165,7 +174,9 @@ class NotificationProvider extends ChangeNotifier {
         'type': backendType,
         if (data != null) 'data': data,
       });
-    } catch (_) {}
+    } catch (e) {
+      AppLogger.canhBao('Không tạo được thông báo', khuVuc: _khuVuc, loi: e);
+    }
   }
 
   /// Đánh dấu 1 thông báo đã đọc (PATCH /api/v1/notifications/:id/read)
@@ -177,7 +188,15 @@ class NotificationProvider extends ChangeNotifier {
       notifyListeners();
       try {
         await _api.dio.patch('/notifications/$id/read');
-      } catch (_) {}
+      } catch (e) {
+        // Da danh dau da doc trong may roi; may chu chua biet thi lan sau mo
+        // app no se hien lai la chua doc.
+        AppLogger.canhBao(
+          'Không đánh dấu được thông báo đã đọc trên máy chủ',
+          khuVuc: _khuVuc,
+          loi: e,
+        );
+      }
     }
   }
 
@@ -190,7 +209,13 @@ class NotificationProvider extends ChangeNotifier {
     notifyListeners();
     try {
       await _api.dio.patch('/notifications/read-all');
-    } catch (_) {}
+    } catch (e) {
+      AppLogger.canhBao(
+        'Không đánh dấu được tất cả thông báo đã đọc trên máy chủ',
+        khuVuc: _khuVuc,
+        loi: e,
+      );
+    }
   }
 
   /// Xóa 1 thông báo (DELETE /api/v1/notifications/:id)
@@ -206,7 +231,13 @@ class NotificationProvider extends ChangeNotifier {
     notifyListeners();
     try {
       await _api.dio.delete('/notifications/$id');
-    } catch (_) {}
+    } catch (e) {
+      AppLogger.canhBao(
+        'Không xóa được thông báo trên máy chủ',
+        khuVuc: _khuVuc,
+        loi: e,
+      );
+    }
   }
 
   /// Xóa toàn bộ thông báo đã đọc

@@ -3,6 +3,41 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../utils/app_logger.dart';
+
+/// Khu vuc ghi log cua tang goi API.
+const String _khuVuc = 'API';
+
+/// Ghi lai mot lan goi API that bai.
+///
+/// Chi ghi duong dan, ma loi va thong bao. KHONG ghi header va KHONG ghi
+/// than request: header co 'Authorization: Bearer ...', con than request co
+/// mat khau luc dang nhap va dia chi nha luc dat hang. Log nam lai trong may
+/// nen cho gi vao day la coi nhu de lo cai do.
+void _ghiLoiGoiApi(DioException error) {
+  final duongDan = '${error.requestOptions.method} ${error.requestOptions.path}';
+  final maLoi = error.response?.statusCode;
+
+  if (maLoi != null) {
+    AppLogger.canhBao(
+      'Gọi API lỗi $maLoi: $duongDan',
+      khuVuc: _khuVuc,
+      loi: error.message,
+    );
+    return;
+  }
+
+  // Khong co ma loi nghia la khong noi duoc toi may chu: mat mang, sai dia
+  // chi, hoac qua han cho. Day la nhom loi hay gap nhat luc chay tren may that
+  // ma truoc gio khong de lai dau vet nao.
+  AppLogger.loi(
+    'Không gọi được máy chủ: $duongDan (${error.type.name})',
+    khuVuc: _khuVuc,
+    loi: error.error ?? error.message,
+    stackTrace: error.stackTrace,
+  );
+}
+
 /// Lop goi API chung toi backend Menly.
 class ApiClient {
   static final ApiClient _instance = ApiClient._internal();
@@ -58,7 +93,17 @@ class ApiClient {
             if (token != null && token.isNotEmpty) {
               options.headers['Authorization'] = 'Bearer $token';
             }
-          } catch (_) {}
+          } catch (e, s) {
+            // Doc duoc token hay khong thi request van di tiep, chi la di khi
+            // chua dang nhap. Nhung phai ghi lai: neu kho luu tru hong thi moi
+            // man can dang nhap deu bao 401 ma khong ai hieu tai sao.
+            AppLogger.loi(
+              'Không đọc được token đã lưu, gửi request không kèm đăng nhập',
+              khuVuc: _khuVuc,
+              loi: e,
+              stackTrace: s,
+            );
+          }
           if (options.data is FormData) {
             options.headers.remove('Content-Type');
             options.headers.remove('content-type');
@@ -93,10 +138,18 @@ class ApiClient {
                   return handler.resolve(retryResponse);
                 }
               }
-            } catch (_) {
-              // Refresh thất bại (hết hạn hoàn toàn)
+            } catch (e) {
+              // Refresh that bai (het han hoan toan). Ghi lai de phan biet
+              // "token het han that" voi "may chu refresh dang hong".
+              AppLogger.canhBao(
+                'Làm mới token thất bại, người dùng sẽ bị đăng xuất',
+                khuVuc: _khuVuc,
+                loi: e,
+              );
             }
           }
+
+          _ghiLoiGoiApi(error);
           return handler.next(error);
         },
       ),

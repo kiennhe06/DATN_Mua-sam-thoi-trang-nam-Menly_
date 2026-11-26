@@ -22,7 +22,9 @@ export const adminUserUpdateSchema = z.object({
 export const inventoryAdjustmentSchema = z.object({
   variantId: z.string().uuid(),
   delta: z.number().int().min(-100000).max(100000).refine((value) => value !== 0),
-  reason: z.enum(['admin_restock', 'admin_correction']),
+  // 'admin_damaged' la hang hong/vo/mat: truoc day phai ghi lan vao
+  // 'admin_correction' roi go tay vao ghi chu, nen khong loc va khong dem duoc.
+  reason: z.enum(['admin_restock', 'admin_correction', 'admin_damaged']),
   note: z.string().trim().max(500).optional(),
 });
 

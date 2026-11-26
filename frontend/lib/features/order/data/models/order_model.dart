@@ -8,6 +8,10 @@ class OrderItemModel {
   /// giu ban chup ten, size, mau va gia nen van xem duoc, chi la khong mo
   /// duoc trang chi tiet nua.
   final String productId;
+
+  /// Ma bien the (size + mau) khach da mua. Can de doi size: phai noi ro dang
+  /// tra lai cai nao va muon doi sang cai nao.
+  final String variantId;
   final String productName;
   final String size;
   final String color;
@@ -18,6 +22,7 @@ class OrderItemModel {
   const OrderItemModel({
     required this.id,
     this.productId = '',
+    this.variantId = '',
     required this.productName,
     required this.size,
     required this.color,
@@ -32,6 +37,7 @@ class OrderItemModel {
     return OrderItemModel(
       id: json['id']?.toString() ?? '',
       productId: json['product_id']?.toString() ?? json['productId']?.toString() ?? '',
+      variantId: json['variant_id']?.toString() ?? json['variantId']?.toString() ?? '',
       productName: json['product_name']?.toString() ?? json['productName']?.toString() ?? '',
       size: json['size']?.toString() ?? '',
       color: json['color']?.toString() ?? '',
@@ -46,6 +52,7 @@ class OrderItemModel {
   Map<String, dynamic> toJson() => {
     'id': id,
     'product_id': productId,
+    'variant_id': variantId,
     'product_name': productName,
     'size': size,
     'color': color,

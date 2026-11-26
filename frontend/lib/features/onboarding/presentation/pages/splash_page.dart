@@ -11,6 +11,7 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../product/presentation/providers/product_provider.dart';
 import 'onboarding_page.dart';
+import 'package:menly_app/core/utils/app_logger.dart';
 
 /// Man cho khi mo app: doi du lieu that tu backend (banner, danh muc, san pham)
 /// nap xong roi moi vao man gioi thieu / trang chu.
@@ -66,7 +67,15 @@ class _SplashPageState extends State<SplashPage>
 
     try {
       await productProv.ensureInitialized().timeout(_dataTimeout);
-    } catch (_) {
+    } catch (e, s) {
+      // Man cho bao "khong tai duoc du lieu" chung chung; day la cho duy nhat
+      // con biet that ra la mat mang, qua han cho, hay may chu tra loi sai.
+      AppLogger.loi(
+        'Không tải được dữ liệu khởi động',
+        khuVuc: 'KhoiDong',
+        loi: e,
+        stackTrace: s,
+      );
       failed = true;
     }
 

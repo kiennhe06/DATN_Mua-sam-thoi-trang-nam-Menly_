@@ -17,6 +17,7 @@ const NHAN_TRANG_THAI: Record<string, { chu: string; lop: string }> = {
   shop_rejected: { chu: 'Đã từ chối', lop: 'bg-danger-bg text-danger border-danger-line' },
   admin_dispute_review: { chu: 'Đang khiếu nại', lop: 'bg-warn-bg text-warn border-warn-line' },
   refunded: { chu: 'Đã hoàn tiền', lop: 'bg-ok-bg text-ok border-ok-line' },
+  exchanged: { chu: 'Đã đổi size', lop: 'bg-blue-50 text-blue-700 border-blue-200' },
   rejected: { chu: 'Đã từ chối', lop: 'bg-danger-bg text-danger border-danger-line' },
 };
 
@@ -95,6 +96,24 @@ export default function ReturnsPage() {
     );
   }
 
+  /**
+   * Duyệt đổi size: không động đến tiền, chỉ chuyển hàng giữa hai size.
+   */
+  function doiSize(yeuCau: OrderReturn, hangCuConBanDuoc: boolean) {
+    const moTaKho = hangCuConBanDuoc
+      ? 'size cũ nhận lại còn bán được nên sẽ cộng vào kho'
+      : 'size cũ bị lỗi nên KHÔNG cộng vào kho, chỉ ghi nhận hàng hỏng';
+    const dongY = window.confirm(
+      `Đổi size cho đơn ${yeuCau.orderId}?\n\n` +
+        `Kho sẽ trừ một cái ở size mới để gửi cho khách, và ${moTaKho}.\n` +
+        'Tiền của đơn giữ nguyên, không hoàn lại.\n\n' +
+        'Thao tác này không hoàn tác được.',
+    );
+    if (!dongY) return;
+
+    doiTrangThai(yeuCau, 'exchanged', 'Đã duyệt đổi size', { restock: hangCuConBanDuoc });
+  }
+
   function tuChoi(yeuCau: OrderReturn) {
     const lyDo = window.prompt('Lý do từ chối yêu cầu trả hàng này?');
     if (lyDo === null) return;
@@ -167,13 +186,28 @@ export default function ReturnsPage() {
                       <p className="font-mono text-xs text-ink-muted">Đơn {yeuCau.orderId}</p>
                       <p className="mt-1 text-sm font-semibold text-ink">{yeuCau.reason}</p>
                       <p className="mt-1 text-[11px] text-ink-muted">
-                        Gửi lúc {dinhDangNgay(yeuCau.createdAt)} · Hoàn{' '}
-                        {yeuCau.refundAmount.toLocaleString('vi-VN')} đ
+                        Gửi lúc {dinhDangNgay(yeuCau.createdAt)}
+                        {yeuCau.requestType === 'exchange'
+                          ? ' · không hoàn tiền'
+                          : ` · Hoàn ${yeuCau.refundAmount.toLocaleString('vi-VN')} đ`}
                       </p>
                     </div>
-                    <span className={`rounded-full border px-3 py-1 text-[11px] font-semibold ${nhan.lop}`}>
-                      {nhan.chu}
-                    </span>
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      {/* Doi size va doi tien la hai viec khac han nhau, phai
+                          nhin mot cai la biet ngay dang xu ly cai nao. */}
+                      <span
+                        className={`rounded-full border px-3 py-1 text-[11px] font-semibold ${
+                          yeuCau.requestType === 'exchange'
+                            ? 'border-blue-200 bg-blue-50 text-blue-700'
+                            : 'border-line text-ink-mid'
+                        }`}
+                      >
+                        {yeuCau.requestType === 'exchange' ? 'Đổi size' : 'Đòi hoàn tiền'}
+                      </span>
+                      <span className={`rounded-full border px-3 py-1 text-[11px] font-semibold ${nhan.lop}`}>
+                        {nhan.chu}
+                      </span>
+                    </div>
                   </div>
 
                   {yeuCau.proofImages.length > 0 && (
@@ -205,24 +239,52 @@ export default function ReturnsPage() {
 
                   {choHoanTien && (
                     <div className="flex flex-wrap gap-2 border-t border-line pt-3">
-                      <button
-                        type="button"
-                        disabled={dangBan}
-                        onClick={() => hoanTien(yeuCau, true)}
-                        className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-ok-line bg-ok-bg px-3.5 py-2 text-xs font-semibold text-ok hover:brightness-95 disabled:opacity-50"
-                      >
-                        <PackageCheck className="h-3.5 w-3.5" />
-                        Hoàn tiền · hàng còn bán được
-                      </button>
-                      <button
-                        type="button"
-                        disabled={dangBan}
-                        onClick={() => hoanTien(yeuCau, false)}
-                        className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-line-strong bg-panel px-3.5 py-2 text-xs font-semibold text-ink-mid hover:bg-tint disabled:opacity-50"
-                      >
-                        <PackageX className="h-3.5 w-3.5" />
-                        Hoàn tiền · hàng lỗi
-                      </button>
+                      {/* Khach xin doi size thi khong co nut hoan tien, vi
+                          don khong mat tien; va nguoc lai. De lan ca hai la
+                          nhan vien rat de bam nham sang nhanh kia. */}
+                      {yeuCau.requestType === 'exchange' ? (
+                        <>
+                          <button
+                            type="button"
+                            disabled={dangBan}
+                            onClick={() => doiSize(yeuCau, true)}
+                            className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-ok-line bg-ok-bg px-3.5 py-2 text-xs font-semibold text-ok hover:brightness-95 disabled:opacity-50"
+                          >
+                            <PackageCheck className="h-3.5 w-3.5" />
+                            Đổi size · hàng cũ còn bán được
+                          </button>
+                          <button
+                            type="button"
+                            disabled={dangBan}
+                            onClick={() => doiSize(yeuCau, false)}
+                            className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-line-strong bg-panel px-3.5 py-2 text-xs font-semibold text-ink-mid hover:bg-tint disabled:opacity-50"
+                          >
+                            <PackageX className="h-3.5 w-3.5" />
+                            Đổi size · hàng cũ bị lỗi
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            type="button"
+                            disabled={dangBan}
+                            onClick={() => hoanTien(yeuCau, true)}
+                            className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-ok-line bg-ok-bg px-3.5 py-2 text-xs font-semibold text-ok hover:brightness-95 disabled:opacity-50"
+                          >
+                            <PackageCheck className="h-3.5 w-3.5" />
+                            Hoàn tiền · hàng còn bán được
+                          </button>
+                          <button
+                            type="button"
+                            disabled={dangBan}
+                            onClick={() => hoanTien(yeuCau, false)}
+                            className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-line-strong bg-panel px-3.5 py-2 text-xs font-semibold text-ink-mid hover:bg-tint disabled:opacity-50"
+                          >
+                            <PackageX className="h-3.5 w-3.5" />
+                            Hoàn tiền · hàng lỗi
+                          </button>
+                        </>
+                      )}
                       {yeuCau.status === 'requested' && (
                         <button
                           type="button"

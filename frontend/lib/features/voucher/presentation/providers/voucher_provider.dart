@@ -1,6 +1,10 @@
 import 'package:flutter/foundation.dart';
 import '../../../../core/network/api_client.dart';
+import '../../../../core/utils/app_logger.dart';
 import 'package:menly_app/features/voucher/data/models/voucher_model.dart';
+
+/// Khu vuc ghi log cua ma giam gia.
+const String _khuVuc = 'Voucher';
 
 /// Provider quan ly Khuyen mai & Gom ma giam gia
 /// Phu trach boi: Thanh Toan (TM10, AP-VC1)
@@ -46,7 +50,13 @@ class VoucherProvider extends ChangeNotifier {
         _vouchers = [];
         _error = 'Không tải được mã giảm giá. Vui lòng thử lại.';
       }
-    } catch (_) {
+    } catch (e, s) {
+      AppLogger.loi(
+        'Không tải được mã giảm giá',
+        khuVuc: _khuVuc,
+        loi: e,
+        stackTrace: s,
+      );
       _vouchers = [];
       _error = 'Không tải được mã giảm giá. Vui lòng thử lại.';
     } finally {

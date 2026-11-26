@@ -508,6 +508,10 @@ export interface OrderReturn {
   adminResolutionNote: string | null;
   /** true: hàng còn bán được và đã nhập lại kho; false: hàng lỗi. */
   restocked: boolean | null;
+  /** 'refund' đòi lại tiền, 'exchange' chỉ đổi size. */
+  requestType: 'refund' | 'exchange';
+  exchangeVariantId: string | null;
+  returnedVariantId: string | null;
   createdAt: string;
   resolvedAt: string | null;
 }
@@ -528,6 +532,9 @@ function normalizeReturn(raw: Record<string, unknown>): OrderReturn {
     rejectionReason: lay<string | null>('rejectionReason', 'rejection_reason', null),
     adminResolutionNote: lay<string | null>('adminResolutionNote', 'admin_resolution_note', null),
     restocked: lay<boolean | null>('restocked', 'restocked', null),
+    requestType: lay<'refund' | 'exchange'>('requestType', 'request_type', 'refund'),
+    exchangeVariantId: lay<string | null>('exchangeVariantId', 'exchange_variant_id', null),
+    returnedVariantId: lay<string | null>('returnedVariantId', 'returned_variant_id', null),
     createdAt: lay('createdAt', 'created_at', ''),
     resolvedAt: lay<string | null>('resolvedAt', 'resolved_at', null),
   };

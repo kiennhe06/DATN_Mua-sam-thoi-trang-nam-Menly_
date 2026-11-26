@@ -1286,7 +1286,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                           if (!context.mounted) return;
 
                           final messenger = ScaffoldMessenger.of(context);
-                          messenger.hideCurrentSnackBar();
+                          messenger.removeCurrentSnackBar();
                           messenger.showSnackBar(
                             SnackBar(
                               content: Text(added

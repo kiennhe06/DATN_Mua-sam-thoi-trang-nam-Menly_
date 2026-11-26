@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/network/api_client.dart';
+import '../../../../core/utils/app_logger.dart';
 import 'package:menly_app/features/cart/data/models/cart_item_model.dart';
 import 'package:menly_app/features/order/data/models/order_model.dart';
 import 'package:menly_app/features/order/data/models/order_return_model.dart';
@@ -15,6 +16,9 @@ import 'package:menly_app/features/order/data/models/order_return_model.dart';
 /// - POST /api/v1/orders (Tao don hang moi)
 /// - GET /api/v1/orders/:id (Chi tiet don hang)
 /// - PUT /api/v1/orders/:id/cancel (Huy don hang)
+/// Khu vuc ghi log cua man don hang.
+const String _khuVuc = 'DonHang';
+
 class OrderProvider extends ChangeNotifier {
   final ApiClient _api = ApiClient();
   List<OrderModel> _orders = [];
@@ -46,7 +50,17 @@ class OrderProvider extends ChangeNotifier {
           notifyListeners();
         }
       }
-    } catch (_) {}
+    } catch (e, s) {
+      // Doc hong thi coi nhu chua co ban luu, lat nua goi API van ra danh
+      // sach. Nhung neu ban luu sai dinh dang thi moi lan mo app deu hong o
+      // day ma khong ai biet.
+      AppLogger.loi(
+        'Không đọc được đơn hàng đã lưu trong máy',
+        khuVuc: _khuVuc,
+        loi: e,
+        stackTrace: s,
+      );
+    }
   }
 
   Future<void> _saveToLocalCache() async {
@@ -54,7 +68,14 @@ class OrderProvider extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       final encoded = jsonEncode(_orders.map((o) => o.toJson()).toList());
       await prefs.setString('cached_orders', encoded);
-    } catch (_) {}
+    } catch (e, s) {
+      AppLogger.loi(
+        'Không lưu được đơn hàng vào máy',
+        khuVuc: _khuVuc,
+        loi: e,
+        stackTrace: s,
+      );
+    }
   }
 
   List<OrderModel> get allOrders => _orders;
@@ -211,8 +232,14 @@ class OrderProvider extends ChangeNotifier {
             .map((item) => OrderReturnModel.fromJson(Map<String, dynamic>.from(item)))
             .toList();
       }
-    } catch (_) {
-      // Giữ danh sách cũ nếu API lỗi, không chặn màn đơn hàng
+    } catch (e) {
+      // Giu danh sach cu neu API loi, khong chan man don hang. Van ghi lai de
+      // con biet vi sao nut "Tra hang" khong hien ra.
+      AppLogger.canhBao(
+        'Không tải được danh sách yêu cầu trả hàng, giữ lại danh sách cũ',
+        khuVuc: _khuVuc,
+        loi: e,
+      );
     } finally {
       notifyListeners();
     }
@@ -222,6 +249,9 @@ class OrderProvider extends ChangeNotifier {
     required String orderId,
     required String reason,
     List<XFile> images = const [],
+    bool doiSize = false,
+    String? bienTheMuonDoi,
+    String? bienTheTra,
   }) async {
     if (reason.trim().isEmpty) {
       throw Exception('Vui lòng nhập lý do trả hàng');
@@ -229,10 +259,20 @@ class OrderProvider extends ChangeNotifier {
     if (images.isEmpty) {
       throw Exception('Vui lòng đính kèm ít nhất 1 hình ảnh minh chứng');
     }
+    if (doiSize && (bienTheMuonDoi == null || bienTheMuonDoi.isEmpty)) {
+      throw Exception('Vui lòng chọn size muốn đổi sang');
+    }
 
     final form = FormData();
     form.fields.add(MapEntry('orderId', orderId));
     form.fields.add(MapEntry('reason', reason.trim()));
+    form.fields.add(MapEntry('requestType', doiSize ? 'exchange' : 'refund'));
+    if (doiSize) {
+      form.fields.add(MapEntry('exchangeVariantId', bienTheMuonDoi!));
+      if (bienTheTra != null && bienTheTra.isNotEmpty) {
+        form.fields.add(MapEntry('returnedVariantId', bienTheTra));
+      }
+    }
 
     for (final image in images.take(5)) {
       final bytes = await image.readAsBytes();

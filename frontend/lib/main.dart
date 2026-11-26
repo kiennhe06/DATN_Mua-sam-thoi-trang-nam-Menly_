@@ -1,6 +1,9 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'core/theme/theme_controller.dart';
+import 'core/utils/app_logger.dart';
 import 'features/address/presentation/providers/address_provider.dart';
 import 'features/auth/presentation/providers/auth_provider.dart';
 import 'features/cart/presentation/providers/cart_provider.dart';
@@ -14,6 +17,33 @@ import 'features/wishlist/presentation/providers/wishlist_provider.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Loi widget: van de Flutter in man hinh do nhu cu, nhung ghi them vao log
+  // de con doc lai duoc sau khi man hinh do da bien mat.
+  final xuLyCu = FlutterError.onError;
+  FlutterError.onError = (chiTiet) {
+    AppLogger.loi(
+      'Lỗi widget: ${chiTiet.exceptionAsString()}',
+      khuVuc: 'Flutter',
+      loi: chiTiet.exception,
+      stackTrace: chiTiet.stack,
+    );
+    xuLyCu?.call(chiTiet);
+  };
+
+  // Loi khong ai bat o tang duoi (Future bi quen await, loi tu nen tang).
+  // Khong co dong nay thi nhung loi do bien mat hoan toan.
+  PlatformDispatcher.instance.onError = (loi, stackTrace) {
+    AppLogger.loi(
+      'Lỗi không ai bắt',
+      khuVuc: 'Flutter',
+      loi: loi,
+      stackTrace: stackTrace,
+    );
+    // true = da xu ly xong, dung lam sap app.
+    return true;
+  };
+
   runApp(const MenlyApp());
 }
 

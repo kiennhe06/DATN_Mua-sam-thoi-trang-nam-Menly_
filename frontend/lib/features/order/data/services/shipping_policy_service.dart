@@ -1,4 +1,5 @@
 import 'package:menly_app/core/network/api_client.dart';
+import 'package:menly_app/core/utils/app_logger.dart';
 import 'package:menly_app/features/order/data/models/shipping_policy_model.dart';
 
 /// Noi duy nhat trong app giu bang gia giao hang.
@@ -31,9 +32,14 @@ class ShippingPolicyService {
         _daTai = ShippingPolicyModel.fromJson(Map<String, dynamic>.from(data));
         return _daTai;
       }
-    } catch (_) {
+    } catch (e) {
       // Mat mang thi giu bang gia cu (neu co) va tra ve null de man hinh
       // tu an phan phi ship thay vi hien mot con so doan mo.
+      AppLogger.canhBao(
+        'Không tải được bảng phí giao hàng',
+        khuVuc: 'PhiShip',
+        loi: e,
+      );
     }
     return _daTai;
   }

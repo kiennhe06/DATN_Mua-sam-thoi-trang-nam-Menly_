@@ -2,6 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'app_accent.dart';
 import 'app_colors.dart';
+import 'app_spacing.dart';
+
+/// Chieu cao thanh dieu huong duoi man hinh, tinh tu day len.
+///
+/// Lay tu app_bottom_nav.dart: le tren 8 + dem doc 8*2 + noi dung 48 + le
+/// duoi 12. Dung de day thong bao noi len tren thanh do.
+const double chieuCaoThanhDuoi = 84;
 
 /// Central theme factory for the Menly design system.
 ///
@@ -167,11 +174,23 @@ class AppTheme {
           textStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
         ),
       ),
+      // Thong bao noi phai nam CAO HON thanh duoi man hinh.
+      //
+      // Mac dinh no de sat day, dung ngay tren nut "Thanh toan" va thanh dieu
+      // huong, ma SnackBar thi an luon cu cham roi vao vung cua no. Thanh ra
+      // vua them hang xong la bam thanh toan khong duoc, phai doi thong bao
+      // tat. Chua cao thanh dieu huong (khoang 84) cong mot chut cho thoang.
       snackBarTheme: SnackBarThemeData(
         backgroundColor: c.inkCard,
         contentTextStyle: TextStyle(color: c.onInk),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(radiusSm)),
         behavior: SnackBarBehavior.floating,
+        insetPadding: const EdgeInsets.fromLTRB(
+          AppSpacing.lg,
+          AppSpacing.sm,
+          AppSpacing.lg,
+          chieuCaoThanhDuoi + AppSpacing.sm,
+        ),
       ),
       dividerTheme: DividerThemeData(color: c.border, thickness: 1, space: 1),
     );

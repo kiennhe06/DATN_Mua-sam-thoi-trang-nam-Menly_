@@ -66,8 +66,8 @@ export default function InventoryPage() {
   return (
     <div className="flex-1 flex flex-col">
       <Header
-        title="Quản lý Kho Hàng & Tồn Kho Toàn Bộ Sản Phẩm"
-        subtitle={`Theo dõi ${products.length} sản phẩm, số lượng tồn kho theo từng kích cỡ và hiệu chỉnh xuất nhập tồn`}
+        title="Kho hàng"
+        subtitle={`${products.length} sản phẩm · tồn kho theo từng size`}
         onRefresh={loadData}
       />
 

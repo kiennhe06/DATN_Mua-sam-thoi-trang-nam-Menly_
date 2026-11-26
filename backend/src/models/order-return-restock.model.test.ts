@@ -109,13 +109,19 @@ test('hàng trả còn bán được thì cộng lại kho và ghi nhật ký l�
   assert.equal(nhatKy.body.reason, 'return');
 });
 
-test('hàng lỗi thì không cộng lại kho và không ghi nhật ký kho', async () => {
+test('hàng lỗi thì không cộng lại kho nhưng vẫn ghi nhật ký để truy', async () => {
   datLai('shop_approved');
 
   await model.updateStatus('tra-1', { status: 'refunded', restock: false });
 
+  // Khong cong ton kho: hang loi khong quay lai ban.
   assert.equal(congKho(), undefined);
-  assert.equal(nhatKyKho(), undefined);
+
+  // Nhung van phai de lai dau vet, neu khong hang hong bien mat khong vet.
+  const nhatKy = nhatKyKho();
+  assert.ok(nhatKy, 'hàng lỗi vẫn phải ghi một dòng nhật ký');
+  assert.equal(nhatKy.body.change, 0, 'ghi nhận nhưng không đổi số lượng tồn');
+  assert.equal(nhatKy.body.reason, 'damaged');
 });
 
 test('đơn đã hoàn tiền rồi thì bấm lại không cộng kho thêm lần nữa', async () => {

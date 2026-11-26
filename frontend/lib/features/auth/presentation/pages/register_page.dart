@@ -5,6 +5,7 @@ import 'package:menly_app/core/network/api_client.dart';
 import 'package:menly_app/core/theme/app_colors.dart';
 import 'package:menly_app/core/theme/app_spacing.dart';
 import 'package:menly_app/core/widgets/app_buttons.dart';
+import 'package:menly_app/core/utils/app_logger.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -44,7 +45,13 @@ class _RegisterPageState extends State<RegisterPage> {
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('saved_user_name', _fullNameController.text.trim());
         await prefs.setString('saved_user_phone', _phoneController.text.trim());
-      } catch (_) {}
+      } catch (e) {
+        AppLogger.canhBao(
+          'Không lưu được tên và số điện thoại vừa đăng ký',
+          khuVuc: 'TaiKhoan',
+          loi: e,
+        );
+      }
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
