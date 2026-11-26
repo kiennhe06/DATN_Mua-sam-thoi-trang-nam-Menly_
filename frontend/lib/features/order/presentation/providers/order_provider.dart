@@ -356,6 +356,8 @@ class OrderProvider extends ChangeNotifier {
     required int discountAmount,
     required int shippingFee,
     required int total,
+    int walletAmount = 0,
+    int coinAmount = 0,
     String? voucherCode,
   }) async {
     final response = await _api.dio.post('/orders', data: {
@@ -367,6 +369,8 @@ class OrderProvider extends ChangeNotifier {
       'shipping_fee': shippingFee,
       'discount_amount': discountAmount,
       'total': total,
+      'wallet_amount': walletAmount,
+      'coin_amount': coinAmount,
       'idempotency_key': 'app-${DateTime.now().microsecondsSinceEpoch}',
       if (voucherCode != null && voucherCode.isNotEmpty)
         'voucher_code': voucherCode,

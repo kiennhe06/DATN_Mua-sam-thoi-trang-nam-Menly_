@@ -25,6 +25,7 @@ import 'package:menly_app/features/support/presentation/pages/staff_support_inbo
 import 'package:menly_app/features/support/presentation/pages/support_chat_page.dart';
 import 'package:menly_app/features/chat/presentation/pages/live_chat_page.dart';
 import 'package:menly_app/features/voucher/presentation/pages/voucher_list_page.dart';
+import 'package:menly_app/features/wallet/presentation/pages/wallet_page.dart';
 import 'package:menly_app/features/voucher/presentation/providers/voucher_provider.dart';
 import 'package:menly_app/features/wishlist/presentation/pages/wishlist_page.dart';
 import 'package:menly_app/features/wishlist/presentation/providers/wishlist_provider.dart';
@@ -799,6 +800,19 @@ class ProfilePage extends StatelessWidget {
                         MaterialPageRoute(
                             builder: (_) => const VoucherListPage())),
                   ),
+                  if (user != null) ...[
+                    const Divider(height: 1),
+                    ProfileMenuItem(
+                      icon: Icons.account_balance_wallet_outlined,
+                      title: 'Ví của tôi',
+                      subtitle:
+                          'Xem số dư ví, xu tích lũy và lịch sử giao dịch',
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const WalletPage()),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),

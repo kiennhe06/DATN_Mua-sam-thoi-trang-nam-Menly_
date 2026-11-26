@@ -5,6 +5,8 @@ import 'package:menly_app/features/order/data/models/shipping_policy_model.dart'
 import 'package:menly_app/features/order/data/services/shipping_policy_service.dart';
 import '../widgets/checkout_payment_cancelled_dialog.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:math' as math;
+import 'package:menly_app/features/wallet/data/wallet_service.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import 'order_success_page.dart';
 import 'package:flutter/material.dart';
@@ -49,6 +51,10 @@ class _CheckoutPageState extends State<CheckoutPage> {
   /// Bang gia giao hang lay tu API, khong viet cung trong man hinh.
   ShippingPolicyModel? _bangGiaGiaoHang;
   bool _isSubmitting = false;
+  bool _useWallet = false;
+  bool _useCoins = false;
+  int _walletBalance = 0;
+  int _coinBalance = 0;
 
   final _nameCtrl = TextEditingController();
   final _phoneCtrl = TextEditingController();
@@ -85,9 +91,29 @@ class _CheckoutPageState extends State<CheckoutPage> {
     return total > 0 ? total : 0;
   }
 
+  int _coinsToUse(CartProvider cart) {
+    if (!_useCoins) return 0;
+    final payableWithoutCredits = _calculateTotal(cart);
+    final twentyPercentOfGoods = (_currentSubtotal * 0.2).floor();
+    final goodsPayable = math.max(0, payableWithoutCredits - cart.shippingFee);
+    return math.min(_coinBalance, math.min(twentyPercentOfGoods, goodsPayable));
+  }
+
+  int _walletToUse(CartProvider cart) {
+    if (!_useWallet) return 0;
+    final remaining = math.max(0, _calculateTotal(cart) - _coinsToUse(cart));
+    return math.min(_walletBalance, remaining);
+  }
+
+  int _totalAfterCredits(CartProvider cart) => math.max(
+        0,
+        _calculateTotal(cart) - _coinsToUse(cart) - _walletToUse(cart),
+      );
+
   @override
   void initState() {
     super.initState();
+    _loadWalletBalances();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initAddressFromProvider();
       _recalculateShippingFee();
@@ -96,6 +122,17 @@ class _CheckoutPageState extends State<CheckoutPage> {
       if (!mounted) return;
       setState(() => _bangGiaGiaoHang = bangGia);
     });
+  }
+
+  Future<void> _loadWalletBalances() async {
+    try {
+      final overview = await WalletService.instance.load();
+      if (!mounted) return;
+      setState(() {
+        _walletBalance = overview.walletBalance;
+        _coinBalance = overview.coinBalance;
+      });
+    } catch (_) {}
   }
 
   @override
@@ -238,6 +275,8 @@ class _CheckoutPageState extends State<CheckoutPage> {
       final discount = _calculateDiscount(cart);
       final shippingFee = cart.shippingFee;
       final total = _calculateTotal(cart);
+      final walletAmount = _walletToUse(cart);
+      final coinAmount = _coinsToUse(cart);
 
       final authProv = context.read<AuthProvider>();
 
@@ -275,6 +314,8 @@ class _CheckoutPageState extends State<CheckoutPage> {
         discountAmount: discount,
         shippingFee: shippingFee,
         total: total,
+        walletAmount: walletAmount,
+        coinAmount: coinAmount,
         voucherCode: cart.appliedVoucher?.code,
       );
 
@@ -285,17 +326,10 @@ class _CheckoutPageState extends State<CheckoutPage> {
       setState(() => _isSubmitting = false);
 
       if (_paymentMethod == 'vnpay') {
-        final orderForPayment = (createdOrder.total == total && createdOrder.discountAmount == discount)
-            ? createdOrder
-            : createdOrder.copyWith(
-                total: total,
-                discountAmount: discount,
-                shippingFee: shippingFee,
-              );
         final paymentSuccess = await Navigator.push<bool>(
           context,
           MaterialPageRoute(
-            builder: (_) => VNPayPaymentPage(order: orderForPayment),
+            builder: (_) => VNPayPaymentPage(order: createdOrder),
           ),
         );
         if (!mounted) return;
@@ -404,7 +438,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
     // o cho khac, du du lieu hien thi lay tu cac o nhap tren man nay.
     context.watch<AddressProvider>();
     final items = widget.customItems ?? cart.selectedItems;
-    final totalAmount = _calculateTotal(cart);
+    final totalAmount = _totalAfterCredits(cart);
 
     return Scaffold(
       backgroundColor: c.background,
@@ -465,6 +499,11 @@ class _CheckoutPageState extends State<CheckoutPage> {
                   ),
                   const SizedBox(height: AppSpacing.sm),
                   _buildVoucherCard(c, cart),
+                  const SizedBox(height: AppSpacing.xl),
+
+                  const SectionHeader(title: 'Ví và xu tích lũy'),
+                  const SizedBox(height: AppSpacing.sm),
+                  _buildWalletOptions(c, cart),
                   const SizedBox(height: AppSpacing.xl),
 
                   // 5. PHUONG THUC THANH TOAN (COD HOAC VNPAY)
@@ -1022,11 +1061,46 @@ class _CheckoutPageState extends State<CheckoutPage> {
     );
   }
 
+  Widget _buildWalletOptions(AppColors c, CartProvider cart) {
+    final coinAmount = _coinsToUse(cart);
+    final walletAmount = _walletToUse(cart);
+    return Container(
+      decoration: _cardDecoration(c),
+      child: Column(children: [
+        CheckboxListTile(
+          value: _useWallet,
+          activeColor: c.primary,
+          onChanged: _walletBalance > 0
+              ? (value) => setState(() => _useWallet = value ?? false)
+              : null,
+          title: const Text('Dùng ví của tôi'),
+          subtitle: Text(
+            'Số dư ${formatPrice(_walletBalance)}${walletAmount > 0 ? ' · Trừ ${formatPrice(walletAmount)}' : ''}',
+          ),
+        ),
+        Divider(height: 1, color: c.border),
+        CheckboxListTile(
+          value: _useCoins,
+          activeColor: c.primary,
+          onChanged: _coinBalance > 0
+              ? (value) => setState(() => _useCoins = value ?? false)
+              : null,
+          title: const Text('Dùng xu'),
+          subtitle: Text(
+            'Có ${formatNumber(_coinBalance)} xu · Tối đa 20% tiền hàng${coinAmount > 0 ? ' · Dùng $coinAmount xu' : ''}',
+          ),
+        ),
+      ]),
+    );
+  }
+
   Widget _buildSummaryCard(AppColors c, CartProvider cart) {
     final subtotal = _currentSubtotal;
     final discount = _calculateDiscount(cart);
     final shippingFee = cart.shippingFee;
-    final total = _calculateTotal(cart);
+    final coinAmount = _coinsToUse(cart);
+    final walletAmount = _walletToUse(cart);
+    final total = _totalAfterCredits(cart);
 
     return Container(
       padding: const EdgeInsets.all(AppSpacing.xl),
@@ -1076,6 +1150,14 @@ class _CheckoutPageState extends State<CheckoutPage> {
               ],
             ),
           ],
+          if (coinAmount > 0) ...[
+            const SizedBox(height: AppSpacing.md),
+            _discountSummaryRow('Xu đã dùng:', coinAmount, c),
+          ],
+          if (walletAmount > 0) ...[
+            const SizedBox(height: AppSpacing.md),
+            _discountSummaryRow('Tiền ví đã dùng:', walletAmount, c),
+          ],
           // Duong ke manh ngan cach truoc dong tong
           const Divider(height: AppSpacing.xxl),
           Row(
@@ -1099,4 +1181,16 @@ class _CheckoutPageState extends State<CheckoutPage> {
       ),
     );
   }
+
+  Widget _discountSummaryRow(String label, int amount, AppColors c) => Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: TextStyle(color: c.success, fontSize: 13)),
+          Text('-${formatPrice(amount)}',
+              style: TextStyle(
+                  color: c.success,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 13.5)),
+        ],
+      );
 }
